@@ -159,16 +159,16 @@
     background: #0d1428;
     border: 1px solid #1e3060;
     border-radius: 8px;
-    padding: 0.6rem 1rem;
+    padding: 0.75rem 1.25rem;
     display: flex;
+    align-items: stretch;
     gap: 1.5rem;
-    align-items: flex-end;
   }
   .vu-label-block {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    min-width: 60px;
+    justify-content: space-between;
+    min-width: 52px;
   }
   .vu-main-title {
     font-family: var(--mono);
@@ -176,11 +176,11 @@
     color: #3a5070;
     letter-spacing: 2px;
     text-transform: uppercase;
-    margin-bottom: 4px;
   }
+  .vu-db-group { display: flex; flex-direction: column; }
   .vu-db-val {
     font-family: var(--mono);
-    font-size: 18px;
+    font-size: 20px;
     color: #00d4f0;
     letter-spacing: 1px;
     line-height: 1;
@@ -191,40 +191,56 @@
     color: #3a5070;
     margin-top: 2px;
   }
-  .vu-channel {
-    flex: 1;
+
+  /* Canal vertical */
+  .vu-channel-v {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    max-width: 80px;
   }
   .vu-ch-label {
     font-family: var(--mono);
-    font-size: 8px;
+    font-size: 9px;
     color: #3a5070;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
+    letter-spacing: 2px;
     text-transform: uppercase;
   }
-  .vu-bars {
+  .vu-meter-v {
     display: flex;
-    align-items: flex-end;
+    flex-direction: column-reverse;
     gap: 2px;
-    height: 56px;
+    width: 100%;
+    height: 120px;
   }
-  .vu-col {
+  .vu-row {
     flex: 1;
-    border-radius: 2px 2px 0 0;
+    border-radius: 2px;
     min-height: 2px;
-    transition: height 0.04s ease-out, background 0.1s;
+    transition: opacity 0.05s ease-out;
   }
-  .vu-scale {
+
+  /* Échelle dB à gauche des canaux */
+  .vu-scale-v {
     display: flex;
+    flex-direction: column;
     justify-content: space-between;
-    margin-top: 3px;
+    height: 120px;
+    padding: 2px 0;
   }
-  .vu-scale span {
+  .vu-scale-v span {
     font-family: var(--mono);
     font-size: 7px;
-    color: #1e3060;
+    color: #2a3a50;
+    text-align: right;
+    line-height: 1;
+  }
+  .vu-channels-group {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
   }
 </style>
 </head>
@@ -420,26 +436,33 @@
 
     <div class="vu-label-block">
       <div class="vu-main-title">VU MÈTRE</div>
-      <div class="vu-db-val" id="vu-db">—∞</div>
-      <div class="vu-db-unit">dB</div>
+      <div class="vu-db-group">
+        <div class="vu-db-val" id="vu-db">—∞</div>
+        <div class="vu-db-unit">dB</div>
+      </div>
+    </div>
+
+    <!-- Échelle dB -->
+    <div class="vu-scale-v">
+      <span>0</span>
+      <span>-3</span>
+      <span>-6</span>
+      <span>-10</span>
+      <span>-20</span>
+      <span>-40</span>
+      <span>-60</span>
     </div>
 
     <!-- Canal Gauche -->
-    <div class="vu-channel">
+    <div class="vu-channel-v">
+      <div class="vu-meter-v" id="vu-bars-L"></div>
       <div class="vu-ch-label">L</div>
-      <div class="vu-bars" id="vu-bars-L"></div>
-      <div class="vu-scale">
-        <span>-60</span><span>-40</span><span>-20</span><span>-12</span><span>-6</span><span>0</span>
-      </div>
     </div>
 
     <!-- Canal Droit -->
-    <div class="vu-channel">
+    <div class="vu-channel-v">
+      <div class="vu-meter-v" id="vu-bars-R"></div>
       <div class="vu-ch-label">R</div>
-      <div class="vu-bars" id="vu-bars-R"></div>
-      <div class="vu-scale">
-        <span>-60</span><span>-40</span><span>-20</span><span>-12</span><span>-6</span><span>0</span>
-      </div>
     </div>
 
   </div>
@@ -571,26 +594,27 @@ class Diffuser {
 const D = CONFIGS.map(cfg=>new Diffuser(cfg));
 
 // ── VU Mètre ──
-const NUM_BARS = 32;
+const NUM_BARS = 24;
 let audioCtx = null, analyserL = null, analyserR = null;
 let vuActive = false;
 
-function colColor(i, total) {
+// Couleur par position (bas = vert, milieu = jaune, haut = rouge)
+function rowColor(i, total) {
   const pct = i / total;
-  if (pct > 0.9) return '#e03020';
-  if (pct > 0.75) return '#f5c400';
-  return '#00d96a';
+  if (pct > 0.85) return '#e03020'; // rouge : top 15% = 0dB à -3dB
+  if (pct > 0.65) return '#f5c400'; // jaune : -3dB à -10dB
+  return '#00d96a';                  // vert  : en dessous de -10dB
 }
 
 function buildBars(containerId) {
   const el = document.getElementById(containerId);
   el.innerHTML = '';
   for (let i = 0; i < NUM_BARS; i++) {
-    const col = document.createElement('div');
-    col.className = 'vu-col';
-    col.style.height = '2px';
-    col.style.background = colColor(i, NUM_BARS);
-    el.appendChild(col);
+    const row = document.createElement('div');
+    row.className = 'vu-row';
+    row.style.background = rowColor(i, NUM_BARS);
+    row.style.opacity = '0.1';
+    el.appendChild(row);
   }
 }
 
@@ -602,12 +626,11 @@ function initVU(audioEl) {
     const merger   = audioCtx.createChannelMerger(2);
     analyserL = audioCtx.createAnalyser();
     analyserR = audioCtx.createAnalyser();
-    analyserL.fftSize = 256;
-    analyserR.fftSize = 256;
-    analyserL.smoothingTimeConstant = 0.75;
-    analyserR.smoothingTimeConstant = 0.75;
+    analyserL.fftSize = 1024;
+    analyserR.fftSize = 1024;
+    analyserL.smoothingTimeConstant = 0.8;
+    analyserR.smoothingTimeConstant = 0.8;
 
-    // src → splitter → analyserL/R → merger → destination
     src.connect(splitter);
     splitter.connect(analyserL, 0);
     splitter.connect(analyserR, 1);
@@ -622,22 +645,23 @@ function initVU(audioEl) {
 }
 
 function getRMS(analyser) {
-  const data = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(data);
+  const data = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(data);
   let sum = 0;
-  for (let i = 0; i < data.length; i++) sum += (data[i] / 255) ** 2;
+  for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
   return Math.sqrt(sum / data.length);
 }
 
 function updateBars(containerId, rms) {
-  const cols = document.querySelectorAll(`#${containerId} .vu-col`);
-  const level = Math.min(1, rms * 3.5);
+  // Convertit RMS en dB, mappe -60dB→0 sur 0→1
+  const db = rms > 0 ? Math.max(-60, 20 * Math.log10(rms)) : -60;
+  const level = (db + 60) / 60; // 0 = silence, 1 = 0dB
   const active = Math.round(level * NUM_BARS);
-  cols.forEach((col, i) => {
-    const h = i < active ? Math.max(2, (i / NUM_BARS) * 56 + 4) : 2;
-    col.style.height = h + 'px';
-    col.style.opacity = i < active ? '1' : '0.12';
+  const rows = document.querySelectorAll(`#${containerId} .vu-row`);
+  rows.forEach((row, i) => {
+    row.style.opacity = i < active ? '1' : '0.1';
   });
+  return db;
 }
 
 function vuLoop() {
@@ -645,12 +669,12 @@ function vuLoop() {
   if (!vuActive || !analyserL || !analyserR) return;
   const rmsL = getRMS(analyserL);
   const rmsR = getRMS(analyserR);
-  updateBars('vu-bars-L', rmsL);
-  updateBars('vu-bars-R', rmsR);
-  const avg = (rmsL + rmsR) / 2;
-  const db = avg > 0 ? Math.max(-60, 20 * Math.log10(avg)) : -Infinity;
-  document.getElementById('vu-db').textContent = isFinite(db) ? db.toFixed(1) : '—∞';
-  document.getElementById('vu-db').style.color = db > -6 ? '#e03020' : db > -18 ? '#f5c400' : '#00d4f0';
+  const dbL  = updateBars('vu-bars-L', rmsL);
+  const dbR  = updateBars('vu-bars-R', rmsR);
+  const db   = Math.max(dbL, dbR);
+  const dbEl = document.getElementById('vu-db');
+  dbEl.textContent = db > -60 ? db.toFixed(1) : '—∞';
+  dbEl.style.color = db > -3 ? '#e03020' : db > -10 ? '#f5c400' : '#00d4f0';
 }
 
 // Connecte le VU mètre au premier diffuseur qui joue
