@@ -430,39 +430,66 @@
   </div>
 </section>
 
-<!-- ══════ VU MÈTRE ══════ -->
+<!-- ══════ BARRE DU BAS : DIFF1 + RADIO MONACO ══════ -->
 <div class="vu-section">
-  <div class="vu-wrap">
+  <div style="display:flex;gap:1rem;">
 
-    <div class="vu-label-block">
-      <div class="vu-main-title">VU MÈTRE</div>
-      <div class="vu-db-group">
-        <div class="vu-db-val" id="vu-db">—∞</div>
-        <div class="vu-db-unit">dB</div>
+    <!-- ── DIFF1 ── -->
+    <div class="vu-wrap" style="flex:1">
+      <div class="vu-label-block">
+        <div class="vu-main-title">DIFF 1</div>
+        <div class="vu-db-group">
+          <div class="vu-db-val" id="vu1-db">—∞</div>
+          <div class="vu-db-unit">dB</div>
+        </div>
+      </div>
+      <div class="vu-scale-v">
+        <span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span>
+      </div>
+      <div class="vu-channel-v">
+        <div class="vu-meter-v" id="vu1-L"></div>
+        <div class="vu-ch-label">L</div>
+      </div>
+      <div class="vu-channel-v">
+        <div class="vu-meter-v" id="vu1-R"></div>
+        <div class="vu-ch-label">R</div>
       </div>
     </div>
 
-    <!-- Échelle dB -->
-    <div class="vu-scale-v">
-      <span>0</span>
-      <span>-3</span>
-      <span>-6</span>
-      <span>-10</span>
-      <span>-20</span>
-      <span>-40</span>
-      <span>-60</span>
-    </div>
-
-    <!-- Canal Gauche -->
-    <div class="vu-channel-v">
-      <div class="vu-meter-v" id="vu-bars-L"></div>
-      <div class="vu-ch-label">L</div>
-    </div>
-
-    <!-- Canal Droit -->
-    <div class="vu-channel-v">
-      <div class="vu-meter-v" id="vu-bars-R"></div>
-      <div class="vu-ch-label">R</div>
+    <!-- ── RADIO MONACO ── -->
+    <div class="vu-wrap" style="flex:2">
+      <div class="vu-label-block" style="min-width:90px">
+        <div class="vu-main-title">RADIO MONACO</div>
+        <div style="display:flex;gap:6px;margin:6px 0">
+          <button class="button is-success is-small is-outlined" id="rm-play-btn" onclick="rmToggle()">▶ PLAY</button>
+          <button class="button is-danger is-small is-outlined" onclick="rmStop()">■</button>
+        </div>
+        <div class="vu-db-group">
+          <div class="vu-db-val" id="vu2-db">—∞</div>
+          <div class="vu-db-unit">dB</div>
+        </div>
+      </div>
+      <div class="vu-scale-v">
+        <span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span>
+      </div>
+      <div class="vu-channel-v">
+        <div class="vu-meter-v" id="vu2-L"></div>
+        <div class="vu-ch-label">L</div>
+      </div>
+      <div class="vu-channel-v">
+        <div class="vu-meter-v" id="vu2-R"></div>
+        <div class="vu-ch-label">R</div>
+      </div>
+      <!-- Infos titre en cours -->
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding-left:12px;border-left:1px solid #1e3060;min-width:0">
+        <div style="font-family:var(--mono);font-size:8px;color:#3a5070;letter-spacing:2px;margin-bottom:4px">EN DIRECT</div>
+        <div style="font-family:var(--display);font-size:16px;font-weight:700;color:#ddeeff;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">RADIO MONACO</div>
+        <div style="font-family:var(--mono);font-size:10px;color:#0099b8;margin-top:2px">98.0 FM · MONACO</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+          <span class="dot-live" id="rm-dot" style="opacity:0"></span>
+          <span style="font-family:var(--mono);font-size:9px;color:#3a5070" id="rm-status">ARRÊT</span>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -476,6 +503,7 @@ const CONFIGS = [
   {
     tracks: [
       { file: "audio/ID_FUN_05_.WAV", artist: "", title: "JINGLE FUN 1", color: "#7c3aed" },
+      { file: "https://radiomonaco.ice.infomaniak.ch/radiomonaco-128.mp3", artist: "RADIO MONACO", title: "DIRECT — 98.0 FM", color: "#1a3a6e" },
     ],
     ids: { avant:'c1-avant', avance:'c1-avance', counter:'c1-counter',
            body:'c1-body', micros:'c1-micros', total:'c1-total',
@@ -484,6 +512,7 @@ const CONFIGS = [
   {
     tracks: [
       { file: "audio/ID_FUN_05_.WAV", artist: "", title: "JINGLE FUN 1", color: "#7c3aed" },
+      { file: "https://radiomonaco.ice.infomaniak.ch/radiomonaco-128.mp3", artist: "RADIO MONACO", title: "DIRECT — 98.0 FM", color: "#1a3a6e" },
     ],
     ids: { avant:'c2-avant', avance:'c2-avance', counter:'c2-counter',
            body:'c2-body', micros:'c2-micros', total:'c2-total',
@@ -593,55 +622,54 @@ class Diffuser {
 
 const D = CONFIGS.map(cfg=>new Diffuser(cfg));
 
-// ── VU Mètre ──
+// ══════════════════════════════════════
+// VU MÈTRE — moteur commun
+// ══════════════════════════════════════
 const NUM_BARS = 24;
-let audioCtx = null, analyserL = null, analyserR = null;
-let vuActive = false;
+let sharedCtx = null;
 
-// Couleur par position (bas = vert, milieu = jaune, haut = rouge)
 function rowColor(i, total) {
   const pct = i / total;
-  if (pct > 0.85) return '#e03020'; // rouge : top 15% = 0dB à -3dB
-  if (pct > 0.65) return '#f5c400'; // jaune : -3dB à -10dB
-  return '#00d96a';                  // vert  : en dessous de -10dB
+  if (pct > 0.85) return '#e03020';
+  if (pct > 0.65) return '#f5c400';
+  return '#00d96a';
 }
 
-function buildBars(containerId) {
-  const el = document.getElementById(containerId);
+function buildBars(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
   el.innerHTML = '';
   for (let i = 0; i < NUM_BARS; i++) {
-    const row = document.createElement('div');
-    row.className = 'vu-row';
-    row.style.background = rowColor(i, NUM_BARS);
-    row.style.opacity = '0.1';
-    el.appendChild(row);
+    const r = document.createElement('div');
+    r.className = 'vu-row';
+    r.style.background = rowColor(i, NUM_BARS);
+    r.style.opacity = '0.1';
+    el.appendChild(r);
   }
 }
 
-function initVU(audioEl) {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const src      = audioCtx.createMediaElementSource(audioEl);
-    const splitter = audioCtx.createChannelSplitter(2);
-    const merger   = audioCtx.createChannelMerger(2);
-    analyserL = audioCtx.createAnalyser();
-    analyserR = audioCtx.createAnalyser();
-    analyserL.fftSize = 1024;
-    analyserR.fftSize = 1024;
-    analyserL.smoothingTimeConstant = 0.8;
-    analyserR.smoothingTimeConstant = 0.8;
+function getCtx() {
+  if (!sharedCtx) sharedCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return sharedCtx;
+}
 
-    src.connect(splitter);
-    splitter.connect(analyserL, 0);
-    splitter.connect(analyserR, 1);
-    analyserL.connect(merger, 0, 0);
-    analyserR.connect(merger, 0, 1);
-    merger.connect(audioCtx.destination);
-
-    buildBars('vu-bars-L');
-    buildBars('vu-bars-R');
-  }
-  vuActive = true;
+function createAnalyzers(audioEl) {
+  const ctx      = getCtx();
+  const src      = ctx.createMediaElementSource(audioEl);
+  const splitter = ctx.createChannelSplitter(2);
+  const merger   = ctx.createChannelMerger(2);
+  const aL = ctx.createAnalyser();
+  const aR = ctx.createAnalyser();
+  aL.fftSize = 1024; aR.fftSize = 1024;
+  aL.smoothingTimeConstant = 0.8;
+  aR.smoothingTimeConstant = 0.8;
+  src.connect(splitter);
+  splitter.connect(aL, 0);
+  splitter.connect(aR, 1);
+  aL.connect(merger, 0, 0);
+  aR.connect(merger, 0, 1);
+  merger.connect(ctx.destination);
+  return { aL, aR };
 }
 
 function getRMS(analyser) {
@@ -652,45 +680,84 @@ function getRMS(analyser) {
   return Math.sqrt(sum / data.length);
 }
 
-function updateBars(containerId, rms) {
-  // Convertit RMS en dB, mappe -60dB→0 sur 0→1
-  const db = rms > 0 ? Math.max(-60, 20 * Math.log10(rms)) : -60;
-  const level = (db + 60) / 60; // 0 = silence, 1 = 0dB
-  const active = Math.round(level * NUM_BARS);
-  const rows = document.querySelectorAll(`#${containerId} .vu-row`);
-  rows.forEach((row, i) => {
-    row.style.opacity = i < active ? '1' : '0.1';
+function paintBars(idL, idR, aL, aR, dbId) {
+  const rmsL = getRMS(aL), rmsR = getRMS(aR);
+  [{ id: idL, rms: rmsL }, { id: idR, rms: rmsR }].forEach(({ id, rms }) => {
+    const db = rms > 0 ? Math.max(-60, 20 * Math.log10(rms)) : -60;
+    const active = Math.round(((db + 60) / 60) * NUM_BARS);
+    document.querySelectorAll(`#${id} .vu-row`).forEach((r, i) => {
+      r.style.opacity = i < active ? '1' : '0.1';
+    });
   });
-  return db;
+  const db = Math.max(
+    getRMS(aL) > 0 ? Math.max(-60, 20 * Math.log10(getRMS(aL))) : -60,
+    getRMS(aR) > 0 ? Math.max(-60, 20 * Math.log10(getRMS(aR))) : -60
+  );
+  const el = document.getElementById(dbId);
+  if (el) {
+    el.textContent = db > -60 ? db.toFixed(1) : '—∞';
+    el.style.color = db > -3 ? '#e03020' : db > -10 ? '#f5c400' : '#00d4f0';
+  }
 }
 
+// ── VU 1 : DIFF1 (branché sur D[0]) ──
+let vu1 = null;
+const _t0 = D[0].togglePlay.bind(D[0]);
+D[0].togglePlay = function() {
+  if (!vu1) {
+    if (sharedCtx && sharedCtx.state === 'suspended') sharedCtx.resume();
+    vu1 = createAnalyzers(D[0].audio);
+    buildBars('vu1-L'); buildBars('vu1-R');
+  }
+  getCtx().resume();
+  _t0();
+};
+
+// ── VU 2 : RADIO MONACO (lecteur dédié) ──
+const rmAudio = new Audio();
+rmAudio.crossOrigin = 'anonymous';
+let vu2 = null, rmPlaying = false;
+
+function rmToggle() {
+  if (!rmPlaying) {
+    if (!vu2) {
+      getCtx().resume();
+      rmAudio.src = 'https://radiomonaco.ice.infomaniak.ch/radiomonaco-128.mp3';
+      vu2 = createAnalyzers(rmAudio);
+      buildBars('vu2-L'); buildBars('vu2-R');
+    }
+    getCtx().resume();
+    rmAudio.play().then(() => {
+      rmPlaying = true;
+      document.getElementById('rm-play-btn').textContent = '■ PAUSE';
+      document.getElementById('rm-dot').style.opacity = '1';
+      document.getElementById('rm-status').textContent = 'EN DIRECT';
+    }).catch(e => console.warn(e));
+  } else {
+    rmAudio.pause();
+    rmPlaying = false;
+    document.getElementById('rm-play-btn').textContent = '▶ PLAY';
+    document.getElementById('rm-dot').style.opacity = '0';
+    document.getElementById('rm-status').textContent = 'PAUSE';
+  }
+}
+
+function rmStop() {
+  rmAudio.pause();
+  rmAudio.src = '';
+  rmPlaying = false;
+  vu2 = null;
+  document.getElementById('rm-play-btn').textContent = '▶ PLAY';
+  document.getElementById('rm-dot').style.opacity = '0';
+  document.getElementById('rm-status').textContent = 'ARRÊT';
+}
+
+// ── Boucle d'animation ──
 function vuLoop() {
   requestAnimationFrame(vuLoop);
-  if (!vuActive || !analyserL || !analyserR) return;
-  const rmsL = getRMS(analyserL);
-  const rmsR = getRMS(analyserR);
-  const dbL  = updateBars('vu-bars-L', rmsL);
-  const dbR  = updateBars('vu-bars-R', rmsR);
-  const db   = Math.max(dbL, dbR);
-  const dbEl = document.getElementById('vu-db');
-  dbEl.textContent = db > -60 ? db.toFixed(1) : '—∞';
-  dbEl.style.color = db > -3 ? '#e03020' : db > -10 ? '#f5c400' : '#00d4f0';
+  if (vu1) paintBars('vu1-L', 'vu1-R', vu1.aL, vu1.aR, 'vu1-db');
+  if (vu2) paintBars('vu2-L', 'vu2-R', vu2.aL, vu2.aR, 'vu2-db');
 }
-
-// Connecte le VU mètre au premier diffuseur qui joue
-const _origToggle0 = D[0].togglePlay.bind(D[0]);
-D[0].togglePlay = function() {
-  if (!audioCtx) initVU(D[0].audio);
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-  _origToggle0();
-};
-const _origToggle1 = D[1].togglePlay.bind(D[1]);
-D[1].togglePlay = function() {
-  if (!audioCtx) initVU(D[1].audio);
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-  _origToggle1();
-};
-
 vuLoop();
 
 setInterval(()=>{
