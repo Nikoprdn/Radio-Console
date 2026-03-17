@@ -1,1 +1,609 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radio Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+  :root {
+    --bg: #080d18;
+    --surface: #0c1220;
+    --surface2: #0f1628;
+    --cyan: #00d4f0;
+    --cyan-dim: #0099b8;
+    --green: #00d96a;
+    --yellow: #f5c400;
+    --orange: #f07800;
+    --red: #e03020;
+    --white: #ddeeff;
+    --gray: #5a7090;
+    --border: #162040;
+    --border-mid: #1e3060;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-display: 'Oswald', sans-serif;
+    --font-ui: 'Rajdhani', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .console { border-bottom: 3px solid #04080f; }
+
+  .console-sep {
+    height: 28px;
+    background: #04080f;
+    border-top: 1px solid #0a1530;
+    border-bottom: 1px solid #0a1530;
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    gap: 12px;
+  }
+  .sep-line { flex: 1; height: 1px; background: #162040; }
+  .sep-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: #2a3a50;
+    letter-spacing: 3px;
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-mid);
+    display: flex;
+    align-items: center;
+    height: 52px;
+  }
+  .top-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 18px;
+    height: 100%;
+    border-right: 1px solid var(--border-mid);
+  }
+  .clock-main {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .clock-date {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--gray);
+    letter-spacing: 1px;
+    margin-top: 1px;
+  }
+  .station-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 20px;
+    border-right: 1px solid var(--border-mid);
+  }
+  .station-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+  .station-sub {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--gray);
+    margin-top: 2px;
+  }
+  .diff-section {
+    padding: 0 20px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--border-mid);
+  }
+  .diff-label {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--yellow);
+    letter-spacing: 2px;
+  }
+  .timer-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0 18px;
+    height: 100%;
+    border-right: 1px solid var(--border-mid);
+    min-width: 120px;
+  }
+  .timer-label {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--gray);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .timer-value {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--green);
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-top: 1px;
+  }
+  .advance-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0 18px;
+    height: 100%;
+    min-width: 100px;
+  }
+  .advance-label {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--yellow);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .advance-value {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--yellow);
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  .onair-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border-mid);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 18px;
+  }
+  .onair-left {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .dot-live {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: blink 1s step-start infinite;
+    vertical-align: middle;
+    margin-bottom: 1px;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .onair-text {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: 3px;
+    line-height: 1;
+  }
+  .logo-badge {
+    background: #122040;
+    border: 1px solid var(--border-mid);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cyan);
+  }
+
+  .controls-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 7px 18px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .ctrl-btn {
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    border-radius: 2px;
+    color: var(--gray);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 14px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.1s;
+  }
+  .ctrl-btn:hover { border-color: var(--cyan-dim); color: var(--white); }
+  .ctrl-btn.play { border-color: var(--green); color: var(--green); }
+  .ctrl-btn.stop { border-color: var(--red); color: var(--red); }
+  .ctrl-btn.play:hover { background: #052210; }
+  .ctrl-btn.stop:hover { background: #200808; }
+  .ctrl-spacer { flex: 1; }
+
+  .playlist-wrap { overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-mid);
+  }
+  thead th {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--gray);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    text-align: left;
+    font-weight: 400;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  tbody tr:hover { background: #0e1830; }
+  tbody tr.active-row {
+    border-left: 2px solid #c01010;
+    background: #180606;
+  }
+  tbody tr.active-row td { position: relative; z-index: 1; }
+  tbody tr.active-row::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #2c0808;
+    z-index: 0;
+    transform-origin: left center;
+    transform: scaleX(var(--prog, 0));
+    transition: transform 1s linear;
+  }
+  tbody tr.next-row {
+    background: #071408;
+    border-left: 2px solid #006630;
+  }
+  td {
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray);
+    padding: 0 12px;
+    height: 46px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .td-num { width: 36px; font-family: var(--font-mono); font-size: 12px; color: var(--gray); text-align: center; }
+  .td-num.playing { color: #ff4040; }
+  .td-time { width: 86px; font-family: var(--font-mono); font-size: 12px; color: var(--cyan-dim); }
+  .td-time .sub { font-size: 9px; color: var(--gray); display: block; margin-top: 1px; }
+  .td-title { min-width: 200px; }
+  .td-title .artist { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--white); letter-spacing: 0.5px; display: block; line-height: 1.1; }
+  .active-row .td-title .artist { color: #ff6060; }
+  .next-row .td-title .artist { color: #40d870; }
+  .td-title .song { font-size: 11px; color: var(--gray); display: block; margin-top: 1px; font-weight: 400; }
+  .td-title .simple { font-size: 13px; font-weight: 500; color: #7a98b8; }
+  .active-row .td-title .simple { color: #ff6060; }
+  .next-row .td-title .simple { color: #40d870; }
+  .td-dur { width: 78px; font-family: var(--font-mono); font-size: 12px; color: var(--gray); text-align: right; }
+  .td-countdown { width: 96px; font-family: var(--font-mono); font-size: 13px; text-align: right; padding-right: 14px; }
+  .active-row .td-countdown { color: #ff5050; font-size: 15px; }
+  .next-row .td-countdown { color: #40d870; }
+  .td-bar { width: 5px; padding: 0; }
+  .color-bar { height: 46px; width: 5px; display: block; }
+
+  .bottom-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border-mid);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 8px 18px;
+  }
+  .bottom-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--cyan-dim); }
+  .bottom-micros { display: flex; flex-direction: column; }
+  .micros-label { font-family: var(--font-mono); font-size: 8px; color: var(--gray); letter-spacing: 1px; text-transform: uppercase; }
+  .micros-value { font-family: var(--font-mono); font-size: 16px; color: var(--orange); }
+  .spacer { flex: 1; }
+  .bottom-total { font-family: var(--font-mono); font-size: 38px; color: var(--white); letter-spacing: 3px; }
+  .bottom-suffix { font-family: var(--font-display); font-size: 30px; font-weight: 700; color: var(--cyan); }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-mid); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ CONSOLE 1 ══════════════════════ -->
+<div class="console">
+  <div class="topbar">
+    <div class="top-section">
+      <div class="clock-main" id="c1-clock">00:00:00</div>
+      <div class="clock-date" id="c1-date">00/00/0000 · GMT+1:00</div>
+    </div>
+    <div class="station-section">
+      <div class="station-name">MA RADIO — STUDIO 1</div>
+      <div class="station-sub">RADIO01_EST</div>
+    </div>
+    <div class="diff-section"><span class="diff-label">DIFF 1</span></div>
+    <div class="timer-section">
+      <div class="timer-label">Avant fenêtre</div>
+      <div class="timer-value" id="c1-avant">00:00:00</div>
+    </div>
+    <div class="advance-section">
+      <div class="advance-label">Avancé</div>
+      <div class="advance-value" id="c1-avance">00:00:00</div>
+    </div>
+  </div>
+  <div class="onair-bar">
+    <div class="onair-left">
+      <span class="dot-live"></span>
+      <span class="onair-text">DIFF 1 — MONTRÉAL</span>
+    </div>
+    <div class="logo-badge">FM</div>
+  </div>
+  <div class="controls-row">
+    <button class="ctrl-btn play" onclick="D[0].togglePlay()">▶ PLAY</button>
+    <button class="ctrl-btn stop" onclick="D[0].stopAll()">■ STOP</button>
+    <button class="ctrl-btn" onclick="D[0].prevTrack()">|◀ PRÉC</button>
+    <button class="ctrl-btn" onclick="D[0].nextTrack()">SUIV ▶|</button>
+    <div class="ctrl-spacer"></div>
+    <span style="font-family:var(--font-mono);font-size:10px;color:var(--gray)">PISTE <span id="c1-counter">1/1</span></span>
+  </div>
+  <div class="playlist-wrap">
+    <table><thead><tr>
+      <th style="width:36px">#</th>
+      <th style="width:86px">Horaire</th>
+      <th></th>
+      <th style="width:78px;text-align:right">Durée</th>
+      <th style="width:96px;text-align:right;padding-right:14px">Décompte</th>
+      <th style="width:5px"></th>
+    </tr></thead>
+    <tbody id="c1-body"></tbody></table>
+  </div>
+  <div class="bottom-bar">
+    <div class="bottom-logo">
+      <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="14" stroke="#0099b8" stroke-width="1.5"/>
+        <circle cx="16" cy="16" r="6"  stroke="#0099b8" stroke-width="1.5"/>
+        <circle cx="16" cy="16" r="2"  fill="#0099b8"/>
+      </svg>MA RADIO
+    </div>
+    <div class="bottom-micros">
+      <span class="micros-label">Durée écoulée</span>
+      <span class="micros-value" id="c1-micros">00:00</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-total" id="c1-total">00:00:00</div>
+    <div class="bottom-suffix" id="c1-suffix">A</div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SÉPARATEUR ══════════════════════ -->
+<div class="console-sep">
+  <div class="sep-line"></div>
+  <span class="sep-label">— diffuseur —</span>
+  <div class="sep-line"></div>
+</div>
+
+<!-- ══════════════════════ CONSOLE 2 ══════════════════════ -->
+<div class="console">
+  <div class="topbar">
+    <div class="top-section">
+      <div class="clock-main" id="c2-clock">00:00:00</div>
+      <div class="clock-date" id="c2-date">00/00/0000 · GMT+1:00</div>
+    </div>
+    <div class="station-section">
+      <div class="station-name">MA RADIO — STUDIO 2</div>
+      <div class="station-sub">RADIO02_EST</div>
+    </div>
+    <div class="diff-section"><span class="diff-label">DIFF 2</span></div>
+    <div class="timer-section">
+      <div class="timer-label">Avant fenêtre</div>
+      <div class="timer-value" id="c2-avant">00:00:00</div>
+    </div>
+    <div class="advance-section">
+      <div class="advance-label">Avancé</div>
+      <div class="advance-value" id="c2-avance">00:00:00</div>
+    </div>
+  </div>
+  <div class="onair-bar">
+    <div class="onair-left">
+      <span class="dot-live"></span>
+      <span class="onair-text">DIFF 2 — MONTRÉAL</span>
+    </div>
+    <div class="logo-badge">FM</div>
+  </div>
+  <div class="controls-row">
+    <button class="ctrl-btn play" onclick="D[1].togglePlay()">▶ PLAY</button>
+    <button class="ctrl-btn stop" onclick="D[1].stopAll()">■ STOP</button>
+    <button class="ctrl-btn" onclick="D[1].prevTrack()">|◀ PRÉC</button>
+    <button class="ctrl-btn" onclick="D[1].nextTrack()">SUIV ▶|</button>
+    <div class="ctrl-spacer"></div>
+    <span style="font-family:var(--font-mono);font-size:10px;color:var(--gray)">PISTE <span id="c2-counter">1/1</span></span>
+  </div>
+  <div class="playlist-wrap">
+    <table><thead><tr>
+      <th style="width:36px">#</th>
+      <th style="width:86px">Horaire</th>
+      <th></th>
+      <th style="width:78px;text-align:right">Durée</th>
+      <th style="width:96px;text-align:right;padding-right:14px">Décompte</th>
+      <th style="width:5px"></th>
+    </tr></thead>
+    <tbody id="c2-body"></tbody></table>
+  </div>
+  <div class="bottom-bar">
+    <div class="bottom-logo">
+      <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="14" stroke="#0099b8" stroke-width="1.5"/>
+        <circle cx="16" cy="16" r="6"  stroke="#0099b8" stroke-width="1.5"/>
+        <circle cx="16" cy="16" r="2"  fill="#0099b8"/>
+      </svg>MA RADIO
+    </div>
+    <div class="bottom-micros">
+      <span class="micros-label">Durée écoulée</span>
+      <span class="micros-value" id="c2-micros">00:00</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-total" id="c2-total">00:00:00</div>
+    <div class="bottom-suffix" id="c2-suffix">A</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// CONFIGURATION — modifie ici tes pistes
+// ═══════════════════════════════════════
+const CONFIGS = [
+  {
+    // ── DIFF 1 ──
+    tracks: [
+      { file: "audio/morceau-01.mp3", artist: "ARTISTE 1", title: "NOM DU MORCEAU 1", color: "#1a6b3a" },
+      { file: "audio/morceau-02.mp3", artist: "ARTISTE 2", title: "NOM DU MORCEAU 2", color: "#1a3a6e" },
+      { file: "audio/morceau-03.mp3", artist: "ARTISTE 3", title: "NOM DU MORCEAU 3", color: "#5b21b6" },
+      { file: "audio/morceau-04.mp3", artist: "ARTISTE 4", title: "NOM DU MORCEAU 4", color: "#1a6b3a" },
+    ],
+    ids: { clock:'c1-clock', date:'c1-date', avant:'c1-avant', avance:'c1-avance',
+           counter:'c1-counter', body:'c1-body', micros:'c1-micros', total:'c1-total', suffix:'c1-suffix' }
+  },
+  {
+    // ── DIFF 2 ──
+    tracks: [
+      { file: "audio/morceau-01.mp3", artist: "ARTISTE 1", title: "NOM DU MORCEAU 1", color: "#1a6b3a" },
+      { file: "audio/morceau-02.mp3", artist: "ARTISTE 2", title: "NOM DU MORCEAU 2", color: "#1a3a6e" },
+      { file: "audio/morceau-03.mp3", artist: "ARTISTE 3", title: "NOM DU MORCEAU 3", color: "#5b21b6" },
+      { file: "audio/morceau-04.mp3", artist: "ARTISTE 4", title: "NOM DU MORCEAU 4", color: "#1a6b3a" },
+    ],
+    ids: { clock:'c2-clock', date:'c2-date', avant:'c2-avant', avance:'c2-avance',
+           counter:'c2-counter', body:'c2-body', micros:'c2-micros', total:'c2-total', suffix:'c2-suffix' }
+  }
+];
+// ═══════════════════════════════════════
+
+const fmt2 = n => String(n).padStart(2,'0');
+const fmtSec  = s => { s=Math.round(s||0); return fmt2(Math.floor(s/60))+':'+fmt2(s%60); };
+const fmtFull = s => { s=Math.round(s||0); return fmt2(Math.floor(s/3600))+':'+fmt2(Math.floor((s%3600)/60))+':'+fmt2(s%60); };
+const nowClock = () => { const d=new Date(); return [d.getHours(),d.getMinutes(),d.getSeconds()].map(fmt2).join(':'); };
+const nowDate  = () => { const d=new Date(); return fmt2(d.getDate())+'/'+fmt2(d.getMonth()+1)+'/'+d.getFullYear(); };
+
+class Diffuser {
+  constructor(cfg) {
+    this.tracks = cfg.tracks;
+    this.ids    = cfg.ids;
+    this.audio  = new Audio();
+    this.ci     = 0;       // currentIndex
+    this.playing = false;
+    this.durs   = this.tracks.map(()=>0);
+    this._preload();
+    this.audio.addEventListener('ended', ()=>{ this.ci=(this.ci+1)%this.tracks.length; this._play(this.ci); });
+    this.audio.addEventListener('loadedmetadata', ()=>{ this.durs[this.ci]=this.audio.duration||0; this.render(); });
+  }
+
+  _preload() {
+    let n=0;
+    this.tracks.forEach((t,i)=>{
+      const a=new Audio(); a.src=t.file;
+      const cb=()=>{ this.durs[i]=a.duration||0; if(++n===this.tracks.length) this.render(); };
+      a.addEventListener('loadedmetadata',cb); a.addEventListener('error',cb);
+    });
+  }
+
+  render() {
+    const now=new Date(); let cur=new Date(now);
+    const starts = this.tracks.map((_,i)=>{ const t=new Date(cur); cur=new Date(cur.getTime()+(this.durs[i]||0)*1000); return t; });
+    const tbody=document.getElementById(this.ids.body);
+    tbody.innerHTML='';
+    this.tracks.forEach((t,i)=>{
+      const isActive=i===this.ci, isNext=i===this.ci+1;
+      const tr=document.createElement('tr');
+      tr.className=isActive?'active-row':isNext?'next-row':'';
+      tr.onclick=()=>this.jumpTo(i);
+      const st=starts[i];
+      const hhmm=fmt2(st.getHours())+':'+fmt2(st.getMinutes())+':'+fmt2(st.getSeconds());
+      const sub='('+fmt2(st.getHours())+':'+fmt2(st.getMinutes()+Math.floor(this.durs[i]/60))+')';
+      const titleCell=t.artist
+        ?`<span class="artist">${t.artist}</span><span class="song">${t.title}</span>`
+        :`<span class="simple">${t.title}</span>`;
+      const rem=isActive&&this.playing?Math.max(0,this.durs[i]-this.audio.currentTime):this.durs[i];
+      const cd=isActive?`<span id="${this.ids.body}-cd">${fmtFull(rem)}</span>`:fmtFull(this.durs[i]);
+      tr.innerHTML=`
+        <td class="td-num${isActive?' playing':''}">${isActive?'▶':(i+1)}</td>
+        <td class="td-time"><span>${hhmm}</span><span class="sub">${sub}</span></td>
+        <td class="td-title">${titleCell}</td>
+        <td class="td-dur">${fmtFull(this.durs[i])}</td>
+        <td class="td-countdown">${cd}</td>
+        <td class="td-bar"><span class="color-bar" style="background:${t.color}"></span></td>`;
+      if(isActive&&this.playing&&this.durs[i]>0)
+        tr.style.setProperty('--prog',(this.audio.currentTime/this.durs[i]).toFixed(4));
+      tbody.appendChild(tr);
+    });
+    document.getElementById(this.ids.counter).textContent=`${this.ci+1}/${this.tracks.length}`;
+    let tot=0; this.durs.forEach(d=>tot+=d);
+    document.getElementById(this.ids.total).textContent=fmtFull(tot);
+    document.getElementById(this.ids.suffix).textContent=this.playing?'EN DIRECT':'A';
+  }
+
+  tick() {
+    document.getElementById(this.ids.clock).textContent=nowClock();
+    document.getElementById(this.ids.date).textContent=nowDate()+' · GMT+1:00';
+    if(this.playing && this.durs[this.ci]>0){
+      const rem=Math.max(0,this.durs[this.ci]-this.audio.currentTime);
+      const prog=this.audio.currentTime/this.durs[this.ci];
+      const cd=document.getElementById(this.ids.body+'-cd');
+      if(cd) cd.textContent=fmtFull(rem);
+      const ar=document.querySelector(`#${this.ids.body} tr.active-row`);
+      if(ar) ar.style.setProperty('--prog',prog.toFixed(4));
+      document.getElementById(this.ids.avant).textContent=fmtFull(rem);
+      document.getElementById(this.ids.avance).textContent=fmtFull(this.audio.currentTime);
+      document.getElementById(this.ids.micros).textContent=fmtSec(this.audio.currentTime);
+    }
+  }
+
+  _play(i) {
+    this.ci=i; this.audio.src=this.tracks[i].file;
+    this.audio.play().then(()=>{this.playing=true;this.render();}).catch(()=>{this.playing=false;this.render();});
+  }
+
+  togglePlay() {
+    if(!this.playing){
+      if(this.audio.src && this.audio.src!==location.href)
+        this.audio.play().then(()=>{this.playing=true;this.render();});
+      else this._play(this.ci);
+    } else { this.audio.pause(); this.playing=false; this.render(); }
+  }
+  stopAll()   { this.audio.pause(); this.audio.currentTime=0; this.playing=false; this.render(); }
+  nextTrack() { const n=(this.ci+1)%this.tracks.length; this.playing?this._play(n):(this.ci=n,this.render()); }
+  prevTrack() { const p=(this.ci-1+this.tracks.length)%this.tracks.length; this.playing?this._play(p):(this.ci=p,this.render()); }
+  jumpTo(i)   { this.playing?this._play(i):(this.ci=i,this.render()); }
+}
+
+const D = CONFIGS.map(cfg => new Diffuser(cfg));
+setInterval(()=>D.forEach(d=>d.tick()), 1000);
+</script>
+</body>
+</html>
