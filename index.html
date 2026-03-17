@@ -58,7 +58,7 @@
   .row-next .cell-cd{color:#40d870!important;}
   .cell-dur{width:64px;font-family:var(--mono);font-size:11px;text-align:right;}
   .cell-cd{width:84px;font-family:var(--mono);font-size:12px;text-align:right;padding-right:10px!important;}
-  .cell-wv{width:220px;padding:4px 8px!important;vertical-align:middle!important;}
+  .cell-wv{padding:4px 8px!important;vertical-align:middle!important;}
   .cell-bar{width:5px;padding:0!important;}
   .color-bar{height:56px;width:5px;display:block;}
   .progress.is-elapsed{height:3px;margin:0;border-radius:0;background:var(--border);}
@@ -90,19 +90,50 @@
   .fdz-count{font-family:var(--mono);font-size:9px;color:var(--cyan);}
   .fdz-add-badge{font-family:var(--mono);font-size:9px;color:var(--green);background:#052210;border:1px solid var(--green-dk);border-radius:3px;padding:1px 6px;margin-left:4px;}
 
-  /* ── Waveform avec in/out ── */
-  .wv-wrap{position:relative;height:36px;cursor:crosshair;user-select:none;border-radius:3px;overflow:hidden;}
-  .wv-canvas{display:block;width:100%;height:36px;}
-  .wv-pre{position:absolute;top:0;bottom:0;left:0;background:rgba(0,0,0,.55);pointer-events:none;}
-  .wv-post{position:absolute;top:0;bottom:0;right:0;background:rgba(0,0,0,.55);pointer-events:none;}
-  .wv-playhead{position:absolute;top:0;bottom:0;width:1.5px;background:rgba(0,212,240,.8);pointer-events:none;display:none;}
-  .wv-handle{position:absolute;top:0;bottom:0;width:3px;cursor:ew-resize;z-index:3;}
-  .wv-handle-in{background:#00d96a;}
+  /* ── Waveform IN/OUT ── */
+  .wv-outer{padding:4px 14px 0;}
+  .wv-wrap{
+    position:relative;
+    height:52px;           /* plus haute = plus lisible */
+    cursor:crosshair;
+    user-select:none;
+    border-radius:3px;
+    /* PAS d'overflow:hidden — les poignées doivent rester visibles aux extrémités */
+  }
+  .wv-canvas{display:block;width:100%;height:52px;border-radius:3px;}
+  .wv-pre{position:absolute;top:0;bottom:0;left:0;background:rgba(0,0,0,.58);pointer-events:none;border-radius:3px 0 0 3px;}
+  .wv-post{position:absolute;top:0;bottom:0;right:0;background:rgba(0,0,0,.58);pointer-events:none;border-radius:0 3px 3px 0;}
+  .wv-playhead{position:absolute;top:0;bottom:0;width:2px;background:rgba(0,212,240,.9);pointer-events:none;display:none;z-index:2;}
+  /* Poignées : largeur généreuse, zone cliquable étendue via padding */
+  .wv-handle{
+    position:absolute;top:0;bottom:0;
+    width:4px;
+    cursor:ew-resize;
+    z-index:4;
+    /* décalage de -2px pour centrer sur la ligne */
+    transform:translateX(-2px);
+  }
+  .wv-handle-in {background:#00d96a;}
   .wv-handle-out{background:#e03020;}
-  .wv-handle::after{position:absolute;top:2px;font-family:var(--mono);font-size:7px;white-space:nowrap;}
-  .wv-handle-in::after{content:'IN';left:4px;color:#00d96a;}
-  .wv-handle-out::after{content:'OUT';left:4px;color:#e03020;}
-  .wv-labels{display:flex;justify-content:space-between;margin-top:2px;}
+  /* Étiquette au-dessus de la poignée */
+  .wv-handle::before{
+    content:attr(data-label);
+    position:absolute;
+    bottom:calc(100% + 2px);
+    left:50%;
+    transform:translateX(-50%);
+    font-family:var(--mono);
+    font-size:8px;
+    white-space:nowrap;
+    padding:1px 4px;
+    border-radius:2px;
+    pointer-events:none;
+  }
+  .wv-handle-in::before {color:#00d96a;background:rgba(0,30,10,.85);}
+  .wv-handle-out::before{color:#e03020;background:rgba(30,0,0,.85);}
+  /* Zone de clic élargie (pseudo-élément transparent) */
+  .wv-handle::after{content:'';position:absolute;top:0;bottom:0;left:-8px;right:-8px;}
+  .wv-labels{display:flex;justify-content:space-between;margin-top:3px;padding:0 2px;}
   .wv-label{font-family:var(--mono);font-size:8px;color:var(--txt-mute);}
   .wv-label.in-lbl{color:var(--green);}
   .wv-label.out-lbl{color:var(--red);}
@@ -193,8 +224,8 @@
       <thead><tr>
         <th style="width:36px">#</th>
         <th style="width:80px">Horaire</th>
-        <th>Titre</th>
-        <th style="width:220px">Waveform · IN / OUT</th>
+        <th style="width:140px">Titre</th>
+        <th>Waveform · IN / OUT</th>
         <th style="width:64px;text-align:right">Durée</th>
         <th style="width:84px;text-align:right;padding-right:10px">Décompte</th>
         <th style="width:5px"></th>
@@ -253,8 +284,8 @@
       <thead><tr>
         <th style="width:36px">#</th>
         <th style="width:80px">Horaire</th>
-        <th>Titre</th>
-        <th style="width:220px">Waveform · IN / OUT</th>
+        <th style="width:140px">Titre</th>
+        <th>Waveform · IN / OUT</th>
         <th style="width:64px;text-align:right">Durée</th>
         <th style="width:84px;text-align:right;padding-right:10px">Décompte</th>
         <th style="width:5px"></th>
@@ -354,15 +385,40 @@ async function drawWaveform(canvas,file){
     const data=ab.getChannelData(0);
     const W=canvas.width,H=canvas.height;
     const c=canvas.getContext('2d');
-    c.fillStyle='#0d1428';c.fillRect(0,0,W,H);
+    c.fillStyle='#0a1428';c.fillRect(0,0,W,H);
     const step=Math.max(1,Math.floor(data.length/W));
-    c.strokeStyle='#1a4a6a';c.lineWidth=1;
+    // Fond de grille légère
+    c.strokeStyle='#1a3050';c.lineWidth=1;
+    c.beginPath();c.moveTo(0,H/2);c.lineTo(W,H/2);c.stroke();
+    // Waveform — couleur plus vive
+    c.strokeStyle='#2090c0';c.lineWidth=1;
     for(let x=0;x<W;x++){
       let mn=0,mx=0;
       for(let j=0;j<step;j++){const v=data[x*step+j]||0;if(v<mn)mn=v;if(v>mx)mx=v;}
-      const y1=Math.round((1+mn)/2*H),y2=Math.round((1+mx)/2*H);
+      const y1=Math.round((1+mn)/2*H);
+      const y2=Math.round((1+mx)/2*H);
       c.beginPath();c.moveTo(x+.5,y1);c.lineTo(x+.5,Math.max(y2,y1+1));c.stroke();
     }
+    // Remplissage semi-transparent sous la waveform
+    const grad=c.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,'rgba(0,160,220,0.15)');
+    grad.addColorStop(0.5,'rgba(0,160,220,0.06)');
+    grad.addColorStop(1,'rgba(0,160,220,0.15)');
+    c.fillStyle=grad;
+    c.beginPath();c.moveTo(0,H/2);
+    for(let x=0;x<W;x++){
+      let mx=0;
+      for(let j=0;j<step;j++){const v=Math.abs(data[x*step+j]||0);if(v>mx)mx=v;}
+      const h2=Math.round(mx*(H/2));
+      c.lineTo(x,H/2-h2);
+    }
+    for(let x=W-1;x>=0;x--){
+      let mx=0;
+      for(let j=0;j<step;j++){const v=Math.abs(data[x*step+j]||0);if(v>mx)mx=v;}
+      const h2=Math.round(mx*(H/2));
+      c.lineTo(x,H/2+h2);
+    }
+    c.closePath();c.fill();
     return ab.duration;
   }catch(e){return 0;}
 }
@@ -394,9 +450,11 @@ class Diffuser{
       a.src=this.tracks[idx].file;
       a.addEventListener('loadedmetadata',()=>{
         this.durs[idx]=a.duration||0;
-        if(this.tracks[idx].outCue===null) this.tracks[idx].outCue=a.duration;
+        if(this.tracks[idx].outCue===null||this.tracks[idx].outCue===undefined)
+          this.tracks[idx].outCue=a.duration;
         this.render();
-        drawWaveform(document.getElementById(`wv-${this.idx}-${idx}`),this.tracks[idx].file);
+        const cv=document.getElementById(`wv-${this.idx}-${idx}`);
+        if(cv){cv.width=400;cv.height=52;drawWaveform(cv,this.tracks[idx].file);}
       });
       a.addEventListener('ended',()=>this._onTrackEnded(idx));
       this.audios[idx]=a;
@@ -438,23 +496,26 @@ class Diffuser{
       const wvId=`wv-${this.idx}-${i}`;
       const dur=this.durs[i]||1;
       const inPct=(this._inOf(i)/dur*100).toFixed(1);
-      const outPct=(this._outOf(i)/dur*100).toFixed(1);
+      // Clamp OUT à 98% max pour qu'elle soit toujours visible
+      const outPct=Math.min(98,(this._outOf(i)/dur*100)).toFixed(1);
       tr.innerHTML=`
         <td class="cell-num${isActive?' is-playing':''}">${isActive?'▶':(i+1)}</td>
         <td class="cell-time"><span>${hhmm}</span><span class="cell-sub">${sub}</span></td>
         <td class="cell-title"><span class="cell-simple" title="${t.title}">${t.title}</span></td>
         <td class="cell-wv">
-          <div class="wv-wrap" id="${wvId}-wrap">
-            <canvas class="wv-canvas" id="${wvId}" width="200" height="36"></canvas>
-            <div class="wv-pre"  id="${wvId}-pre"  style="width:${inPct}%"></div>
-            <div class="wv-post" id="${wvId}-post" style="left:${outPct}%"></div>
-            <div class="wv-playhead" id="${wvId}-ph"></div>
-            <div class="wv-handle wv-handle-in"  id="${wvId}-in"  style="left:${inPct}%"></div>
-            <div class="wv-handle wv-handle-out" id="${wvId}-out" style="left:${outPct}%"></div>
-          </div>
-          <div class="wv-labels">
-            <span class="wv-label in-lbl"  id="${wvId}-inlbl">IN ${fmtMs(this._inOf(i))}</span>
-            <span class="wv-label out-lbl" id="${wvId}-outlbl">OUT ${fmtMs(this._outOf(i))}</span>
+          <div class="wv-outer">
+            <div class="wv-wrap" id="${wvId}-wrap">
+              <canvas class="wv-canvas" id="${wvId}" width="400" height="52"></canvas>
+              <div class="wv-pre"      id="${wvId}-pre"  style="width:${inPct}%"></div>
+              <div class="wv-post"     id="${wvId}-post" style="left:${outPct}%"></div>
+              <div class="wv-playhead" id="${wvId}-ph"></div>
+              <div class="wv-handle wv-handle-in"  id="${wvId}-in"  data-label="IN"  style="left:${inPct}%"></div>
+              <div class="wv-handle wv-handle-out" id="${wvId}-out" data-label="OUT" style="left:${outPct}%"></div>
+            </div>
+            <div class="wv-labels">
+              <span class="wv-label in-lbl"  id="${wvId}-inlbl">IN ${fmtMs(this._inOf(i))}</span>
+              <span class="wv-label out-lbl" id="${wvId}-outlbl">OUT ${fmtMs(this._outOf(i))}</span>
+            </div>
           </div>
         </td>
         <td class="cell-dur">${fmtFull(this.durs[i]||0)}</td>
@@ -463,9 +524,8 @@ class Diffuser{
       tbody.appendChild(tr);
       // Bind drag handles
       this._bindHandles(wvId,i);
-      // Draw waveform if dur already known
       const cv=document.getElementById(wvId);
-      if(cv&&this.durs[i]>0) drawWaveform(cv,t.file);
+      if(cv&&this.durs[i]>0){cv.width=400;cv.height=52;drawWaveform(cv,t.file);}
     });
 
     document.getElementById(this.ids.counter).textContent=this.tracks.length?`${this.ci+1}/${this.tracks.length}`:'0/0';
@@ -489,16 +549,19 @@ class Diffuser{
       const t=this.tracks[trackIdx];
       if(type==='in'){
         t.inCue=Math.min(pct*dur,this._outOf(trackIdx)-0.1);
-        el.style.left=(t.inCue/dur*100).toFixed(1)+'%';
+        const dispPct=(t.inCue/dur*100).toFixed(1);
+        el.style.left=dispPct+'%';
         const pre=document.getElementById(wvId+'-pre');
-        if(pre)pre.style.width=(t.inCue/dur*100).toFixed(1)+'%';
+        if(pre)pre.style.width=dispPct+'%';
         const lbl=document.getElementById(wvId+'-inlbl');
         if(lbl)lbl.textContent='IN '+fmtMs(t.inCue);
       } else {
         t.outCue=Math.max(pct*dur,this._inOf(trackIdx)+0.1);
-        el.style.left=(t.outCue/dur*100).toFixed(1)+'%';
+        const rawPct=t.outCue/dur*100;
+        const dispPct=Math.min(98,rawPct).toFixed(1);
+        el.style.left=dispPct+'%';
         const post=document.getElementById(wvId+'-post');
-        if(post)post.style.left=(t.outCue/dur*100).toFixed(1)+'%';
+        if(post)post.style.left=dispPct+'%';
         const lbl=document.getElementById(wvId+'-outlbl');
         if(lbl)lbl.textContent='OUT '+fmtMs(t.outCue);
       }
