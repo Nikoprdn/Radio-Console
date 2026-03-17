@@ -8,70 +8,70 @@
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --mono: 'Share Tech Mono', monospace;
+    --mono:    'Share Tech Mono', monospace;
     --display: 'Oswald', sans-serif;
-    --brand-red:   #e03020;
-    --brand-black: #080d18;
-    --brand-gray:  #0d1428;
-    --brand-gray2: #111c38;
-    --brand-gray3: #0c1530;
-    --border-c:    #1e3060;
-    --text-main:   #ddeeff;
-    --text-dim:    #5a7090;
+    --bg:       #080d18;
+    --s1:       #0d1428;
+    --s2:       #111c38;
+    --s3:       #0c1530;
+    --border:   #1e3060;
+    --border2:  #2a4a8a;
+    --cyan:     #00d4f0;
+    --cyan-dim: #0099b8;
+    --green:    #00d96a;
+    --green-dk: #006630;
+    --yellow:   #f5c400;
+    --orange:   #f07800;
+    --red:      #e03020;
+    --txt:      #ddeeff;
+    --txt-dim:  #5a7090;
+    --txt-mute: #3a5070;
   }
-  html, body { background: var(--brand-black) !important; min-height: 100vh; }
+  html, body { background: var(--bg) !important; min-height: 100vh; }
 
-  /* ── Navbar ── */
-  .navbar.is-console { background: var(--brand-gray); border-bottom: 1px solid var(--border-c); }
-  .navbar-brand .navbar-item { font-family: var(--display); font-size: 20px; font-weight: 700; color: #00d4f0; letter-spacing: 2px; }
-  .navbar-end .navbar-item { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
-  .clock-display { font-family: var(--mono); font-size: 22px; color: #00d4f0; letter-spacing: 3px; }
+  .navbar.is-console { background: var(--s1); border-bottom: 1px solid var(--border); }
+  .navbar-brand .navbar-item { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--cyan); letter-spacing: 2px; }
+  .navbar-end .navbar-item { font-family: var(--mono); font-size: 11px; color: var(--txt-dim); }
+  .clock-display { font-family: var(--mono); font-size: 22px; color: var(--cyan); letter-spacing: 3px; }
 
-  /* ── Section background ── */
-  .section.is-console { padding: 1rem; background: var(--brand-black); }
+  .section.is-console { padding: 1rem; background: var(--bg); }
 
-  /* ── Card dark ── */
-  .card.is-dark-card { background: var(--brand-gray); border: 1px solid var(--border-c); border-radius: 8px; box-shadow: none; }
-  .card.is-dark-card .card-header { background: var(--brand-gray2); border-bottom: 1px solid var(--border-c); box-shadow: none; border-radius: 8px 8px 0 0; }
-  .card.is-dark-card .card-header-title { color: var(--text-main); font-family: var(--display); font-size: 15px; letter-spacing: 1px; padding: 0.6rem 1rem; }
+  .card.is-dark-card { background: var(--s1); border: 1px solid var(--border); border-radius: 8px; box-shadow: none; }
+  .card.is-dark-card .card-header { background: var(--s2); border-bottom: 1px solid var(--border); box-shadow: none; border-radius: 8px 8px 0 0; }
+  .card.is-dark-card .card-header-title { color: var(--txt); font-family: var(--display); font-size: 15px; letter-spacing: 1px; padding: 0.6rem 1rem; }
   .card.is-dark-card .card-content { padding: 0; }
-  .card.is-dark-card .card-footer { background: var(--brand-gray3); border-top: 1px solid var(--border-c); border-radius: 0 0 8px 8px; padding: 0.6rem 1rem; gap: 1rem; }
-  .card.is-dark-card .card-footer-item { color: var(--text-dim); font-family: var(--mono); font-size: 11px; border: none; padding: 0; justify-content: flex-start; }
+  .card.is-dark-card .card-footer { background: var(--s3); border-top: 1px solid var(--border); border-radius: 0 0 8px 8px; padding: 0.6rem 1rem; gap: 1rem; }
+  .card.is-dark-card .card-footer-item { color: var(--txt-dim); font-family: var(--mono); font-size: 11px; border: none; padding: 0; justify-content: flex-start; }
 
-  /* ── DIFF badge ── */
   .diff-badge { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2px; padding: 2px 10px; border-radius: 4px; }
 
-  /* ── ON AIR bar ── */
-  .notification.is-onair { background: var(--brand-gray2); border: 1px solid var(--border-c); border-top: none; border-radius: 0; padding: 0.5rem 1rem; margin: 0; display: flex; align-items: center; justify-content: space-between; }
-  .onair-title { font-family: var(--display); font-size: 22px; font-weight: 700; color: var(--text-main); letter-spacing: 3px; }
-  .dot-live { display: inline-block; width: 8px; height: 8px; background: var(--brand-red); border-radius: 50%; animation: blink 1s step-start infinite; vertical-align: middle; margin-right: 6px; }
+  .notification.is-onair { background: var(--s2); border: 1px solid var(--border); border-top: none; border-radius: 0; padding: 0.5rem 1rem; margin: 0; display: flex; align-items: center; justify-content: space-between; }
+  .onair-title { font-family: var(--display); font-size: 22px; font-weight: 700; color: var(--txt); letter-spacing: 3px; }
+  .dot-live { display: inline-block; width: 8px; height: 8px; background: var(--red); border-radius: 50%; animation: blink 1s step-start infinite; vertical-align: middle; margin-right: 6px; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-  /* ── Timers ── */
   .timer-group { display: flex; gap: 1rem; align-items: center; margin-left: auto; padding-right: 1rem; }
   .timer-box { text-align: center; }
-  .timer-box .label-txt { font-family: var(--mono); font-size: 8px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; display: block; }
+  .timer-box .label-txt { font-family: var(--mono); font-size: 8px; color: var(--txt-dim); letter-spacing: 1px; text-transform: uppercase; display: block; }
   .timer-box .val-txt   { font-family: var(--mono); font-size: 15px; letter-spacing: 1px; line-height: 1; display: block; }
 
-  /* ── Table ── */
   .table.is-radio { background: transparent; width: 100%; }
-  .table.is-radio thead th { background: var(--brand-gray3); color: var(--text-dim); font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; border-color: var(--border-c) !important; padding: 6px 10px; font-weight: 400; }
-  .table.is-radio tbody tr { border-bottom: 1px solid var(--border-c); cursor: pointer; position: relative; overflow: hidden; }
+  .table.is-radio thead th { background: var(--s3); color: var(--txt-mute); font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; border-color: var(--border) !important; padding: 6px 10px; font-weight: 400; }
+  .table.is-radio tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; position: relative; overflow: hidden; }
   .table.is-radio tbody tr:hover td { background: #0e1830; }
-  .table.is-radio tbody td { border-color: var(--border-c) !important; color: var(--text-dim); padding: 0 10px; height: 48px; vertical-align: middle; white-space: nowrap; }
-  .table.is-radio tbody tr.row-active { background: #160505; border-left: 3px solid var(--brand-red); }
+  .table.is-radio tbody td { border-color: var(--border) !important; color: var(--txt-dim); padding: 0 10px; height: 48px; vertical-align: middle; white-space: nowrap; }
+  .table.is-radio tbody tr.row-active { background: #160505; border-left: 3px solid var(--red); }
   .table.is-radio tbody tr.row-active td { position: relative; z-index: 1; }
   .table.is-radio tbody tr.row-active::before { content: ''; position: absolute; inset: 0; background: #2a0808; z-index: 0; transform-origin: left; transform: scaleX(var(--prog,0)); transition: transform 1s linear; }
-  .table.is-radio tbody tr.row-next { background: #071408; border-left: 3px solid #006630; }
+  .table.is-radio tbody tr.row-next { background: #071408; border-left: 3px solid var(--green-dk); }
 
-  /* Cell helpers */
   .cell-num  { width:36px; font-family:var(--mono); font-size:12px; text-align:center; }
-  .cell-num.is-playing { color: var(--brand-red) !important; }
-  .cell-time { width:82px; font-family:var(--mono); font-size:12px; color:#0099b8 !important; }
-  .cell-sub  { font-size:9px; color:#3a5070 !important; display:block; }
+  .cell-num.is-playing { color: var(--red) !important; }
+  .cell-time { width:82px; font-family:var(--mono); font-size:12px; color: var(--cyan-dim) !important; }
+  .cell-sub  { font-size:9px; color: var(--txt-mute) !important; display:block; }
   .cell-title { min-width:180px; }
-  .cell-artist { font-family:var(--display); font-size:15px; font-weight:600; color:var(--text-main) !important; display:block; line-height:1.1; }
-  .cell-song   { font-size:11px; color:var(--text-dim) !important; display:block; }
+  .cell-artist { font-family:var(--display); font-size:15px; font-weight:600; color:var(--txt) !important; display:block; line-height:1.1; }
+  .cell-song   { font-size:11px; color:var(--txt-dim) !important; display:block; }
   .cell-simple { font-size:13px; color:#7a98b8 !important; }
   .row-active .cell-artist, .row-active .cell-simple { color:#ff6060 !important; }
   .row-active .cell-num  { color:#ff4040 !important; }
@@ -83,59 +83,68 @@
   .cell-bar { width:5px; padding:0 !important; }
   .color-bar { height:48px; width:5px; display:block; }
 
-  /* ── Progress bar ── */
-  .progress.is-elapsed { height: 3px; margin: 0; border-radius: 0; background: var(--border-c); }
-  .progress.is-elapsed::-webkit-progress-value { background: var(--brand-red); transition: width 1s linear; }
-  .progress.is-elapsed::-moz-progress-bar { background: var(--brand-red); }
+  .progress.is-elapsed { height: 3px; margin: 0; border-radius: 0; background: var(--border); }
+  .progress.is-elapsed::-webkit-progress-value { background: var(--red); transition: width 1s linear; }
+  .progress.is-elapsed::-moz-progress-bar { background: var(--red); }
 
-  /* ── Separator ── */
   .console-sep { height: 24px; background: #060b16; border-top: 1px solid #0d1830; border-bottom: 1px solid #0d1830; display: flex; align-items: center; padding: 0 1rem; gap: 1rem; }
-  .sep-line  { flex:1; height:1px; background:#111c38; }
-  .sep-label { font-family:var(--mono); font-size:9px; color:#1e3060; letter-spacing:3px; }
+  .sep-line  { flex:1; height:1px; background: var(--s2); }
+  .sep-label { font-family:var(--mono); font-size:9px; color: var(--txt-mute); letter-spacing:3px; }
 
-  /* ── Columns ── */
   .columns.is-console { margin: 0; }
   .columns.is-console .column { padding: 0; }
 
-  /* ── Buttons ── */
   .button { font-family: var(--mono) !important; font-size: 11px !important; letter-spacing: 1px !important; border-radius: 2px !important; }
-  .button.is-dark { background: transparent !important; border-color: var(--border-c) !important; color: var(--text-dim) !important; }
-  .button.is-dark:hover { border-color: #00d4f0 !important; color: var(--text-main) !important; }
-  .button.is-success { background: transparent !important; border-color: #00d96a !important; color: #00d96a !important; }
+  .button.is-dark { background: transparent !important; border-color: var(--border) !important; color: var(--txt-dim) !important; }
+  .button.is-dark:hover { border-color: var(--cyan-dim) !important; color: var(--txt) !important; }
+  .button.is-success { background: transparent !important; border-color: var(--green) !important; color: var(--green) !important; }
   .button.is-success:hover { background: #052210 !important; }
-  .button.is-danger  { background: transparent !important; border-color: var(--brand-red) !important; color: var(--brand-red) !important; }
+  .button.is-danger  { background: transparent !important; border-color: var(--red) !important; color: var(--red) !important; }
   .button.is-danger:hover  { background: #200808 !important; }
   .tag { font-family: var(--mono) !important; font-size: 10px !important; letter-spacing: 1px !important; border-radius: 2px !important; }
 
+  /* ── Zone de dépôt fichiers ── */
+  .file-drop-zone {
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    text-align: center;
+    margin: 8px 10px;
+  }
+  .file-drop-zone:hover, .file-drop-zone.drag-over { border-color: var(--cyan-dim); background: #0a1830; }
+  .file-drop-zone input[type=file] { display: none; }
+  .fdz-icon { font-family: var(--mono); font-size: 14px; color: var(--cyan-dim); }
+  .fdz-text { font-family: var(--mono); font-size: 10px; color: var(--txt-dim); letter-spacing: 1px; display: block; margin-top: 2px; }
+  .fdz-count { font-family: var(--mono); font-size: 9px; color: var(--cyan); margin-top: 4px; display: block; }
+
   /* ── VU Mètre ── */
-  .vu-section { background: #060b16; border-top: 2px solid var(--border-c); padding: 0.75rem 1rem; position: sticky; bottom: 0; z-index: 10; }
-  .vu-wrap { background: var(--brand-gray); border: 1px solid var(--border-c); border-radius: 8px; padding: 0.75rem 1.25rem; display: flex; align-items: stretch; gap: 1.5rem; }
+  .vu-section { background: #060b16; border-top: 2px solid var(--border); padding: 0.75rem 1rem; position: sticky; bottom: 0; z-index: 10; }
+  .vu-wrap { background: var(--s1); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1.25rem; display: flex; align-items: stretch; gap: 1.5rem; }
   .vu-label-block { display: flex; flex-direction: column; justify-content: space-between; min-width: 52px; }
-  .vu-main-title { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+  .vu-main-title { font-family: var(--mono); font-size: 10px; color: var(--txt-dim); letter-spacing: 2px; text-transform: uppercase; }
   .vu-db-group { display: flex; flex-direction: column; }
-  .vu-db-val { font-family: var(--mono); font-size: 20px; color: #00d4f0; letter-spacing: 1px; line-height: 1; }
-  .vu-db-unit { font-family: var(--mono); font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+  .vu-db-val { font-family: var(--mono); font-size: 20px; color: var(--cyan); letter-spacing: 1px; line-height: 1; }
+  .vu-db-unit { font-family: var(--mono); font-size: 9px; color: var(--txt-dim); margin-top: 2px; }
   .vu-channel-v { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; max-width: 80px; }
-  .vu-ch-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+  .vu-ch-label { font-family: var(--mono); font-size: 9px; color: var(--txt-dim); letter-spacing: 2px; text-transform: uppercase; }
   .vu-meter-v { display: flex; flex-direction: column-reverse; gap: 2px; width: 100%; height: 120px; }
   .vu-row { flex: 1; border-radius: 2px; min-height: 2px; transition: opacity 0.05s ease-out; }
-
-  /* Échelle dB */
   .vu-scale-v { display: flex; flex-direction: column; justify-content: space-between; height: 120px; padding: 2px 0; }
-  .vu-scale-v span { font-family: var(--mono); font-size: 7px; color: var(--text-dim); text-align: right; line-height: 1; }
+  .vu-scale-v span { font-family: var(--mono); font-size: 7px; color: var(--txt-dim); text-align: right; line-height: 1; }
 
-  /* Volume slider Radio Monaco */
   .rm-vol-wrap { display:flex; flex-direction:column; gap:4px; justify-content:center; }
-  .rm-vol-label { font-family:var(--mono); font-size:8px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; }
-  input[type=range].rm-vol { -webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:var(--border-c); outline:none; }
-  input[type=range].rm-vol::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#00d4f0; cursor:pointer; }
-  input[type=range].rm-vol::-moz-range-thumb { width:14px; height:14px; border-radius:50%; background:#00d4f0; cursor:pointer; border:none; }
-  .rm-vol-val { font-family:var(--mono); font-size:10px; color:var(--text-main); text-align:center; }
+  .rm-vol-label { font-family:var(--mono); font-size:8px; color:var(--txt-dim); letter-spacing:1px; text-transform:uppercase; }
+  input[type=range].rm-vol { -webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:var(--border); outline:none; }
+  input[type=range].rm-vol::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--cyan); cursor:pointer; }
+  input[type=range].rm-vol::-moz-range-thumb { width:14px; height:14px; border-radius:50%; background:var(--cyan); cursor:pointer; border:none; }
+  .rm-vol-val { font-family:var(--mono); font-size:10px; color:var(--txt); text-align:center; }
 </style>
 </head>
 <body>
 
-<!-- ══════ NAVBAR ══════ -->
+<!-- NAVBAR -->
 <nav class="navbar is-console" role="navigation">
   <div class="navbar-brand">
     <a class="navbar-item">
@@ -160,11 +169,9 @@
 <section class="section is-console">
   <div class="columns is-console is-multiline" style="gap:1rem;flex-direction:column">
 
-    <!-- ══════ CARD DIFF 1 ══════ -->
+    <!-- DIFF 1 -->
     <div class="column is-full">
       <div class="card is-dark-card">
-
-        <!-- Card header: station info + timers -->
         <div class="card-header" style="display:flex;align-items:stretch">
           <div style="display:flex;align-items:center;padding:0 1rem;border-right:1px solid #1e3060">
             <span class="tag diff-badge" style="background:#1a2a00;color:#f5c400;border:1px solid #3a4a00">DIFF 1</span>
@@ -184,8 +191,6 @@
             </div>
           </div>
         </div>
-
-        <!-- ON AIR notification -->
         <div class="notification is-onair">
           <div style="display:flex;align-items:center;gap:10px">
             <span class="dot-live"></span>
@@ -196,16 +201,22 @@
             <button class="button is-danger is-small is-outlined"  onclick="D[0].stopAll()">■ STOP</button>
             <button class="button is-small" style="background:transparent;border-color:#1e3060;color:#5a7090" onclick="D[0].prevTrack()">|◀</button>
             <button class="button is-small" style="background:transparent;border-color:#1e3060;color:#5a7090" onclick="D[0].nextTrack()">▶|</button>
-            <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060;font-family:var(--mono);font-size:10px">
-              PISTE <strong id="c1-counter" style="color:#5a7090;margin-left:4px">1/1</strong>
-            </span>
+            <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060;font-family:var(--mono);font-size:10px">PISTE <strong id="c1-counter" style="color:#5a7090;margin-left:4px">0/0</strong></span>
           </div>
         </div>
-
-        <!-- Progress bar (Bulma native) -->
         <progress class="progress is-elapsed" id="c1-progress" value="0" max="100"></progress>
 
-        <!-- Playlist table -->
+        <!-- Zone dépôt DIFF 1 -->
+        <div class="file-drop-zone" id="fdz1" onclick="document.getElementById('fi1').click()"
+             ondragover="ev.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleDrop(event,0)">
+          <input type="file" id="fi1" multiple accept="audio/*" onchange="handleFiles(this.files,0)">
+          <span class="fdz-icon">⊕</span>
+          <span class="fdz-text">Glisser des fichiers audio ici · ou cliquer</span>
+          <span class="fdz-count" id="fdz1-count">Aucun fichier chargé</span>
+        </div>
+
         <div class="card-content">
           <table class="table is-radio is-fullwidth is-narrow">
             <thead><tr>
@@ -219,35 +230,18 @@
             <tbody id="c1-body"></tbody>
           </table>
         </div>
-
-        <!-- Card footer: totaux -->
         <div class="card-footer">
-          <span class="card-footer-item">
-            Durée écoulée&nbsp;
-            <strong id="c1-micros" style="color:#f07800;font-family:var(--mono)">00:00</strong>
-          </span>
-          <span class="card-footer-item" style="margin-left:auto;justify-content:flex-end">
-            Total&nbsp;
-            <strong id="c1-total" style="color:#ddeeff;font-family:var(--mono);font-size:18px;letter-spacing:2px">00:00:00</strong>
-            &nbsp;
-            <span id="c1-suffix" style="color:#00d4f0;font-family:var(--display);font-size:16px;font-weight:700">A</span>
-          </span>
+          <span class="card-footer-item">Durée écoulée&nbsp;<strong id="c1-micros" style="color:#f07800;font-family:var(--mono)">00:00</strong></span>
+          <span class="card-footer-item" style="margin-left:auto;justify-content:flex-end">Total&nbsp;<strong id="c1-total" style="color:#ddeeff;font-family:var(--mono);font-size:18px;letter-spacing:2px">00:00:00</strong>&nbsp;<span id="c1-suffix" style="color:#00d4f0;font-family:var(--display);font-size:16px;font-weight:700">A</span></span>
         </div>
-
       </div>
-    </div><!-- /column -->
-
-    <!-- ══════ SEPARATOR ══════ -->
-    <div class="console-sep">
-      <div class="sep-line"></div>
-      <span class="sep-label">— diffuseur —</span>
-      <div class="sep-line"></div>
     </div>
 
-    <!-- ══════ CARD DIFF 2 ══════ -->
+    <div class="console-sep"><div class="sep-line"></div><span class="sep-label">— diffuseur —</span><div class="sep-line"></div></div>
+
+    <!-- DIFF 2 -->
     <div class="column is-full">
       <div class="card is-dark-card">
-
         <div class="card-header" style="display:flex;align-items:stretch">
           <div style="display:flex;align-items:center;padding:0 1rem;border-right:1px solid #1e3060">
             <span class="tag diff-badge" style="background:#001a2a;color:#00d4f0;border:1px solid #003a5a">DIFF 2</span>
@@ -267,7 +261,6 @@
             </div>
           </div>
         </div>
-
         <div class="notification is-onair">
           <div style="display:flex;align-items:center;gap:10px">
             <span class="dot-live"></span>
@@ -278,13 +271,21 @@
             <button class="button is-danger is-small is-outlined"  onclick="D[1].stopAll()">■ STOP</button>
             <button class="button is-small" style="background:transparent;border-color:#1e3060;color:#5a7090" onclick="D[1].prevTrack()">|◀</button>
             <button class="button is-small" style="background:transparent;border-color:#1e3060;color:#5a7090" onclick="D[1].nextTrack()">▶|</button>
-            <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060;font-family:var(--mono);font-size:10px">
-              PISTE <strong id="c2-counter" style="color:#5a7090;margin-left:4px">1/1</strong>
-            </span>
+            <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060;font-family:var(--mono);font-size:10px">PISTE <strong id="c2-counter" style="color:#5a7090;margin-left:4px">0/0</strong></span>
           </div>
         </div>
-
         <progress class="progress is-elapsed" id="c2-progress" value="0" max="100"></progress>
+
+        <!-- Zone dépôt DIFF 2 -->
+        <div class="file-drop-zone" id="fdz2" onclick="document.getElementById('fi2').click()"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleDrop(event,1)">
+          <input type="file" id="fi2" multiple accept="audio/*" onchange="handleFiles(this.files,1)">
+          <span class="fdz-icon">⊕</span>
+          <span class="fdz-text">Glisser des fichiers audio ici · ou cliquer</span>
+          <span class="fdz-count" id="fdz2-count">Aucun fichier chargé</span>
+        </div>
 
         <div class="card-content">
           <table class="table is-radio is-fullwidth is-narrow">
@@ -299,53 +300,30 @@
             <tbody id="c2-body"></tbody>
           </table>
         </div>
-
         <div class="card-footer">
-          <span class="card-footer-item">
-            Durée écoulée&nbsp;
-            <strong id="c2-micros" style="color:#f07800;font-family:var(--mono)">00:00</strong>
-          </span>
-          <span class="card-footer-item" style="margin-left:auto;justify-content:flex-end">
-            Total&nbsp;
-            <strong id="c2-total" style="color:#ddeeff;font-family:var(--mono);font-size:18px;letter-spacing:2px">00:00:00</strong>
-            &nbsp;
-            <span id="c2-suffix" style="color:#00d4f0;font-family:var(--display);font-size:16px;font-weight:700">A</span>
-          </span>
+          <span class="card-footer-item">Durée écoulée&nbsp;<strong id="c2-micros" style="color:#f07800;font-family:var(--mono)">00:00</strong></span>
+          <span class="card-footer-item" style="margin-left:auto;justify-content:flex-end">Total&nbsp;<strong id="c2-total" style="color:#ddeeff;font-family:var(--mono);font-size:18px;letter-spacing:2px">00:00:00</strong>&nbsp;<span id="c2-suffix" style="color:#00d4f0;font-family:var(--display);font-size:16px;font-weight:700">A</span></span>
         </div>
-
       </div>
-    </div><!-- /column -->
+    </div>
 
   </div>
 </section>
 
-<!-- ══════ BARRE DU BAS : DIFF1 + RADIO MONACO ══════ -->
+<!-- VU MÈTRES -->
 <div class="vu-section">
   <div style="display:flex;gap:1rem;">
 
-    <!-- ── DIFF1 ── -->
     <div class="vu-wrap" style="flex:1">
       <div class="vu-label-block">
         <div class="vu-main-title">DIFF 1</div>
-        <div class="vu-db-group">
-          <div class="vu-db-val" id="vu1-db">—∞</div>
-          <div class="vu-db-unit">dB</div>
-        </div>
+        <div class="vu-db-group"><div class="vu-db-val" id="vu1-db">—∞</div><div class="vu-db-unit">dB</div></div>
       </div>
-      <div class="vu-scale-v">
-        <span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span>
-      </div>
-      <div class="vu-channel-v">
-        <div class="vu-meter-v" id="vu1-L"></div>
-        <div class="vu-ch-label">L</div>
-      </div>
-      <div class="vu-channel-v">
-        <div class="vu-meter-v" id="vu1-R"></div>
-        <div class="vu-ch-label">R</div>
-      </div>
+      <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
+      <div class="vu-channel-v"><div class="vu-meter-v" id="vu1-L"></div><div class="vu-ch-label">L</div></div>
+      <div class="vu-channel-v"><div class="vu-meter-v" id="vu1-R"></div><div class="vu-ch-label">R</div></div>
     </div>
 
-    <!-- ── RADIO MONACO ── -->
     <div class="vu-wrap" style="flex:2">
       <div class="vu-label-block" style="min-width:90px">
         <div class="vu-main-title">RADIO MONACO</div>
@@ -358,26 +336,14 @@
           <input type="range" class="rm-vol" id="rm-volume" min="0" max="100" value="80" oninput="rmSetVolume(this.value)">
           <div class="rm-vol-val" id="rm-vol-val">80%</div>
         </div>
-        <div class="vu-db-group" style="margin-top:6px">
-          <div class="vu-db-val" id="vu2-db">—∞</div>
-          <div class="vu-db-unit">dB LUFS</div>
-        </div>
+        <div class="vu-db-group" style="margin-top:6px"><div class="vu-db-val" id="vu2-db">—∞</div><div class="vu-db-unit">dB LUFS</div></div>
       </div>
-      <div class="vu-scale-v">
-        <span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span>
-      </div>
-      <div class="vu-channel-v">
-        <div class="vu-meter-v" id="vu2-L"></div>
-        <div class="vu-ch-label">L</div>
-      </div>
-      <div class="vu-channel-v">
-        <div class="vu-meter-v" id="vu2-R"></div>
-        <div class="vu-ch-label">R</div>
-      </div>
-      <!-- Infos titre en cours -->
+      <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
+      <div class="vu-channel-v"><div class="vu-meter-v" id="vu2-L"></div><div class="vu-ch-label">L</div></div>
+      <div class="vu-channel-v"><div class="vu-meter-v" id="vu2-R"></div><div class="vu-ch-label">R</div></div>
       <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding-left:12px;border-left:1px solid #1e3060;min-width:0">
         <div style="font-family:var(--mono);font-size:8px;color:#3a5070;letter-spacing:2px;margin-bottom:4px">EN DIRECT</div>
-        <div style="font-family:var(--display);font-size:16px;font-weight:700;color:#ddeeff;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">RADIO MONACO</div>
+        <div style="font-family:var(--display);font-size:16px;font-weight:700;color:#ddeeff;letter-spacing:1px">RADIO MONACO</div>
         <div style="font-family:var(--mono);font-size:10px;color:#0099b8;margin-top:2px">98.0 FM · MONACO</div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
           <span class="dot-live" id="rm-dot" style="opacity:0"></span>
@@ -390,34 +356,44 @@
 </div>
 
 <script>
-// ═══════════════════════════════════════
-// CONFIGURATION — modifie ici tes pistes
-// ═══════════════════════════════════════
+const COLORS = ['#1a6b3a','#1a3a6e','#5b21b6','#6b3a1a','#1a5a6b','#3a1a6b','#6b5a1a','#1a6b5a'];
+
 const CONFIGS = [
-  {
-    tracks: [
-      { file: "audio/ID_FUN_05_.WAV", artist: "", title: "JINGLE FUN 1", color: "#7c3aed" },
-    ],
-    ids: { avant:'c1-avant', avance:'c1-avance', counter:'c1-counter',
-           body:'c1-body', micros:'c1-micros', total:'c1-total',
-           suffix:'c1-suffix', progress:'c1-progress' }
-  },
-  {
-    tracks: [
-      { file: "audio/ID_FUN_05_.WAV", artist: "", title: "JINGLE FUN 1", color: "#7c3aed" },
-    ],
-    ids: { avant:'c2-avant', avance:'c2-avance', counter:'c2-counter',
-           body:'c2-body', micros:'c2-micros', total:'c2-total',
-           suffix:'c2-suffix', progress:'c2-progress' }
-  }
+  { tracks: [], ids: { avant:'c1-avant', avance:'c1-avance', counter:'c1-counter', body:'c1-body', micros:'c1-micros', total:'c1-total', suffix:'c1-suffix', progress:'c1-progress' }, fdzCount:'fdz1-count' },
+  { tracks: [], ids: { avant:'c2-avant', avance:'c2-avance', counter:'c2-counter', body:'c2-body', micros:'c2-micros', total:'c2-total', suffix:'c2-suffix', progress:'c2-progress' }, fdzCount:'fdz2-count' }
 ];
-// ═══════════════════════════════════════
 
 const fmt2    = n => String(n).padStart(2,'0');
 const fmtSec  = s => { s=Math.round(s||0); return fmt2(Math.floor(s/60))+':'+fmt2(s%60); };
 const fmtFull = s => { s=Math.round(s||0); return fmt2(Math.floor(s/3600))+':'+fmt2(Math.floor((s%3600)/60))+':'+fmt2(s%60); };
 const nowClock= () => { const d=new Date(); return [d.getHours(),d.getMinutes(),d.getSeconds()].map(fmt2).join(':'); };
-const nowDate = () => { const d=new Date(); return fmt2(d.getDate())+'/'+fmt2(d.getMonth()+1)+'/'+d.getFullYear(); };
+
+// ── Chargement fichiers locaux ──
+function handleFiles(files, idx) {
+  const arr = Array.from(files).filter(f => f.type.startsWith('audio/'));
+  if (!arr.length) return;
+  arr.sort((a,b) => a.name.localeCompare(b.name));
+  CONFIGS[idx].tracks = arr.map((f, i) => ({
+    file: URL.createObjectURL(f),
+    artist: '',
+    title: f.name.replace(/\.[^/.]+$/, ''),
+    color: COLORS[i % COLORS.length],
+    _url: true
+  }));
+  document.getElementById(CONFIGS[idx].fdzCount).textContent =
+    arr.length + ' fichier' + (arr.length > 1 ? 's' : '') + ' chargé' + (arr.length > 1 ? 's' : '');
+  D[idx].tracks = CONFIGS[idx].tracks;
+  D[idx].durs   = CONFIGS[idx].tracks.map(() => 0);
+  D[idx].ci     = 0;
+  D[idx].playing = false;
+  D[idx]._preload();
+}
+
+function handleDrop(ev, idx) {
+  ev.preventDefault();
+  document.getElementById('fdz'+(idx+1)).classList.remove('drag-over');
+  handleFiles(ev.dataTransfer.files, idx);
+}
 
 class Diffuser {
   constructor(cfg) {
@@ -426,272 +402,164 @@ class Diffuser {
     this.audio   = new Audio();
     this.ci      = 0;
     this.playing = false;
-    this.durs    = this.tracks.map(()=>0);
-    this._preload();
-    this.audio.addEventListener('ended', ()=>{ this.ci=(this.ci+1)%this.tracks.length; this._play(this.ci); });
-    this.audio.addEventListener('loadedmetadata', ()=>{ this.durs[this.ci]=this.audio.duration||0; this.render(); });
+    this.durs    = [];
+    this.audio.addEventListener('ended', () => { this.ci=(this.ci+1)%this.tracks.length; this._play(this.ci); });
+    this.audio.addEventListener('loadedmetadata', () => { this.durs[this.ci]=this.audio.duration||0; this.render(); });
   }
 
   _preload() {
-    let n=0;
-    this.tracks.forEach((t,i)=>{
-      const a=new Audio(); a.src=t.file;
-      const cb=()=>{ this.durs[i]=a.duration||0; if(++n===this.tracks.length) this.render(); };
-      a.addEventListener('loadedmetadata',cb); a.addEventListener('error',cb);
+    if (!this.tracks.length) { this.render(); return; }
+    let n = 0;
+    this.durs = this.tracks.map(() => 0);
+    this.tracks.forEach((t, i) => {
+      const a = new Audio(); a.src = t.file;
+      const cb = () => { this.durs[i] = a.duration||0; if (++n === this.tracks.length) this.render(); };
+      a.addEventListener('loadedmetadata', cb); a.addEventListener('error', cb);
     });
   }
 
   render() {
-    const now=new Date(); let cur=new Date(now);
-    const starts=this.tracks.map((_,i)=>{ const t=new Date(cur); cur=new Date(cur.getTime()+(this.durs[i]||0)*1000); return t; });
-    const tbody=document.getElementById(this.ids.body);
-    tbody.innerHTML='';
-    this.tracks.forEach((t,i)=>{
-      const isActive=i===this.ci, isNext=i===this.ci+1;
-      const tr=document.createElement('tr');
-      if(isActive) tr.className='row-active';
-      else if(isNext) tr.className='row-next';
-      tr.onclick=()=>this.jumpTo(i);
-      const st=starts[i];
-      const hhmm=fmt2(st.getHours())+':'+fmt2(st.getMinutes())+':'+fmt2(st.getSeconds());
-      const sub='('+fmt2(st.getHours())+':'+fmt2(st.getMinutes()+Math.floor(this.durs[i]/60))+')';
-      const titleCell=t.artist
-        ?`<span class="cell-artist">${t.artist}</span><span class="cell-song">${t.title}</span>`
-        :`<span class="cell-simple">${t.title}</span>`;
-      const rem=isActive&&this.playing?Math.max(0,this.durs[i]-this.audio.currentTime):this.durs[i];
-      const cd=isActive?`<span id="${this.ids.body}-cd">${fmtFull(rem)}</span>`:fmtFull(this.durs[i]);
-      tr.innerHTML=`
-        <td class="cell-num${isActive?' row-active':''}">${isActive?'▶':(i+1)}</td>
+    const now = new Date(); let cur = new Date(now);
+    const starts = this.tracks.map((_, i) => { const t = new Date(cur); cur = new Date(cur.getTime()+(this.durs[i]||0)*1000); return t; });
+    const tbody = document.getElementById(this.ids.body);
+    tbody.innerHTML = '';
+    this.tracks.forEach((t, i) => {
+      const isActive = i===this.ci, isNext = i===this.ci+1;
+      const tr = document.createElement('tr');
+      if (isActive) tr.className='row-active'; else if (isNext) tr.className='row-next';
+      tr.onclick = () => this.jumpTo(i);
+      const st = starts[i];
+      const hhmm = fmt2(st.getHours())+':'+fmt2(st.getMinutes())+':'+fmt2(st.getSeconds());
+      const sub  = '('+fmt2(st.getHours())+':'+fmt2(st.getMinutes()+Math.floor((this.durs[i]||0)/60))+')';
+      const titleCell = `<span class="cell-simple">${t.title}</span>`;
+      const rem = isActive&&this.playing ? Math.max(0,this.durs[i]-this.audio.currentTime) : (this.durs[i]||0);
+      const cd  = isActive ? `<span id="${this.ids.body}-cd">${fmtFull(rem)}</span>` : fmtFull(this.durs[i]||0);
+      tr.innerHTML = `
+        <td class="cell-num${isActive?' is-playing':''}">${isActive?'▶':(i+1)}</td>
         <td class="cell-time"><span>${hhmm}</span><span class="cell-sub">${sub}</span></td>
         <td class="cell-title">${titleCell}</td>
-        <td class="cell-dur">${fmtFull(this.durs[i])}</td>
+        <td class="cell-dur">${fmtFull(this.durs[i]||0)}</td>
         <td class="cell-cd">${cd}</td>
         <td class="cell-bar"><span class="color-bar" style="background:${t.color}"></span></td>`;
-      if(isActive&&this.playing&&this.durs[i]>0)
-        tr.style.setProperty('--prog',(this.audio.currentTime/this.durs[i]).toFixed(4));
+      if (isActive && this.playing && this.durs[i] > 0)
+        tr.style.setProperty('--prog', (this.audio.currentTime/this.durs[i]).toFixed(4));
       tbody.appendChild(tr);
     });
-
-    document.getElementById(this.ids.counter).textContent=`${this.ci+1}/${this.tracks.length}`;
-    let tot=0; this.durs.forEach(d=>tot+=d);
-    document.getElementById(this.ids.total).textContent=fmtFull(tot);
-    document.getElementById(this.ids.suffix).textContent=this.playing?'EN DIRECT':'A';
+    const n = this.tracks.length;
+    document.getElementById(this.ids.counter).textContent = n ? `${this.ci+1}/${n}` : '0/0';
+    let tot = 0; this.durs.forEach(d => tot += d||0);
+    document.getElementById(this.ids.total).textContent = fmtFull(tot);
+    document.getElementById(this.ids.suffix).textContent = this.playing ? 'EN DIRECT' : 'A';
   }
 
   tick() {
-    if(this.playing&&this.durs[this.ci]>0){
-      const rem=Math.max(0,this.durs[this.ci]-this.audio.currentTime);
-      const prog=this.audio.currentTime/this.durs[this.ci];
-      const cd=document.getElementById(this.ids.body+'-cd');
-      if(cd) cd.textContent=fmtFull(rem);
-      const ar=document.querySelector(`#${this.ids.body} tr.row-active`);
-      if(ar) ar.style.setProperty('--prog',prog.toFixed(4));
-      // Bulma native progress bar
-      const pb=document.getElementById(this.ids.progress);
-      if(pb) pb.value=Math.round(prog*100);
-      document.getElementById(this.ids.avant).textContent=fmtFull(rem);
-      document.getElementById(this.ids.avance).textContent=fmtFull(this.audio.currentTime);
-      document.getElementById(this.ids.micros).textContent=fmtSec(this.audio.currentTime);
+    if (this.playing && this.durs[this.ci] > 0) {
+      const rem  = Math.max(0, this.durs[this.ci]-this.audio.currentTime);
+      const prog = this.audio.currentTime/this.durs[this.ci];
+      const cd   = document.getElementById(this.ids.body+'-cd');
+      if (cd) cd.textContent = fmtFull(rem);
+      const ar = document.querySelector(`#${this.ids.body} tr.row-active`);
+      if (ar) ar.style.setProperty('--prog', prog.toFixed(4));
+      const pb = document.getElementById(this.ids.progress);
+      if (pb) pb.value = Math.round(prog*100);
+      document.getElementById(this.ids.avant).textContent  = fmtFull(rem);
+      document.getElementById(this.ids.avance).textContent = fmtFull(this.audio.currentTime);
+      document.getElementById(this.ids.micros).textContent = fmtSec(this.audio.currentTime);
     }
   }
 
   _play(i) {
-    this.ci=i; this.audio.src=this.tracks[i].file;
+    if (!this.tracks.length) return;
+    this.ci = i; this.audio.src = this.tracks[i].file;
     this.audio.play().then(()=>{this.playing=true;this.render();}).catch(()=>{this.playing=false;this.render();});
   }
   togglePlay() {
-    if(!this.playing){
-      if(this.audio.src&&this.audio.src!==location.href)
+    if (!this.tracks.length) return;
+    if (!this.playing) {
+      if (this.audio.src && this.audio.src !== location.href)
         this.audio.play().then(()=>{this.playing=true;this.render();});
       else this._play(this.ci);
     } else { this.audio.pause(); this.playing=false; this.render(); }
   }
   stopAll()   { this.audio.pause(); this.audio.currentTime=0; this.playing=false; document.getElementById(this.ids.progress).value=0; this.render(); }
-  nextTrack() { const n=(this.ci+1)%this.tracks.length; this.playing?this._play(n):(this.ci=n,this.render()); }
-  prevTrack() { const p=(this.ci-1+this.tracks.length)%this.tracks.length; this.playing?this._play(p):(this.ci=p,this.render()); }
+  nextTrack() { if (!this.tracks.length) return; const n=(this.ci+1)%this.tracks.length; this.playing?this._play(n):(this.ci=n,this.render()); }
+  prevTrack() { if (!this.tracks.length) return; const p=(this.ci-1+this.tracks.length)%this.tracks.length; this.playing?this._play(p):(this.ci=p,this.render()); }
   jumpTo(i)   { this.playing?this._play(i):(this.ci=i,this.render()); }
 }
 
-const D = CONFIGS.map(cfg=>new Diffuser(cfg));
+const D = CONFIGS.map(cfg => new Diffuser(cfg));
 
-// ══════════════════════════════════════
-// VU MÈTRE — moteur commun
-// ══════════════════════════════════════
+// ── VU Mètre ──
 const NUM_BARS = 24;
 let sharedCtx = null;
-
 function rowColor(i, total) {
-  const pct = i / total;
-  if (pct > 0.85) return '#e03020';
-  if (pct > 0.65) return '#f5c400';
+  const p = i/total;
+  if (p > 0.85) return '#e03020';
+  if (p > 0.65) return '#f5c400';
   return '#00d96a';
 }
-
 function buildBars(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
+  const el = document.getElementById(id); if (!el) return;
   el.innerHTML = '';
-  for (let i = 0; i < NUM_BARS; i++) {
+  for (let i=0; i<NUM_BARS; i++) {
     const r = document.createElement('div');
-    r.className = 'vu-row';
-    r.style.background = rowColor(i, NUM_BARS);
-    r.style.opacity = '0.1';
+    r.className='vu-row'; r.style.background=rowColor(i,NUM_BARS); r.style.opacity='0.1';
     el.appendChild(r);
   }
 }
-
-function getCtx() {
-  if (!sharedCtx) sharedCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return sharedCtx;
-}
-
-function createAnalyzers(audioEl) {
-  const ctx      = getCtx();
-  const src      = ctx.createMediaElementSource(audioEl);
-  const splitter = ctx.createChannelSplitter(2);
-  const merger   = ctx.createChannelMerger(2);
-  const aL = ctx.createAnalyser();
-  const aR = ctx.createAnalyser();
-  aL.fftSize = 1024; aR.fftSize = 1024;
-  aL.smoothingTimeConstant = 0.8;
-  aR.smoothingTimeConstant = 0.8;
-  src.connect(splitter);
-  splitter.connect(aL, 0);
-  splitter.connect(aR, 1);
-  aL.connect(merger, 0, 0);
-  aR.connect(merger, 0, 1);
-  merger.connect(ctx.destination);
-  return { aL, aR };
-}
-
-function getRMS(analyser) {
-  const data = new Float32Array(analyser.fftSize);
-  analyser.getFloatTimeDomainData(data);
-  let sum = 0;
-  for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
-  return Math.sqrt(sum / data.length);
-}
-
-// EBU R128 : cible -23 LUFS, ajustement via GainNode
+function getCtx() { if (!sharedCtx) sharedCtx = new (window.AudioContext||window.webkitAudioContext)(); return sharedCtx; }
+function getRMS(an) { const d=new Float32Array(an.fftSize); an.getFloatTimeDomainData(d); let s=0; for(let v of d) s+=v*v; return Math.sqrt(s/d.length); }
 const TARGET_LUFS = -23;
-function applyEBUR128(gainNode, rmsL, rmsR) {
-  const rms = Math.max(rmsL, rmsR);
-  if (rms < 0.0001) return;
-  const measuredLUFS = 20 * Math.log10(rms);
-  const correction = Math.pow(10, (TARGET_LUFS - measuredLUFS) / 20);
-  const target = Math.min(4, Math.max(0.05, correction));
-  gainNode.gain.setTargetAtTime(target, getCtx().currentTime, 0.5);
+function applyEBU(gn, rL, rR) {
+  const r=Math.max(rL,rR); if(r<0.0001) return;
+  const t=Math.min(4,Math.max(0.05,Math.pow(10,(TARGET_LUFS-20*Math.log10(r))/20)));
+  gn.gain.setTargetAtTime(t,getCtx().currentTime,0.5);
 }
-
-function paintBars(idL, idR, aL, aR, dbId, gainNode) {
-  const rmsL = getRMS(aL), rmsR = getRMS(aR);
-  if (gainNode) applyEBUR128(gainNode, rmsL, rmsR);
-  [{ id: idL, rms: rmsL }, { id: idR, rms: rmsR }].forEach(({ id, rms }) => {
-    const db = rms > 0 ? Math.max(-60, 20 * Math.log10(rms)) : -60;
-    const active = Math.round(((db + 60) / 60) * NUM_BARS);
-    document.querySelectorAll(`#${id} .vu-row`).forEach((r, i) => {
-      r.style.opacity = i < active ? '1' : '0.1';
-    });
+function paintBars(idL,idR,aL,aR,dbId,gn) {
+  const rL=getRMS(aL),rR=getRMS(aR);
+  if(gn) applyEBU(gn,rL,rR);
+  [{ id:idL,rms:rL },{ id:idR,rms:rR }].forEach(({id,rms})=>{
+    const db=rms>0?Math.max(-60,20*Math.log10(rms)):-60;
+    const act=Math.round(((db+60)/60)*NUM_BARS);
+    document.querySelectorAll(`#${id} .vu-row`).forEach((r,i)=>{ r.style.opacity=i<act?'1':'0.1'; });
   });
-  const rms = Math.max(rmsL, rmsR);
-  const db = rms > 0 ? Math.max(-60, 20 * Math.log10(rms)) : -60;
-  const el = document.getElementById(dbId);
-  if (el) {
-    el.textContent = db > -60 ? db.toFixed(1) : '—∞';
-    el.style.color = db > -3 ? '#e03020' : db > -10 ? '#f5c400' : '#00d4f0';
-  }
+  const db=Math.max(rL,rR)>0?Math.max(-60,20*Math.log10(Math.max(rL,rR))):-60;
+  const el=document.getElementById(dbId);
+  if(el){ el.textContent=db>-60?db.toFixed(1):'—∞'; el.style.color=db>-3?'#e03020':db>-10?'#f5c400':'#00d4f0'; }
 }
 
-// ── VU 1 : DIFF1 ──
-let vu1 = null, gain1 = null;
-const _t0 = D[0].togglePlay.bind(D[0]);
-D[0].togglePlay = function() {
-  if (!vu1) {
+function wireVU(audioEl, idL, idR, dbId) {
+  const ctx=getCtx(), gn=ctx.createGain(); gn.gain.value=1;
+  const src=ctx.createMediaElementSource(audioEl);
+  const sp=ctx.createChannelSplitter(2), mg=ctx.createChannelMerger(2);
+  const aL=ctx.createAnalyser(), aR=ctx.createAnalyser();
+  aL.fftSize=1024; aR.fftSize=1024; aL.smoothingTimeConstant=0.8; aR.smoothingTimeConstant=0.8;
+  src.connect(gn); gn.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
+  aL.connect(mg,0,0); aR.connect(mg,0,1); mg.connect(ctx.destination);
+  buildBars(idL); buildBars(idR);
+  return { aL, aR, gn };
+}
+
+let vu1=null;
+const _t0=D[0].togglePlay.bind(D[0]);
+D[0].togglePlay=function(){ if(!vu1){ getCtx().resume(); vu1=wireVU(D[0].audio,'vu1-L','vu1-R','vu1-db'); } getCtx().resume(); _t0(); };
+
+const rmAudio=new Audio(); rmAudio.crossOrigin='anonymous';
+let vu2=null, rmPlaying=false;
+function rmSetVolume(v){ rmAudio.volume=v/100; document.getElementById('rm-vol-val').textContent=v+'%'; }
+function rmToggle(){
+  if(!rmPlaying){
+    if(!vu2){ getCtx().resume(); rmAudio.src='https://radiomonaco.ice.infomaniak.ch/radiomonaco-128.mp3'; rmAudio.volume=document.getElementById('rm-volume').value/100; vu2=wireVU(rmAudio,'vu2-L','vu2-R','vu2-db'); }
     getCtx().resume();
-    gain1 = getCtx().createGain(); gain1.gain.value = 1.0;
-    const ctx = getCtx();
-    const src = ctx.createMediaElementSource(D[0].audio);
-    const splitter = ctx.createChannelSplitter(2);
-    const merger = ctx.createChannelMerger(2);
-    const aL = ctx.createAnalyser(); const aR = ctx.createAnalyser();
-    aL.fftSize = 1024; aR.fftSize = 1024;
-    aL.smoothingTimeConstant = 0.8; aR.smoothingTimeConstant = 0.8;
-    src.connect(gain1); gain1.connect(splitter);
-    splitter.connect(aL, 0); splitter.connect(aR, 1);
-    aL.connect(merger, 0, 0); aR.connect(merger, 0, 1);
-    merger.connect(ctx.destination);
-    vu1 = { aL, aR };
-    buildBars('vu1-L'); buildBars('vu1-R');
-  }
-  getCtx().resume();
-  _t0();
-};
-
-// ── VU 2 : RADIO MONACO ──
-const rmAudio = new Audio();
-rmAudio.crossOrigin = 'anonymous';
-let vu2 = null, gain2 = null, rmPlaying = false;
-
-function rmSetVolume(v) {
-  rmAudio.volume = v / 100;
-  document.getElementById('rm-vol-val').textContent = v + '%';
+    rmAudio.play().then(()=>{ rmPlaying=true; document.getElementById('rm-play-btn').textContent='■ PAUSE'; document.getElementById('rm-dot').style.opacity='1'; document.getElementById('rm-status').textContent='EN DIRECT'; }).catch(e=>console.warn(e));
+  } else { rmAudio.pause(); rmPlaying=false; document.getElementById('rm-play-btn').textContent='▶ PLAY'; document.getElementById('rm-dot').style.opacity='0'; document.getElementById('rm-status').textContent='PAUSE'; }
 }
+function rmStop(){ rmAudio.pause(); rmAudio.src=''; rmPlaying=false; vu2=null; document.getElementById('rm-play-btn').textContent='▶ PLAY'; document.getElementById('rm-dot').style.opacity='0'; document.getElementById('rm-status').textContent='ARRÊT'; }
 
-function rmToggle() {
-  if (!rmPlaying) {
-    if (!vu2) {
-      getCtx().resume();
-      rmAudio.src = 'https://radiomonaco.ice.infomaniak.ch/radiomonaco-128.mp3';
-      rmAudio.volume = document.getElementById('rm-volume').value / 100;
-      gain2 = getCtx().createGain(); gain2.gain.value = 1.0;
-      const ctx = getCtx();
-      const src = ctx.createMediaElementSource(rmAudio);
-      const splitter = ctx.createChannelSplitter(2);
-      const merger = ctx.createChannelMerger(2);
-      const aL = ctx.createAnalyser(); const aR = ctx.createAnalyser();
-      aL.fftSize = 1024; aR.fftSize = 1024;
-      aL.smoothingTimeConstant = 0.8; aR.smoothingTimeConstant = 0.8;
-      src.connect(gain2); gain2.connect(splitter);
-      splitter.connect(aL, 0); splitter.connect(aR, 1);
-      aL.connect(merger, 0, 0); aR.connect(merger, 0, 1);
-      merger.connect(ctx.destination);
-      vu2 = { aL, aR };
-      buildBars('vu2-L'); buildBars('vu2-R');
-    }
-    getCtx().resume();
-    rmAudio.play().then(() => {
-      rmPlaying = true;
-      document.getElementById('rm-play-btn').textContent = '■ PAUSE';
-      document.getElementById('rm-dot').style.opacity = '1';
-      document.getElementById('rm-status').textContent = 'EN DIRECT';
-    }).catch(e => console.warn(e));
-  } else {
-    rmAudio.pause(); rmPlaying = false;
-    document.getElementById('rm-play-btn').textContent = '▶ PLAY';
-    document.getElementById('rm-dot').style.opacity = '0';
-    document.getElementById('rm-status').textContent = 'PAUSE';
-  }
-}
-
-function rmStop() {
-  rmAudio.pause(); rmAudio.src = '';
-  rmPlaying = false; vu2 = null; gain2 = null;
-  document.getElementById('rm-play-btn').textContent = '▶ PLAY';
-  document.getElementById('rm-dot').style.opacity = '0';
-  document.getElementById('rm-status').textContent = 'ARRÊT';
-}
-
-function vuLoop() {
-  requestAnimationFrame(vuLoop);
-  if (vu1) paintBars('vu1-L', 'vu1-R', vu1.aL, vu1.aR, 'vu1-db', gain1);
-  if (vu2) paintBars('vu2-L', 'vu2-R', vu2.aL, vu2.aR, 'vu2-db', gain2);
-}
+function vuLoop(){ requestAnimationFrame(vuLoop); if(vu1) paintBars('vu1-L','vu1-R',vu1.aL,vu1.aR,'vu1-db',vu1.gn); if(vu2) paintBars('vu2-L','vu2-R',vu2.aL,vu2.aR,'vu2-db',vu2.gn); }
 vuLoop();
 
-setInterval(()=>{
-  document.getElementById('global-clock').textContent=nowClock();
-  D.forEach(d=>d.tick());
-}, 1000);
+setInterval(()=>{ document.getElementById('global-clock').textContent=nowClock(); D.forEach(d=>d.tick()); }, 1000);
 </script>
 </body>
 </html>
