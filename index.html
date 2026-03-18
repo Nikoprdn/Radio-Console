@@ -78,6 +78,7 @@
   .button.is-danger:hover{background:#200808!important;}
   .button.is-auto{background:transparent!important;border-color:var(--border)!important;color:var(--txt-dim)!important;transition:all .15s!important;}
   .button.is-auto.active{background:#0a2a00!important;border-color:var(--green)!important;color:var(--green)!important;}
+  #auto-btn-1.active{background:#120d22!important;border-color:#9b5de5!important;color:#9b5de5!important;}
   .tag{font-family:var(--mono)!important;font-size:10px!important;letter-spacing:1px!important;border-radius:2px!important;}
 
   /* ── Zone dépôt (additive) ── */
@@ -412,6 +413,38 @@
   }
   .rdv-popup-cancel:hover { border-color: var(--red); color: var(--red); }
 
+  /* ── Alerte silence SAT / DAB+ / Hz ── */
+  @keyframes silence-blink {
+    0%,100%{ background:#e03020; opacity:1; }
+    50%{ background:#8c1010; opacity:.5; }
+  }
+  .vu-silence-alert {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-top: 4px;
+    display: none;
+  }
+  .vu-silence-alert.active {
+    display: block;
+    color: #fff;
+    background: #e03020;
+    animation: silence-blink .6s step-start infinite;
+  }
+  /* Case entière clignote en rouge sur le vu-wrap */
+  .vu-wrap.silence-warn {
+    border-color: #e03020 !important;
+    animation: silence-blink .6s step-start infinite;
+  }
+
+  /* ── DIFF 2 couleur accent violet ── */
+  #c2-progress::-webkit-progress-value { background: #9b5de5 !important; }
+  #c2-progress::-moz-progress-bar      { background: #9b5de5 !important; }
+
   /* Cards avec position relative pour popup */
   .card.is-dark-card { position: relative; }
 </style>
@@ -510,7 +543,7 @@
 <div class="column is-full"><div class="card is-dark-card">
   <div class="card-header" style="display:flex;align-items:stretch">
     <div style="display:flex;align-items:center;padding:0 1rem;border-right:1px solid #1e3060">
-      <span class="tag diff-badge" style="background:#001a2a;color:#00d4f0;border:1px solid #003a5a">DIFF 2</span>
+      <span class="tag diff-badge" style="background:#160d2a;color:#9b5de5;border:1px solid #6a3aaa">DIFF 2</span>
     </div>
     <div style="display:flex;flex-direction:column;justify-content:center;padding:0 1rem;border-right:1px solid #1e3060">
       <p class="card-header-title" style="padding:0;font-size:14px">MA RADIO — STUDIO 2</p>
@@ -531,10 +564,10 @@
       <button class="button is-dark is-small" onclick="D[1].prevTrack()">|◀</button>
       <button class="button is-dark is-small" onclick="D[1].nextTrack()">▶|</button>
       <button class="button is-auto is-small" id="auto-btn-1" onclick="D[1].toggleAuto()">AUTO</button>
-      <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060">PISTE <strong id="c2-counter" style="color:#5a7090;margin-left:4px">0/0</strong></span>
+      <span class="tag" style="background:#160d2a;color:#7a5aaa;border:1px solid #6a3aaa">PISTE <strong id="c2-counter" style="color:#6a3aaa;margin-left:4px">0/0</strong></span>
     </div>
   </div>
-  <progress class="progress is-elapsed" id="c2-progress" value="0" max="100"></progress>
+  <progress class="progress is-elapsed" id="c2-progress" style="--progress-color:#9b5de5" value="0" max="100"></progress>
   <div class="file-drop-zone" id="fdz2" onclick="document.getElementById('fi2').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event,1)">
     <input type="file" id="fi2" multiple accept="audio/*" onchange="handleFiles(this.files,1)">
     <div class="fdz-row">
@@ -559,8 +592,8 @@
     </table>
   </div>
   <div class="card-footer">
-    <span class="card-footer-item">Durée écoulée&nbsp;<strong id="c2-micros" style="color:#f07800;font-family:var(--mono)">00:00</strong></span>
-    <span class="card-footer-item" style="margin-left:auto;justify-content:flex-end">Total&nbsp;<strong id="c2-total" style="color:#ddeeff;font-family:var(--mono);font-size:18px;letter-spacing:2px">00:00:00</strong>&nbsp;<span id="c2-suffix" style="color:#00d4f0;font-family:var(--display);font-size:16px;font-weight:700">A</span></span>
+    <span class="card-footer-item">Durée écoulée&nbsp;<strong id="c2-micros" style="color:#9b5de5;font-family:var(--mono)">00:00</strong></span>
+    <span class="card-footer-item" style="margin-left:auto;justify-content:flex-end">Total&nbsp;<strong id="c2-total" style="color:#ddeeff;font-family:var(--mono);font-size:18px;letter-spacing:2px">00:00:00</strong>&nbsp;<span id="c2-suffix" style="color:#9b5de5;font-family:var(--display);font-size:16px;font-weight:700">A</span></span>
   </div>
   <!-- Popup rendez-vous DIFF 2 -->
   <div class="rdv-popup" id="rdv-popup-1">
@@ -595,7 +628,7 @@
     <div class="vu-wrap" style="flex:1">
       <div class="vu-label-block">
         <div class="vu-main-title">DIFF 2</div>
-        <div class="vu-db-group"><div class="vu-db-val" id="vu-d2-db">—∞</div><div class="vu-db-unit">dB</div></div>
+        <div class="vu-db-group"><div class="vu-db-val" id="vu-d2-db" style="color:#9b5de5">—∞</div><div class="vu-db-unit">dB</div></div>
       </div>
       <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
       <div class="vu-channel-v"><div class="vu-meter-v" id="vu-d2-L"></div><div class="vu-ch-label">L</div></div>
@@ -643,7 +676,7 @@
     <!-- RDV DIFF 2 -->
     <div class="rdv-card">
       <div class="rdv-card-header">
-        <span class="rdv-diff-label" style="background:#001a2a;color:#00d4f0;border:1px solid #003a5a">DIFF 2</span>
+        <span class="rdv-diff-label" style="background:#160d2a;color:#9b5de5;border:1px solid #6a3aaa">DIFF 2</span>
         <span class="rdv-status" id="rdv-status-1">EN ATTENTE</span>
       </div>
       <div class="rdv-row">
@@ -727,33 +760,36 @@
       </div>
     </div>
 
-    <div class="vu-wrap" style="flex:1">
+    <div class="vu-wrap" id="vu-wrap-sat" style="flex:1">
       <div class="vu-label-block">
         <div class="vu-main-title">SATELLITE</div>
         <div class="vu-db-group"><div class="vu-db-val" id="vu-sat-db">—∞</div><div class="vu-db-unit">dB</div></div>
-        <div style="font-family:var(--mono);font-size:8px;color:#3a5070;margin-top:6px;letter-spacing:1px">DIFF 1 + DIFF 2 + RM</div>
+        <div style="font-family:var(--mono);font-size:8px;color:#3a5070;margin-top:6px;letter-spacing:1px">DIFF 1 + RM</div>
+        <div class="vu-silence-alert" id="sil-sat">⚠ SILENCE</div>
       </div>
       <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
       <div class="vu-channel-v"><div class="vu-meter-v" id="vu-sat-L"></div><div class="vu-ch-label">L</div></div>
       <div class="vu-channel-v"><div class="vu-meter-v" id="vu-sat-R"></div><div class="vu-ch-label">R</div></div>
     </div>
 
-    <div class="vu-wrap" style="flex:1">
+    <div class="vu-wrap" id="vu-wrap-dab" style="flex:1">
       <div class="vu-label-block">
         <div class="vu-main-title">DAB+</div>
         <div class="vu-db-group"><div class="vu-db-val" id="vu-dab-db">—∞</div><div class="vu-db-unit">dB</div></div>
-        <div style="font-family:var(--mono);font-size:8px;color:#3a5070;margin-top:6px;letter-spacing:1px">DIFF 1 + DIFF 2 + RM</div>
+        <div style="font-family:var(--mono);font-size:8px;color:#3a5070;margin-top:6px;letter-spacing:1px">DIFF 2 + RM</div>
+        <div class="vu-silence-alert" id="sil-dab">⚠ SILENCE</div>
       </div>
       <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
       <div class="vu-channel-v"><div class="vu-meter-v" id="vu-dab-L"></div><div class="vu-ch-label">L</div></div>
       <div class="vu-channel-v"><div class="vu-meter-v" id="vu-dab-R"></div><div class="vu-ch-label">R</div></div>
     </div>
 
-    <div class="vu-wrap" style="flex:1">
+    <div class="vu-wrap" id="vu-wrap-hz" style="flex:1">
       <div class="vu-label-block">
         <div class="vu-main-title">Hz</div>
         <div class="vu-db-group"><div class="vu-db-val" id="vu-hz-db">—∞</div><div class="vu-db-unit">dB</div></div>
         <div style="font-family:var(--mono);font-size:8px;color:#3a5070;margin-top:6px;letter-spacing:1px">DIFF 1 + DIFF 2 + RM</div>
+        <div class="vu-silence-alert" id="sil-hz">⚠ SILENCE</div>
       </div>
       <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
       <div class="vu-channel-v"><div class="vu-meter-v" id="vu-hz-L"></div><div class="vu-ch-label">L</div></div>
@@ -1116,56 +1152,76 @@ class Diffuser{
 const D=CONFIGS.map((cfg,i)=>new Diffuser(cfg,i));
 
 // ── VU Mètre ──
-const NUM_BARS=24;let sharedCtx=null;
+const NUM_BARS=24; let sharedCtx=null;
+
 function rowColor(i,t){const p=i/t;return p>.85?'#e03020':p>.65?'#f5c400':'#00d96a';}
 function buildBars(id){const el=document.getElementById(id);if(!el)return;el.innerHTML='';for(let i=0;i<NUM_BARS;i++){const r=document.createElement('div');r.className='vu-row';r.style.background=rowColor(i,NUM_BARS);r.style.opacity='0.1';el.appendChild(r);}}
 function getCtx(){if(!sharedCtx)sharedCtx=new(window.AudioContext||window.webkitAudioContext)();return sharedCtx;}
 function getRMS(an){const d=new Float32Array(an.fftSize);an.getFloatTimeDomainData(d);let s=0;for(const v of d)s+=v*v;return Math.sqrt(s/d.length);}
 const TARGET_LUFS=-23;
 function applyEBU(gn,rL,rR){const r=Math.max(rL,rR);if(r<0.0001)return;gn.gain.setTargetAtTime(Math.min(4,Math.max(0.05,Math.pow(10,(TARGET_LUFS-20*Math.log10(r))/20))),getCtx().currentTime,0.5);}
-function paintBars(idL,idR,aL,aR,dbId,gn){const rL=getRMS(aL),rR=getRMS(aR);if(gn)applyEBU(gn,rL,rR);[{id:idL,rms:rL},{id:idR,rms:rR}].forEach(({id,rms})=>{const db=rms>0?Math.max(-60,20*Math.log10(rms)):-60;const act=Math.round(((db+60)/60)*NUM_BARS);document.querySelectorAll(`#${id} .vu-row`).forEach((r,i)=>r.style.opacity=i<act?'1':'0.1');});const db=Math.max(rL,rR)>0?Math.max(-60,20*Math.log10(Math.max(rL,rR))):-60;const el=document.getElementById(dbId);if(el){el.textContent=db>-60?db.toFixed(1):'—∞';el.style.color=db>-3?'#e03020':db>-10?'#f5c400':'#00d4f0';}}
-function wireVU(audioEl,idL,idR){const ctx=getCtx(),gn=ctx.createGain();gn.gain.value=1;const src=ctx.createMediaElementSource(audioEl);const sp=ctx.createChannelSplitter(2),mg=ctx.createChannelMerger(2);const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;src.connect(gn);gn.connect(sp);sp.connect(aL,0);sp.connect(aR,1);aL.connect(mg,0,0);aR.connect(mg,0,1);mg.connect(ctx.destination);buildBars(idL);buildBars(idR);return{aL,aR,gn};}
+function paintBars(idL,idR,aL,aR,dbId,gn,neutralColor){
+  const rL=getRMS(aL),rR=getRMS(aR);
+  if(gn)applyEBU(gn,rL,rR);
+  [{id:idL,rms:rL},{id:idR,rms:rR}].forEach(({id,rms})=>{
+    const db=rms>0?Math.max(-60,20*Math.log10(rms)):-60;
+    const act=Math.round(((db+60)/60)*NUM_BARS);
+    document.querySelectorAll(`#${id} .vu-row`).forEach((r,i)=>r.style.opacity=i<act?'1':'0.1');
+  });
+  const db=Math.max(rL,rR)>0?Math.max(-60,20*Math.log10(Math.max(rL,rR))):-60;
+  const el=document.getElementById(dbId);
+  if(el){el.textContent=db>-60?db.toFixed(1):'—∞';el.style.color=db>-3?'#e03020':db>-10?'#f5c400':(neutralColor||'#00d4f0');}
+}
+function wireVU(audioEl,idL,idR){
+  const ctx=getCtx(),gn=ctx.createGain();gn.gain.value=1;
+  const src=ctx.createMediaElementSource(audioEl);
+  const sp=ctx.createChannelSplitter(2),mg=ctx.createChannelMerger(2);
+  const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
+  aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
+  src.connect(gn);gn.connect(sp);sp.connect(aL,0);sp.connect(aR,1);
+  aL.connect(mg,0,0);aR.connect(mg,0,1);mg.connect(ctx.destination);
+  buildBars(idL);buildBars(idR);
+  return{aL,aR,gn};
+}
 
+// ── Radio Monaco ──
+const rmAudio=new Audio(); rmAudio.crossOrigin='anonymous';
+let vu2=null, rmPlaying=false;
+function rmSetVolume(v){rmAudio.volume=v/100;document.getElementById('rm-vol-val').textContent=v+'%';}
+function rmToggle(){
+  if(!rmPlaying){
+    if(!vu2){getCtx().resume();rmAudio.src='https://radiomonaco.ice.infomaniak.ch/radiomonaco-128.mp3';rmAudio.volume=document.getElementById('rm-volume').value/100;vu2=wireVU(rmAudio,'vu2-L','vu2-R');}
+    getCtx().resume();
+    rmAudio.play().then(()=>{rmPlaying=true;document.getElementById('rm-play-btn').textContent='■ PAUSE';document.getElementById('rm-dot').style.opacity='1';document.getElementById('rm-status').textContent='EN DIRECT';}).catch(e=>console.warn(e));
+  }else{rmAudio.pause();rmPlaying=false;document.getElementById('rm-play-btn').textContent='▶ PLAY';document.getElementById('rm-dot').style.opacity='0';document.getElementById('rm-status').textContent='PAUSE';}
+}
+function rmStop(){rmAudio.pause();rmAudio.src='';rmPlaying=false;vu2=null;document.getElementById('rm-play-btn').textContent='▶ PLAY';document.getElementById('rm-dot').style.opacity='0';document.getElementById('rm-status').textContent='ARRÊT';}
+
+// ── Wiring VU DIFF 1 & 2 (au premier PLAY) ──
 let vu1=null, vuD2=null;
-
-// DIFF 1 VU
 const _t0=D[0].togglePlay.bind(D[0]);
 D[0].togglePlay=function(){
   if(!vu1){getCtx().resume();vu1=wireVU(D[0].audios[D[0].ci]||new Audio(),'vu1-L','vu1-R');}
-  getCtx().resume();_t0();
+  getCtx().resume(); _t0();
 };
-
-// DIFF 2 VU
 const _t1=D[1].togglePlay.bind(D[1]);
 D[1].togglePlay=function(){
   if(!vuD2){getCtx().resume();vuD2=wireVU(D[1].audios[D[1].ci]||new Audio(),'vu-d2-L','vu-d2-R');}
-  getCtx().resume();_t1();
+  getCtx().resume(); _t1();
 };
 
-// SAT / DAB+ / Hz : VU-mètres passifs (pas de source audio Web)
-// Ils simulent une activité basée sur les flux DIFF pour la démo.
-// En production, connecter une entrée audio réelle via getCtx().createMediaStreamSource().
-const VU_PASSIVE=['sat','dab','hz'];
-function initPassiveVU(){
-  VU_PASSIVE.forEach(id=>{buildBars(`vu-${id}-L`);buildBars(`vu-${id}-R`);});
-}
-initPassiveVU();
-function initPassiveVU2(){['sat','dab','hz'].forEach(id=>{buildBars(`vu-${id}-L`);buildBars(`vu-${id}-R`);});}
-initPassiveVU2();
+// ── Initialiser les barres SAT/DAB+/Hz ──
+['sat','dab','hz'].forEach(id=>{buildBars(`vu-${id}-L`);buildBars(`vu-${id}-R`);});
 
-// Mix réel de toutes les sources actives pour les flux de diffusion
+// ── Mix flux de diffusion ──
 function paintMix(id, sources){
   const active=sources.filter(v=>v!=null);
   if(!active.length){
-    // Pas de source active : silence
-    ['L','R'].forEach(ch=>{
-      document.querySelectorAll(`#vu-${id}-${ch} .vu-row`).forEach(r=>r.style.opacity='0.1');
-    });
+    ['L','R'].forEach(ch=>{document.querySelectorAll(`#vu-${id}-${ch} .vu-row`).forEach(r=>r.style.opacity='0.1');});
     const el=document.getElementById(`vu-${id}-db`);
     if(el){el.textContent='—∞';el.style.color='#00d4f0';}
-    return;
+    return -60;
   }
-  // RMS = somme RMS de toutes les sources (mix additif)
   let rL=0,rR=0;
   active.forEach(v=>{rL+=getRMS(v.aL);rR+=getRMS(v.aR);});
   rL=Math.min(1,rL); rR=Math.min(1,rR);
@@ -1178,34 +1234,48 @@ function paintMix(id, sources){
   const db=rms>0?Math.max(-60,20*Math.log10(rms)):-60;
   const el=document.getElementById(`vu-${id}-db`);
   if(el){el.textContent=db>-60?db.toFixed(1):'—∞';el.style.color=db>-3?'#e03020':db>-10?'#f5c400':'#00d4f0';}
+  return db;
 }
 
-const rmAudio=new Audio();rmAudio.crossOrigin='anonymous';
-let vu2=null,rmPlaying=false;
-function rmSetVolume(v){rmAudio.volume=v/100;document.getElementById('rm-vol-val').textContent=v+'%';}
-function rmToggle(){
-  if(!rmPlaying){
-    if(!vu2){getCtx().resume();rmAudio.src='https://radiomonaco.ice.infomaniak.ch/radiomonaco-128.mp3';rmAudio.volume=document.getElementById('rm-volume').value/100;vu2=wireVU(rmAudio,'vu2-L','vu2-R');}
-    getCtx().resume();
-    rmAudio.play().then(()=>{rmPlaying=true;document.getElementById('rm-play-btn').textContent='■ PAUSE';document.getElementById('rm-dot').style.opacity='1';document.getElementById('rm-status').textContent='EN DIRECT';}).catch(e=>console.warn(e));
-  }else{rmAudio.pause();rmPlaying=false;document.getElementById('rm-play-btn').textContent='▶ PLAY';document.getElementById('rm-dot').style.opacity='0';document.getElementById('rm-status').textContent='PAUSE';}
+// ── Détection silence (5 secondes) ──
+const SILENCE_THRESH_DB=-55, SILENCE_DELAY_MS=5000;
+const silenceState={
+  sat:{since:null,alerting:false},
+  dab:{since:null,alerting:false},
+  hz: {since:null,alerting:false}
+};
+function checkSilence(key,db){
+  const s=silenceState[key];
+  const now=Date.now();
+  const wrap =document.getElementById(`vu-wrap-${key}`);
+  const badge=document.getElementById(`sil-${key}`);
+  if(db<=SILENCE_THRESH_DB){
+    if(s.since===null)s.since=now;
+    if((now-s.since)>=SILENCE_DELAY_MS&&!s.alerting){
+      s.alerting=true;
+      if(wrap) wrap.classList.add('silence-warn');
+      if(badge)badge.classList.add('active');
+    }
+  }else{
+    s.since=null;s.alerting=false;
+    if(wrap) wrap.classList.remove('silence-warn');
+    if(badge)badge.classList.remove('active');
+  }
 }
-function rmStop(){rmAudio.pause();rmAudio.src='';rmPlaying=false;vu2=null;document.getElementById('rm-play-btn').textContent='▶ PLAY';document.getElementById('rm-dot').style.opacity='0';document.getElementById('rm-status').textContent='ARRÊT';}
 
+// ── Boucle VU principale ──
 function vuLoop(){
   requestAnimationFrame(vuLoop);
-  // Diffuseurs (sticky)
-  if(vu1)  paintBars('vu1-L','vu1-R',vu1.aL,vu1.aR,'vu1-db',vu1.gn);
-  if(vuD2) paintBars('vu-d2-L','vu-d2-R',vuD2.aL,vuD2.aR,'vu-d2-db',vuD2.gn);
-  // Radio Monaco (bas de page)
-  if(vu2)  paintBars('vu2-L','vu2-R',vu2.aL,vu2.aR,'vu2-db',vu2.gn);
-  // Flux de diffusion :
-  // SATELLITE = DIFF1 + Radio Monaco
-  // DAB+      = DIFF2 + Radio Monaco
-  // Hz        = DIFF1 + DIFF2 + Radio Monaco (tout)
-  paintMix('sat', [vu1,      vu2]);
-  paintMix('dab', [vuD2,     vu2]);
-  paintMix('hz',  [vu1, vuD2, vu2]);
+  if(vu1)  paintBars('vu1-L','vu1-R',  vu1.aL,  vu1.aR,  'vu1-db',   vu1.gn,  '#00d4f0');
+  if(vuD2) paintBars('vu-d2-L','vu-d2-R',vuD2.aL,vuD2.aR,'vu-d2-db', vuD2.gn, '#9b5de5');
+  if(vu2)  paintBars('vu2-L','vu2-R',  vu2.aL,  vu2.aR,  'vu2-db',   vu2.gn,  '#00d4f0');
+  // Flux de diffusion : SAT=DIFF1+RM, DAB=DIFF2+RM, Hz=tout
+  const dbSat=paintMix('sat',[vu1,vu2]);
+  const dbDab=paintMix('dab',[vuD2,vu2]);
+  const dbHz =paintMix('hz', [vu1,vuD2,vu2]);
+  checkSilence('sat',dbSat);
+  checkSilence('dab',dbDab);
+  checkSilence('hz', dbHz);
 }
 vuLoop();
 
@@ -1254,14 +1324,21 @@ function rdvToggleArm(idx){
     popup.classList.add('visible');
     s.popupVisible=true;
   } else {
-    // DIFF EXTERNE : précharger l'iframe maintenant (warm-up)
-    // pour que la page soit prête et que l'audio puisse démarrer
-    const fr=document.getElementById('diff2-frame');
-    if(!fr.src || fr.src==='about:blank' || fr.src===''){
-      fr.src='https://nikoprdn.github.io/Diff2/';
-    }
-    s.iframeReady=false;
-    fr.onload=()=>{ s.iframeReady=true; };
+    // DIFF EXTERNE : ouvrir la page maintenant via clic utilisateur
+    // (le popup blocker ne bloque pas les window.open issus d'un événement utilisateur)
+    // On stocke la référence à l'onglet ouvert pour lui envoyer postMessage plus tard
+    s.extWin=window.open('https://nikoprdn.github.io/Diff2/','diff2_ext');
+    // Laisser la page charger avant d'envoyer le message
+    s.extWinReady=false;
+    const pollReady=setInterval(()=>{
+      try{
+        if(s.extWin && !s.extWin.closed){
+          // Envoyer un ping — la page répond si elle a le listener
+          s.extWin.postMessage({action:'ping'},'https://nikoprdn.github.io');
+        }
+      }catch(e){}
+    },500);
+    s._readyPoll=pollReady;
   }
 }
 
@@ -1276,11 +1353,7 @@ function rdvCancel(idx){
   document.getElementById(`rdv-status-${idx}`).classList.remove('armed','live');
   document.getElementById(`rdv-cd-${idx}`).textContent='—';
   document.getElementById(`rdv-cd-${idx}`).className='rdv-countdown';
-  // Si annulation d'un RDV externe, décharger l'iframe
-  if(s.isExternal){
-    const fr=document.getElementById('diff2-frame');
-    fr.src=''; s.iframeReady=false;
-  }
+  if(s.isExternal && s._readyPoll){ clearInterval(s._readyPoll); s._readyPoll=null; }
 }
 
 function rdvTick(){
@@ -1338,14 +1411,15 @@ function rdvTick(){
 
       // Lancer le diffuseur
       if(rdvState[idx].isExternal){
-        // Envoyer postMessage à l'iframe pour déclencher le DIFF 1 distant
-        const fr=document.getElementById('diff2-frame');
-        const msg={action:'rdv_play',diffuser:0}; // diffuser:0 = DIFF 1 de la page distante
-        if(s.iframeReady && fr.contentWindow){
-          fr.contentWindow.postMessage(msg,'https://nikoprdn.github.io');
+        // Envoyer postMessage à l'onglet Diff2 ouvert lors de l'armement
+        if(s._readyPoll){ clearInterval(s._readyPoll); s._readyPoll=null; }
+        if(s.extWin && !s.extWin.closed){
+          s.extWin.postMessage({action:'rdv_play',diffuser:0},'https://nikoprdn.github.io');
+          // Focus sur l'onglet distant pour que l'audio démarre (autoplay policy)
+          s.extWin.focus();
         } else {
-          // Fallback : ouvrir dans un nouvel onglet avec paramètre URL
-          window.open('https://nikoprdn.github.io/Diff2/?rdv_play=1','_blank','noopener');
+          // Fallback si l'onglet a été fermé : en rouvrir un avec param URL
+          window.open('https://nikoprdn.github.io/Diff2/?rdv_play=1','diff2_ext');
         }
       } else if(!D[idx].playing){
         D[idx].togglePlay();
@@ -1363,13 +1437,5 @@ function rdvTick(){
   });
 }
 </script>
-
-<!-- iframe cachée pour communication postMessage avec Diff2 -->
-<iframe id="diff2-frame"
-  src=""
-  style="display:none;width:0;height:0;border:0"
-  allow="autoplay"
-  sandbox="allow-scripts allow-same-origin allow-forms">
-</iframe>
 </body>
 </html>
