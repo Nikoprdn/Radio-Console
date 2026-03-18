@@ -730,7 +730,19 @@
 <!-- FLUX DE DIFFUSION — tout en bas -->
 <div style="height:2rem;background:var(--bg)"></div>
 <div class="vu-section" style="position:static;border-top:2px solid #2a4a8a;">
-  <div class="vu-row-title" style="color:#2a4a8a;letter-spacing:4px;">— Flux de diffusion —</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+    <div class="vu-row-title" style="color:#2a4a8a;letter-spacing:4px;margin-bottom:0;">— Flux de diffusion —</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;">BIP SILENCE</span>
+      <input type="range" id="bip-vol" min="0" max="100" value="35"
+        style="-webkit-appearance:none;width:80px;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;"
+        oninput="bipVolChange(this.value)">
+      <span id="bip-vol-val" style="font-family:var(--mono);font-size:9px;color:var(--cyan);min-width:28px;">35%</span>
+      <button onclick="playBip()" style="background:transparent;border:1px solid var(--border);color:var(--txt-mute);font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px;"
+        onmouseover="this.style.borderColor='#00d4f0';this.style.color='#00d4f0'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--txt-mute)'">▶ TEST</button>
+    </div>
+  </div>
   <div class="vu-row-wrap">
 
     <!-- RADIO MONACO VU dans flux de diffusion -->
@@ -1237,29 +1249,74 @@ function paintMix(id, sources){
   return db;
 }
 
-// ── Détection silence (5 secondes) ──
+// ── Détection silence + BIP d'alerte (5 secondes) ──
+// Le bip sort sur un AudioContext dédié, totalement hors de la chaîne VU/diffusion
 const SILENCE_THRESH_DB=-55, SILENCE_DELAY_MS=5000;
 const silenceState={
-  sat:{since:null,alerting:false},
-  dab:{since:null,alerting:false},
-  hz: {since:null,alerting:false}
+  sat:{since:null,alerting:false,bipTimer:null},
+  dab:{since:null,alerting:false,bipTimer:null},
+  hz: {since:null,alerting:false,bipTimer:null}
 };
+
+// Contexte audio indépendant uniquement pour les bips
+let _bipCtx=null;
+function getBipCtx(){
+  if(!_bipCtx||_bipCtx.state==='closed')
+    _bipCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(_bipCtx.state==='suspended') _bipCtx.resume();
+  return _bipCtx;
+}
+
+// Émet un bip double (1kHz 80ms + 100ms silence + 1kHz 80ms) sur le contexte dédié
+function playBip(){
+  try{
+    const ctx=getBipCtx();
+    const vol=ctx.createGain();
+    vol.gain.value=_bipVolume;
+    vol.connect(ctx.destination);
+    [[0,0.08],[0.18,0.08]].forEach(([start,dur])=>{
+      const osc=ctx.createOscillator();
+      osc.type='sine';
+      osc.frequency.value=1000;
+      // Enveloppe rapide pour éviter le "click"
+      const env=ctx.createGain();
+      env.gain.setValueAtTime(0,ctx.currentTime+start);
+      env.gain.linearRampToValueAtTime(1,ctx.currentTime+start+0.005);
+      env.gain.setValueAtTime(1,ctx.currentTime+start+dur-0.005);
+      env.gain.linearRampToValueAtTime(0,ctx.currentTime+start+dur);
+      osc.connect(env);
+      env.connect(vol);
+      osc.start(ctx.currentTime+start);
+      osc.stop(ctx.currentTime+start+dur);
+    });
+  }catch(e){console.warn('Bip error:',e);}
+}
+
 function checkSilence(key,db){
   const s=silenceState[key];
   const now=Date.now();
   const wrap =document.getElementById(`vu-wrap-${key}`);
   const badge=document.getElementById(`sil-${key}`);
+
   if(db<=SILENCE_THRESH_DB){
-    if(s.since===null)s.since=now;
+    if(s.since===null) s.since=now;
     if((now-s.since)>=SILENCE_DELAY_MS&&!s.alerting){
       s.alerting=true;
       if(wrap) wrap.classList.add('silence-warn');
       if(badge)badge.classList.add('active');
+      // Premier bip immédiat, puis répétition toutes les 8 secondes
+      playBip();
+      s.bipTimer=setInterval(playBip, 8000);
     }
   }else{
-    s.since=null;s.alerting=false;
-    if(wrap) wrap.classList.remove('silence-warn');
-    if(badge)badge.classList.remove('active');
+    // Son revenu → tout réinitialiser
+    s.since=null;
+    if(s.alerting){
+      s.alerting=false;
+      if(s.bipTimer){ clearInterval(s.bipTimer); s.bipTimer=null; }
+      if(wrap) wrap.classList.remove('silence-warn');
+      if(badge)badge.classList.remove('active');
+    }
   }
 }
 
@@ -1278,6 +1335,19 @@ function vuLoop(){
   checkSilence('hz', dbHz);
 }
 vuLoop();
+
+// ── Contrôle volume bip ──
+let _bipVolume=0.35;
+function bipVolChange(v){
+  _bipVolume=v/100;
+  document.getElementById('bip-vol-val').textContent=v+'%';
+}
+
+// Pré-initialiser le contexte bip au premier clic sur la page (débloque autoplay)
+document.addEventListener('click',function initBipOnce(){
+  try{ getBipCtx(); }catch(e){}
+  document.removeEventListener('click',initBipOnce);
+},{once:true});
 
 setInterval(()=>{document.getElementById('global-clock').textContent=nowClock();D.forEach(d=>d.tick());rdvTick();},80);
 
