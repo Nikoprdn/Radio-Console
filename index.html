@@ -1246,13 +1246,22 @@ function rdvToggleArm(idx){
   document.getElementById(`rdv-status-${idx}`).textContent='ARMÉ';
   document.getElementById(`rdv-status-${idx}`).classList.add('armed');
 
-  // Popup uniquement pour DIFF internes (0 et 1)
   if(!s.isExternal){
+    // Popup sur la card DIFF interne
     const popup=document.getElementById(`rdv-popup-${idx}`);
     document.getElementById(`rdv-popup-target-${idx}`).textContent=timeStr;
     document.getElementById(`rdv-popup-win-${idx}`).textContent=`fenêtre ± ${s.winMin} min`;
     popup.classList.add('visible');
     s.popupVisible=true;
+  } else {
+    // DIFF EXTERNE : précharger l'iframe maintenant (warm-up)
+    // pour que la page soit prête et que l'audio puisse démarrer
+    const fr=document.getElementById('diff2-frame');
+    if(!fr.src || fr.src==='about:blank' || fr.src===''){
+      fr.src='https://nikoprdn.github.io/Diff2/';
+    }
+    s.iframeReady=false;
+    fr.onload=()=>{ s.iframeReady=true; };
   }
 }
 
@@ -1267,6 +1276,11 @@ function rdvCancel(idx){
   document.getElementById(`rdv-status-${idx}`).classList.remove('armed','live');
   document.getElementById(`rdv-cd-${idx}`).textContent='—';
   document.getElementById(`rdv-cd-${idx}`).className='rdv-countdown';
+  // Si annulation d'un RDV externe, décharger l'iframe
+  if(s.isExternal){
+    const fr=document.getElementById('diff2-frame');
+    fr.src=''; s.iframeReady=false;
+  }
 }
 
 function rdvTick(){
@@ -1324,8 +1338,15 @@ function rdvTick(){
 
       // Lancer le diffuseur
       if(rdvState[idx].isExternal){
-        // Ouvrir/recharger la page externe dans un nouvel onglet avec autoplay
-        window.open('https://nikoprdn.github.io/Diff2/?autoplay=1','_blank','noopener');
+        // Envoyer postMessage à l'iframe pour déclencher le DIFF 1 distant
+        const fr=document.getElementById('diff2-frame');
+        const msg={action:'rdv_play',diffuser:0}; // diffuser:0 = DIFF 1 de la page distante
+        if(s.iframeReady && fr.contentWindow){
+          fr.contentWindow.postMessage(msg,'https://nikoprdn.github.io');
+        } else {
+          // Fallback : ouvrir dans un nouvel onglet avec paramètre URL
+          window.open('https://nikoprdn.github.io/Diff2/?rdv_play=1','_blank','noopener');
+        }
       } else if(!D[idx].playing){
         D[idx].togglePlay();
       }
@@ -1342,5 +1363,13 @@ function rdvTick(){
   });
 }
 </script>
+
+<!-- iframe cachée pour communication postMessage avec Diff2 -->
+<iframe id="diff2-frame"
+  src=""
+  style="display:none;width:0;height:0;border:0"
+  allow="autoplay"
+  sandbox="allow-scripts allow-same-origin allow-forms">
+</iframe>
 </body>
 </html>
