@@ -1803,39 +1803,64 @@ function handleFiles(files,idx){
 function handleDrop(ev,idx){ev.preventDefault();document.getElementById('fdz'+(idx+1)).classList.remove('drag-over');handleFiles(ev.dataTransfer.files,idx);}
 
 // ── Dessin waveform ──
-// Cache audio data pour le zoom
-const WV_DATA_CACHE={}; // file→Float32Array
+const WV_DATA_CACHE={}; // file → Float32Array (cache pour zoom)
 
-async function drawWaveform(canvas,file,startRatio=0,endRatio=1){
+async function drawWaveform(canvas, file, startRatio=0, endRatio=1){
   try{
-    const resp=await fetch(file);const buf=await resp.arrayBuffer();
+    const resp=await fetch(file);
+    const buf=await resp.arrayBuffer();
     const offCtx=new OfflineAudioContext(1,1,44100);
     const ab=await offCtx.decodeAudioData(buf);
     const rawData=ab.getChannelData(0);
     WV_DATA_CACHE[file]=rawData;
-    drawWaveformFromData(canvas,rawData,startRatio,endRatio);
-    // Remplissage semi-transparent sous la waveform
-    const grad=c.createLinearGradient(0,0,0,H);
-    grad.addColorStop(0,'rgba(0,160,220,0.15)');
-    grad.addColorStop(0.5,'rgba(0,160,220,0.06)');
-    grad.addColorStop(1,'rgba(0,160,220,0.15)');
-    c.fillStyle=grad;
-    c.beginPath();c.moveTo(0,H/2);
-    for(let x=0;x<W;x++){
-      let mx=0;
-      for(let j=0;j<step;j++){const v=Math.abs(data[x*step+j]||0);if(v>mx)mx=v;}
-      const h2=Math.round(mx*(H/2));
-      c.lineTo(x,H/2-h2);
-    }
-    for(let x=W-1;x>=0;x--){
-      let mx=0;
-      for(let j=0;j<step;j++){const v=Math.abs(data[x*step+j]||0);if(v>mx)mx=v;}
-      const h2=Math.round(mx*(H/2));
-      c.lineTo(x,H/2+h2);
-    }
-    c.closePath();c.fill();
+    drawWaveformFromData(canvas, rawData, startRatio, endRatio);
     return ab.duration;
-  }catch(e){return 0;}
+  }catch(e){ console.warn('waveform',e); return 0; }
+}
+
+function drawWaveformFromData(canvas, data, startRatio=0, endRatio=1){
+  const W=canvas.width, H=canvas.height;
+  const c=canvas.getContext('2d');
+  c.fillStyle='#06101e';
+  c.fillRect(0,0,W,H);
+  // Ligne centrale
+  c.strokeStyle='#1a3050'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(0,H/2); c.lineTo(W,H/2); c.stroke();
+
+  const start=Math.floor(startRatio*data.length);
+  const end=Math.floor(endRatio*data.length);
+  const len=Math.max(1,end-start);
+  const step=Math.max(1,Math.floor(len/W));
+
+  // Remplissage sous la courbe
+  c.fillStyle='rgba(0,140,200,0.10)';
+  c.beginPath(); c.moveTo(0,H/2);
+  for(let x=0;x<W;x++){
+    let mx=0;
+    for(let j=0;j<step;j++){const v=Math.abs(data[start+x*step+j]||0);if(v>mx)mx=v;}
+    c.lineTo(x, H/2 - Math.round(mx*(H/2)));
+  }
+  for(let x=W-1;x>=0;x--){
+    let mx=0;
+    for(let j=0;j<step;j++){const v=Math.abs(data[start+x*step+j]||0);if(v>mx)mx=v;}
+    c.lineTo(x, H/2 + Math.round(mx*(H/2)));
+  }
+  c.closePath(); c.fill();
+
+  // Barres min/max
+  for(let x=0;x<W;x++){
+    let mn=0,mx=0;
+    for(let j=0;j<step;j++){
+      const v=data[start+x*step+j]||0;
+      if(v<mn)mn=v; if(v>mx)mx=v;
+    }
+    const bright=Math.min(220, 70+Math.round((x/W)*120));
+    c.strokeStyle=`rgb(0,${bright},${Math.min(255,bright+80)})`;
+    c.lineWidth=1;
+    const y1=Math.round((1+mn)/2*H);
+    const y2=Math.round((1+mx)/2*H);
+    c.beginPath(); c.moveTo(x+.5,y1); c.lineTo(x+.5,Math.max(y2,y1+1)); c.stroke();
+  }
 }
 
 // ── Classe Diffuser ──
@@ -1859,7 +1884,8 @@ class Diffuser{
     const offset=this.tracks.length;
     this.tracks.push(...newTracks);
     this.durs.push(...newTracks.map(()=>0));
-    // Créer un Audio() par nouvelle piste
+    // Créer un Audio() par nouvelle piste — PAS de listener 'ended' ici,
+    // c'est _startTrack qui pose audio.onended avec le token de session
     newTracks.forEach((_,i)=>{
       const idx=offset+i;
       const a=new Audio();
@@ -1870,20 +1896,17 @@ class Diffuser{
           this.tracks[idx].outCue=a.duration;
         this.render();
         const cv=document.getElementById(`wv-${this.idx}-${idx}`);
-        if(cv){cv.width=400;cv.height=52;drawWaveform(cv,this.tracks[idx].file);}
+        if(cv){cv.width=800;cv.height=80;drawWaveform(cv,this.tracks[idx].file);}
       });
-      a.addEventListener('ended',()=>this._onTrackEnded(idx));
+      // !! PAS de addEventListener('ended') — géré par audio.onended + token dans _startTrack
       this.audios[idx]=a;
     });
     this.render();
   }
 
   _onTrackEnded(i){
-    // le son est terminé naturellement (après outCue déjà géré dans tick)
-    if(this.ci===i){
-      this.playing=false;
-      this.render();
-    }
+    // Méthode conservée pour compatibilité mais désactivée —
+    // la suppression et l'avance sont gérées par audio.onended + token dans _startTrack
   }
 
   _effectiveDur(i){return this.durs[i]||0;}
@@ -3052,10 +3075,7 @@ function insertMacroInDiff(diffIdx,macroKey,btn){
   }
 }
 
-function fireMacroTrack(macroKey){
-  const m=MACROS[macroKey];if(!m)return;
-  m.run();
-}
+
 
 // ══════════════════════════════════════
 // VU STRIPS LATÉRAUX SUR CHAQUE DIFFUSEUR
