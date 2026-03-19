@@ -30,7 +30,33 @@
   .card.is-dark-card .card-footer{background:var(--s3);border-top:1px solid var(--border);border-radius:0 0 8px 8px;padding:.6rem 1rem;gap:1rem;}
   .card.is-dark-card .card-footer-item{color:var(--txt-dim);font-family:var(--mono);font-size:11px;border:none;padding:0;justify-content:flex-start;}
   .diff-badge{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;padding:2px 10px;border-radius:4px;}
-  .notification.is-onair{background:var(--s2);border:1px solid var(--border);border-top:none;border-radius:0;padding:.5rem 1rem;margin:0;display:flex;align-items:center;justify-content:space-between;}
+  .notification.is-onair{background:var(--s2);border:1px solid var(--border);border-top:none;border-radius:0;padding:.5rem 1rem;margin:0;display:flex;align-items:center;justify-content:space-between;transition:background .2s,border-color .2s;}
+
+  /* ── État EN DIRECT ── */
+  .diff-card-header.is-live{
+    background:linear-gradient(90deg,#2a0505 0%,#1a0808 100%)!important;
+    border-bottom-color:#8a1010!important;
+    transition:background .2s,border-color .2s;
+  }
+  .diff-card-header.is-live .diff-badge{
+    background:#6a0000!important;color:#ff6060!important;border-color:#aa2020!important;
+    box-shadow:0 0 8px rgba(220,30,30,.4);
+  }
+  .diff-onair-bar.is-live{
+    background:linear-gradient(90deg,#3a0808 0%,#250505 100%)!important;
+    border-color:#7a1010!important;
+    transition:background .2s,border-color .2s;
+  }
+  .diff-onair-bar.is-live .onair-title{ color:#ff5050!important; }
+  .diff-onair-bar.is-live .dot-live{
+    background:#ff3030!important;
+    box-shadow:0 0 6px #ff3030,0 0 12px rgba(255,30,30,.6)!important;
+    animation:live-pulse .8s ease-in-out infinite!important;
+  }
+  @keyframes live-pulse{
+    0%,100%{opacity:1;box-shadow:0 0 6px #ff3030,0 0 14px rgba(255,30,30,.5);}
+    50%{opacity:.6;box-shadow:0 0 3px #ff3030;}
+  }
   .onair-title{font-family:var(--display);font-size:22px;font-weight:700;color:var(--txt);letter-spacing:3px;}
   .onair-track-name{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:2px;color:var(--yellow);margin-left:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px;transition:opacity .3s;}
   .dot-live{display:inline-block;width:8px;height:8px;background:var(--red);border-radius:50%;animation:blink 1s step-start infinite;vertical-align:middle;margin-right:6px;}
@@ -1140,7 +1166,7 @@
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
 <!-- ══ DIFF 1 ══ -->
 <div class="card is-dark-card">
-  <div class="card-header" style="display:flex;align-items:stretch">
+  <div class="card-header diff-card-header" id="diff-header-0" style="display:flex;align-items:stretch">
     <div style="display:flex;align-items:center;padding:0 1rem;border-right:1px solid #1e3060">
       <span class="tag diff-badge" style="background:#1a2a00;color:#f5c400;border:1px solid #3a4a00">DIFF 1</span>
     </div>
@@ -1152,7 +1178,7 @@
       <div class="timer-box"><span class="label-txt">Avancé</span><span class="val-txt" id="c1-avance" style="color:#f5c400">00:00:00</span></div>
     </div>
   </div>
-  <div class="notification is-onair">
+  <div class="notification is-onair diff-onair-bar" id="diff-onair-0">
     <div style="display:flex;align-items:center;gap:10px">
       <span class="dot-live"></span><span class="onair-title">DIFF 1</span><span id="onair-track-0" class="onair-track-name"></span>
     </div>
@@ -1226,7 +1252,7 @@
 
 <!-- ══ DIFF 2 ══ -->
 <div class="card is-dark-card">
-  <div class="card-header" style="display:flex;align-items:stretch">
+  <div class="card-header diff-card-header" id="diff-header-1" id="diff-header-4" style="display:flex;align-items:stretch">
     <div style="display:flex;align-items:center;padding:0 1rem;border-right:1px solid #1e3060">
       <span class="tag diff-badge" style="background:#160d2a;color:#9b5de5;border:1px solid #6a3aaa">DIFF 2</span>
     </div>
@@ -1238,7 +1264,7 @@
       <div class="timer-box"><span class="label-txt">Avancé</span><span class="val-txt" id="c2-avance" style="color:#f5c400">00:00:00</span></div>
     </div>
   </div>
-  <div class="notification is-onair">
+  <div class="notification is-onair diff-onair-bar" id="diff-onair-1">
     <div style="display:flex;align-items:center;gap:10px">
       <span class="dot-live"></span><span class="onair-title">DIFF 2</span><span id="onair-track-1" class="onair-track-name"></span>
     </div>
@@ -1316,7 +1342,7 @@
 <!-- ══ NATIONAL ══ -->
 <div class="column is-full">
 <div class="card is-pub-card">
-  <div class="card-header" style="display:flex;align-items:stretch">
+  <div class="card-header diff-card-header" id="diff-header-5" style="display:flex;align-items:stretch">
     <div style="display:flex;align-items:center;padding:0 .75rem;border-right:1px solid #2a2e34">
       <span class="tag diff-badge" style="background:#1c1c1c;color:#909090;border:1px solid #404040;letter-spacing:4px">NATIONAL</span>
     </div>
@@ -1328,7 +1354,7 @@
       <div class="timer-box"><span class="label-txt" style="color:#3a4048">Avancé</span><span class="val-txt" id="pn-avant" style="color:#5a6370">00:00:00</span></div>
     </div>
   </div>
-  <div class="notification is-onair" style="padding:.4rem .75rem">
+  <div class="notification is-onair diff-onair-bar" id="diff-onair-5" style="padding:.4rem .75rem">
     <div style="display:flex;align-items:center;gap:8px">
       <span class="dot-live" style="background:#5a6370"></span>
       <span class="onair-title" style="font-size:16px;letter-spacing:4px;color:#6a7280">NATIONAL</span><span id="onair-track-5" class="onair-track-name" style="font-size:13px;color:#8a9098"></span>
@@ -1387,7 +1413,7 @@
 
 <!-- PUB SAT -->
 <div class="card is-pub-card">
-  <div class="card-header" style="display:flex;align-items:stretch">
+  <div class="card-header diff-card-header" id="diff-header-2" style="display:flex;align-items:stretch">
     <div style="display:flex;align-items:center;padding:0 .75rem;border-right:1px solid #1e3060">
       <span class="tag diff-badge" style="background:#1a2a00;color:#f5c400;border:1px solid #3a4a00">PUB SAT</span>
     </div>
@@ -1399,7 +1425,7 @@
       <div class="timer-box"><span class="label-txt">Avancé</span><span class="val-txt" id="ps-avant" style="color:#f5c400">00:00:00</span></div>
     </div>
   </div>
-  <div class="notification is-onair" style="padding:.4rem .75rem">
+  <div class="notification is-onair diff-onair-bar" id="diff-onair-2" style="padding:.4rem .75rem">
     <div style="display:flex;align-items:center;gap:8px">
       <span class="dot-live"></span><span class="onair-title" style="font-size:16px;letter-spacing:2px">PUB SAT</span>
     </div>
@@ -1453,7 +1479,7 @@
 
 <!-- PUB DAB+ -->
 <div class="card is-pub-card">
-  <div class="card-header" style="display:flex;align-items:stretch">
+  <div class="card-header diff-card-header" id="diff-header-3" style="display:flex;align-items:stretch">
     <div style="display:flex;align-items:center;padding:0 .75rem;border-right:1px solid #1e3060">
       <span class="tag diff-badge" style="background:#001a2a;color:#00d4f0;border:1px solid #003a5a">PUB DAB+</span>
     </div>
@@ -1465,7 +1491,7 @@
       <div class="timer-box"><span class="label-txt">Avancé</span><span class="val-txt" id="pd-avant" style="color:#f5c400">00:00:00</span></div>
     </div>
   </div>
-  <div class="notification is-onair" style="padding:.4rem .75rem">
+  <div class="notification is-onair diff-onair-bar" id="diff-onair-3" style="padding:.4rem .75rem">
     <div style="display:flex;align-items:center;gap:8px">
       <span class="dot-live"></span><span class="onair-title" style="font-size:16px;letter-spacing:2px">PUB DAB+</span>
     </div>
@@ -1531,7 +1557,7 @@
       <div class="timer-box"><span class="label-txt">Avancé</span><span class="val-txt" id="ph-avant" style="color:#f5c400">00:00:00</span></div>
     </div>
   </div>
-  <div class="notification is-onair" style="padding:.4rem .75rem">
+  <div class="notification is-onair diff-onair-bar" id="diff-onair-4" style="padding:.4rem .75rem">
     <div style="display:flex;align-items:center;gap:8px">
       <span class="dot-live"></span><span class="onair-title" style="font-size:16px;letter-spacing:2px">PUB Hz</span>
     </div>
@@ -2450,6 +2476,11 @@ class Diffuser{
       trackNameEl.textContent=activeTrack&&!activeTrack.isMacro?'— '+activeTrack.title:'';
       trackNameEl.style.opacity=activeTrack?'1':'0';
     }
+    // ── Indicateur visuel EN DIRECT : header + barre rouge ──
+    const hdr=document.getElementById('diff-header-'+this.idx);
+    const bar=document.getElementById('diff-onair-'+this.idx);
+    if(hdr) hdr.classList.toggle('is-live', this.playing);
+    if(bar) bar.classList.toggle('is-live', this.playing);
   }
 
   _bindHandles(wvId,trackIdx){
