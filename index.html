@@ -947,9 +947,24 @@
   </div>
   <div class="card-footer">
     <span class="card-footer-item">Écoulé&nbsp;<strong id="ph-micros" style="color:#f07800;font-family:var(--mono)">00:00</strong></span>
-    <span class="card-footer-item" style="margin-left:auto;justify-content:flex-end">Total<!-- Panneau Rendez-vous -->
+    <span class="card-footer-item" style="margin-left:auto;justify-content:flex-end">Total&nbsp;<strong id="ph-total" style="color:#ddeeff;font-family:var(--mono);font-size:15px;letter-spacing:2px">00:00:00</strong>&nbsp;<span id="ph-suffix" style="color:#00d4f0;font-family:var(--display);font-size:14px;font-weight:700">A</span></span>
+  </div>
+</div>
+
+</div><!-- /grid PUB -->
+</div><!-- /column PUB -->
+
+<!-- Éléments cachés pour la compatibilité JS -->
+<span id="ps-avance" style="display:none"></span>
+<span id="pd-avance" style="display:none"></span>
+<span id="ph-avance" style="display:none"></span>
+<span id="pn-avance" style="display:none"></span>
+</div></section>
+
+</div><!-- /tab-diffusion -->
+
 <div id="tab-rdv" class="tab-panel">
-<div class="rdv-section" style="min-height:80vh">
+<div class="rdv-section" style="min-height:80vh;padding-bottom:120px">
 
   <!-- ── SECTION RENDEZ-VOUS ── -->
   <div class="rdv-title">Fenêtres de rendez-vous</div>
@@ -1032,9 +1047,8 @@
 </div>
 </div><!-- /tab-rdv -->
 
-<!-- Panneau Macros -->
 <div id="tab-macros" class="tab-panel">
-<div class="rdv-section" style="min-height:80vh">
+<div class="rdv-section" style="min-height:80vh;padding-bottom:120px">
   <div class="rdv-title">Macros</div>
   <p style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);margin-bottom:1rem;letter-spacing:1px;">
     Glisse une macro dans n'importe quelle playlist pour l'insérer comme action déclenchée à la lecture.
@@ -1070,6 +1084,30 @@
 </div>
 </div><!-- /tab-macros -->
 
+<!-- VU MÈTRES STICKY : DIFF 1 + DIFF 2 — toujours visible -->
+<div class="vu-section">
+  <div class="vu-row-title">Diffuseurs</div>
+  <div class="vu-row-wrap">
+    <div class="vu-wrap" style="flex:1">
+      <div class="vu-label-block">
+        <div class="vu-main-title">DIFF 1</div>
+        <div class="vu-db-group"><div class="vu-db-val" id="vu1-db">—∞</div><div class="vu-db-unit">dB</div></div>
+      </div>
+      <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
+      <div class="vu-channel-v"><div class="vu-meter-v" id="vu1-L"></div><div class="vu-ch-label">L</div></div>
+      <div class="vu-channel-v"><div class="vu-meter-v" id="vu1-R"></div><div class="vu-ch-label">R</div></div>
+    </div>
+    <div class="vu-wrap" style="flex:1">
+      <div class="vu-label-block">
+        <div class="vu-main-title">DIFF 2</div>
+        <div class="vu-db-group"><div class="vu-db-val" id="vu-d2-db" style="color:#9b5de5">—∞</div><div class="vu-db-unit">dB</div></div>
+      </div>
+      <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
+      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-d2-L"></div><div class="vu-ch-label">L</div></div>
+      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-d2-R"></div><div class="vu-ch-label">R</div></div>
+    </div>
+  </div>
+</div>
 
 <!-- FLUX DE DIFFUSION — tout en bas -->
 <div style="height:2rem;background:var(--bg)"></div>
