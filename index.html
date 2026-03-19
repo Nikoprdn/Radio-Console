@@ -734,6 +734,9 @@
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(0,'raccro');flashMacroItem(this)">
             <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
           </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(0,'stop3');flashMacroItem(this)" style="border-top:1px solid #3a1010">
+            <div><div class="mdrop-badge" style="color:#e03020;border-color:#e03020">STOP −3s</div><div class="mdrop-desc">Arrêt avec délai 3s</div></div>
+          </div>
         </div>
       </div>
       <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060">PISTE <strong id="c1-counter" style="color:#5a7090;margin-left:4px">0/0</strong></span>
@@ -815,6 +818,9 @@
           </div>
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(1,'raccro');flashMacroItem(this)">
             <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
+          </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(1,'stop3');flashMacroItem(this)" style="border-top:1px solid #3a1010">
+            <div><div class="mdrop-badge" style="color:#e03020;border-color:#e03020">STOP −3s</div><div class="mdrop-desc">Arrêt avec délai 3s</div></div>
           </div>
         </div>
       </div>
@@ -902,6 +908,9 @@
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(5,'raccro');flashMacroItem(this)">
             <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
           </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(5,'stop3');flashMacroItem(this)" style="border-top:1px solid #3a1010">
+            <div><div class="mdrop-badge" style="color:#e03020;border-color:#e03020">STOP −3s</div><div class="mdrop-desc">Arrêt avec délai 3s</div></div>
+          </div>
         </div>
       </div>
       <span class="tag" style="background:#141618;color:#3a4048;border:1px solid #2a2e34;font-size:9px">PISTE <strong id="pn-counter" style="color:#4a5260;margin-left:3px">0/0</strong></span>
@@ -969,6 +978,9 @@
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(2,'raccro');flashMacroItem(this)">
             <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
           </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(2,'stop3');flashMacroItem(this)" style="border-top:1px solid #3a1010">
+            <div><div class="mdrop-badge" style="color:#e03020;border-color:#e03020">STOP −3s</div><div class="mdrop-desc">Arrêt avec délai 3s</div></div>
+          </div>
         </div>
       </div>
       <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060;font-size:9px">PISTE <strong id="ps-counter" style="color:#5a7090;margin-left:3px">0/0</strong></span>
@@ -1031,6 +1043,9 @@
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(3,'raccro');flashMacroItem(this)">
             <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
           </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(3,'stop3');flashMacroItem(this)" style="border-top:1px solid #3a1010">
+            <div><div class="mdrop-badge" style="color:#e03020;border-color:#e03020">STOP −3s</div><div class="mdrop-desc">Arrêt avec délai 3s</div></div>
+          </div>
         </div>
       </div>
       <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060;font-size:9px">PISTE <strong id="pd-counter" style="color:#5a7090;margin-left:3px">0/0</strong></span>
@@ -1092,6 +1107,9 @@
           </div>
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(4,'raccro');flashMacroItem(this)">
             <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
+          </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(4,'stop3');flashMacroItem(this)" style="border-top:1px solid #3a1010">
+            <div><div class="mdrop-badge" style="color:#e03020;border-color:#e03020">STOP −3s</div><div class="mdrop-desc">Arrêt avec délai 3s</div></div>
           </div>
         </div>
       </div>
@@ -1281,6 +1299,26 @@
       </div>
       <div style="border-top:1px solid var(--border);padding-top:8px">
         <button class="macro-run-btn" id="macro-raccro-btn" onclick="runMacro('raccro')">▶ EXÉCUTER MAINTENANT</button>
+      </div>
+    </div>
+
+    <!-- STOP −3s -->
+    <div class="macro-card" style="border-color:#3a1010">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span class="diff-badge" style="background:#1a0000;color:#e03020;border:1px solid #5a1010;letter-spacing:3px;font-size:11px">STOP −3s</span>
+      </div>
+      <div class="macro-desc" style="margin-bottom:10px">Arrête le diffuseur qui la lit, après 3 secondes</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);margin-bottom:8px;letter-spacing:1px">AJOUTER DANS →</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(0,'stop3',this)">DIFF 1</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(1,'stop3',this)">DIFF 2</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(2,'stop3',this)">PUB SAT</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(3,'stop3',this)">PUB DAB+</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(4,'stop3',this)">PUB Hz</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(5,'stop3',this)">NATIONAL</button>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:8px">
+        <button class="macro-run-btn" id="macro-stop3-btn" onclick="runMacro('stop3')" style="border-color:#5a1010;color:#e03020">▶ EXÉCUTER MAINTENANT</button>
       </div>
     </div>
 
@@ -1750,7 +1788,7 @@ class Diffuser{
     const t=this.tracks[i];
     // Si c'est une macro, l'exécuter et passer à la suivante
     if(t && t.isMacro){
-      if(typeof fireMacroTrack==='function') fireMacroTrack(t.macroKey);
+      if(typeof fireMacroTrack==='function') fireMacroTrack(t.macroKey, this.idx);
       // Auto-avance vers la piste suivante
       setTimeout(()=>{
         if(this.playing){
@@ -2526,38 +2564,69 @@ function rdvTick(){
 const MACROS={
   nat:{
     label:'START NAT',
-    run(){
+    run(diffIdx){
       if(D[5]&&!D[5].playing) D[5].togglePlay();
     }
   },
   loc:{
     label:'START LOC',
-    run(){
+    run(diffIdx){
       [2,3,4].forEach(i=>{ if(D[i]&&!D[i].playing) D[i].togglePlay(); });
     }
   },
   raccro:{
     label:'RACCRO',
-    run(){
-      // Lance le diffuseur DIFF 1
+    run(diffIdx){
       if(D[0]&&!D[0].playing) D[0].togglePlay();
+    }
+  },
+  stop3:{
+    label:'STOP −3s',
+    run(diffIdx){
+      // Stoppe le diffuseur qui contient cette macro, avec un délai de 3 secondes
+      const targetIdx = (diffIdx !== undefined && diffIdx !== null) ? diffIdx : 0;
+      const d = D[targetIdx];
+      if(!d) return;
+      // Afficher un compte à rebours visuel sur le footer du diffuseur
+      const cfg = CONFIGS[targetIdx];
+      const totalEl = cfg ? document.getElementById(cfg.ids.total) : null;
+      let remaining = 3;
+      const origText = totalEl ? totalEl.textContent : null;
+      const tick = setInterval(()=>{
+        if(totalEl){
+          totalEl.textContent = '00:00:0' + remaining;
+          totalEl.style.color = '#e03020';
+          totalEl.style.animation = 'silence-blink .5s step-start infinite';
+        }
+        remaining--;
+        if(remaining < 0){
+          clearInterval(tick);
+          if(totalEl){
+            totalEl.style.animation = '';
+            totalEl.style.color = '';
+          }
+          if(d.playing) d.stopAll();
+        }
+      }, 1000);
     }
   }
 };
 
-function runMacro(key){
+function fireMacroTrack(macroKey, diffIdx){
+  const m=MACROS[macroKey];if(!m)return;
+  m.run(diffIdx);
+}
+
+function runMacro(key, diffIdx){
   const m=MACROS[key]; if(!m)return;
-  m.run();
+  m.run(diffIdx);
   const btn=document.getElementById('macro-'+key+'-btn');
   if(btn){
     btn.classList.add('running');
     btn.textContent='▶ EN COURS';
-    setTimeout(()=>{ btn.classList.remove('running'); btn.textContent='▶ EXÉCUTER'; },2000);
+    setTimeout(()=>{ btn.classList.remove('running'); btn.textContent='▶ EXÉCUTER'; },3500);
   }
 }
-
-// Compatibilité : rdvToggleTarget / rdvWinAdj / rdvToggleArm / rdvCancel restent vides
-// (les popups DIFF 1/2 sont maintenant pilotés par rdvMaster)
 function rdvWinAdj(){}
 function rdvToggleArm(){}
 function rdvCancel(idx){
