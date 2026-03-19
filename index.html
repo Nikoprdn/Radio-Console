@@ -44,9 +44,66 @@
   .table.is-radio tbody tr{border-bottom:1px solid var(--border);cursor:pointer;position:relative;overflow:hidden;}
   .table.is-radio tbody tr:hover td{background:#0e1830;}
   .table.is-radio tbody td{border-color:var(--border)!important;color:var(--txt-dim);padding:0 10px;height:56px;vertical-align:middle;white-space:nowrap;}
-  .table.is-radio tbody tr.row-active{background:#160505;border-left:3px solid var(--red);}
-  .table.is-radio tbody tr.row-active td{position:relative;z-index:1;}
-  .table.is-radio tbody tr.row-active::before{content:'';position:absolute;inset:0;background:#2a0808;z-index:0;transform-origin:left;transform:scaleX(var(--prog,0));transition:transform .1s linear;}
+
+  /* ── Ligne active : grande, waveform en fond ── */
+  .table.is-radio tbody tr.row-active{
+    background:#080a10;
+    border-left:3px solid var(--red);
+    border-top:1px solid #3a0808;
+    border-bottom:1px solid #3a0808;
+  }
+  .table.is-radio tbody tr.row-active td{
+    position:relative;z-index:2;
+    height:96px; /* plus haute */
+    vertical-align:middle;
+  }
+  /* Fond de progression rouge */
+  .table.is-radio tbody tr.row-active::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,rgba(60,5,5,.9) 0%,rgba(30,3,3,.7) 100%);
+    z-index:0;transform-origin:left;transform:scaleX(var(--prog,0));
+    transition:transform .1s linear;
+  }
+  /* Waveform fond : canvas positionné en absolu z-index:1 */
+  .row-active-wv-bg{
+    position:absolute;inset:0;z-index:1;
+    width:100%;height:100%;
+    opacity:0.55;object-fit:fill;pointer-events:none;
+    display:block;
+  }
+  /* Titre en gros sur la ligne active */
+  .row-active-title{
+    font-family:var(--display);
+    font-size:22px;font-weight:700;
+    color:#ffffff;letter-spacing:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    text-shadow:0 1px 8px rgba(0,0,0,.8);
+    position:relative;z-index:3;
+  }
+  /* Timecode à droite sur ligne active */
+  .row-active-tc{
+    font-family:var(--mono);
+    font-size:13px;color:#ff4040;
+    letter-spacing:1px;font-weight:700;
+    position:relative;z-index:3;
+  }
+  /* Durée sur ligne active */
+  .row-active-dur{
+    font-family:var(--mono);font-size:11px;
+    color:#7a9ab8;position:relative;z-index:3;
+  }
+  /* Horaire sur ligne active */
+  .row-active-time{
+    font-family:var(--mono);font-size:11px;
+    color:var(--cyan-dim);position:relative;z-index:3;
+  }
+  /* IN/OUT labels sous le titre sur ligne active */
+  .row-active-cues{
+    font-family:var(--mono);font-size:8px;
+    color:rgba(0,212,240,.6);letter-spacing:1px;
+    position:relative;z-index:3;margin-top:2px;
+  }
+
   .table.is-radio tbody tr.row-next{background:#071408;border-left:3px solid var(--green-dk);}
   .cell-num{width:36px;font-family:var(--mono);font-size:12px;text-align:center;}
   .cell-num.is-playing{color:var(--red)!important;}
@@ -56,7 +113,6 @@
   .cell-simple{font-size:12px;color:#7a98b8!important;overflow:hidden;text-overflow:ellipsis;display:block;max-width:150px;}
   .row-active .cell-simple{color:#ff6060!important;}
   .row-active .cell-num{color:#ff4040!important;}
-  .row-active .cell-cd{color:#ff5050!important;font-size:14px!important;}
   .row-next .cell-simple{color:#40d870!important;}
   .row-next .cell-cd{color:#40d870!important;}
   .cell-dur{width:64px;font-family:var(--mono);font-size:11px;text-align:right;}
@@ -2045,6 +2101,52 @@ function drawWaveformFromData(canvas, data, startRatio=0, endRatio=1){
   }
 }
 
+// Waveform fond de ligne active — couleurs broadcast, semi-transparent
+function drawWaveformBg(canvas, data){
+  const W=canvas.width, H=canvas.height;
+  const c=canvas.getContext('2d');
+  c.clearRect(0,0,W,H);
+  // Fond sombre semi-transparent
+  c.fillStyle='rgba(4,6,16,.0)';
+  c.fillRect(0,0,W,H);
+
+  const step=Math.max(1,Math.floor(data.length/W));
+
+  // Remplissage cyan semi-transparent
+  c.fillStyle='rgba(0,160,220,0.18)';
+  c.beginPath(); c.moveTo(0,H/2);
+  for(let x=0;x<W;x++){
+    let mx=0;
+    for(let j=0;j<step;j++){const v=Math.abs(data[x*step+j]||0);if(v>mx)mx=v;}
+    c.lineTo(x, H/2 - mx*(H/2)*0.9);
+  }
+  for(let x=W-1;x>=0;x--){
+    let mx=0;
+    for(let j=0;j<step;j++){const v=Math.abs(data[x*step+j]||0);if(v>mx)mx=v;}
+    c.lineTo(x, H/2 + mx*(H/2)*0.9);
+  }
+  c.closePath(); c.fill();
+
+  // Barres min/max — bleu cyan vif
+  for(let x=0;x<W;x++){
+    let mn=0,mx=0;
+    for(let j=0;j<step;j++){
+      const v=data[x*step+j]||0;
+      if(v<mn)mn=v; if(v>mx)mx=v;
+    }
+    // Couleur : cyan pour le corps, rouge/orange pour les pics
+    const amp=Math.max(Math.abs(mn),Math.abs(mx));
+    const r=amp>0.8?255:amp>0.6?Math.round(amp*200):0;
+    const g=Math.round(160+amp*60);
+    const b=Math.round(220-amp*80);
+    c.strokeStyle=`rgba(${r},${g},${b},0.75)`;
+    c.lineWidth=1;
+    const y1=Math.round((1+mn)/2*H);
+    const y2=Math.round((1+mx)/2*H);
+    c.beginPath(); c.moveTo(x+.5,y1); c.lineTo(x+.5,Math.max(y2,y1+1)); c.stroke();
+  }
+}
+
 // ── Classe Diffuser ──
 class Diffuser{
   constructor(cfg,diffIdx){
@@ -2140,35 +2242,101 @@ class Diffuser{
         return;
       }
 
-      tr.innerHTML=`
-        <td class="cell-num${isActive?' is-playing':''}">${isActive?'▶':(i+1)}</td>
-        <td class="cell-time"><span>${hhmm}</span><span class="cell-sub">${sub}</span></td>
-        <td class="cell-title" style="display:flex;align-items:center;gap:4px">${delBtn}<span class="cell-simple" title="${t.title}">${t.title}</span></td>
-        <td class="cell-wv">
-          <div class="wv-outer">
-            <div class="wv-wrap" id="${wvId}-wrap">
-              <canvas class="wv-canvas" id="${wvId}" width="800" height="80"></canvas>
-              <div class="wv-pre"      id="${wvId}-pre"  style="width:${inPct}%"></div>
-              <div class="wv-post"     id="${wvId}-post" style="left:${outPct}%"></div>
-              <div class="wv-playhead" id="${wvId}-ph"></div>
-              <div class="wv-handle wv-handle-in"  id="${wvId}-in"  data-label="IN"  style="left:${inPct}%"></div>
-              <div class="wv-handle wv-handle-out" id="${wvId}-out" data-label="OUT" style="left:${outPct}%"></div>
-              <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" title="Éditer IN/OUT">✎</button>
+      if(isActive){
+        // ── LIGNE ACTIVE : waveform en fond pleine ligne, titre en gros ──
+        tr.innerHTML=`
+          <!-- Canvas waveform fond (z-index:1, absolu) -->
+          <canvas class="row-active-wv-bg" id="${wvId}-bg" width="1200" height="96"></canvas>
+          <!-- Poignées IN/OUT fond -->
+          <div style="position:absolute;top:0;bottom:0;z-index:1;pointer-events:none;
+            left:${inPct}%;width:2px;background:rgba(0,255,96,.5)"></div>
+          <div style="position:absolute;top:0;bottom:0;z-index:1;pointer-events:none;
+            left:${outPct}%;width:2px;background:rgba(255,40,40,.5)"></div>
+          <!-- Numéro -->
+          <td class="cell-num is-playing" style="width:32px">▶</td>
+          <!-- Horaire -->
+          <td class="cell-time" style="width:72px">
+            <span class="row-active-time">${hhmm}</span>
+            <span class="cell-sub" style="color:rgba(0,212,240,.5)">${sub}</span>
+          </td>
+          <!-- Titre en gros -->
+          <td class="cell-title" style="max-width:none;flex:1;padding-left:8px!important">
+            ${delBtn}
+            <div>
+              <div class="row-active-title">${t.title}</div>
+              <div class="row-active-cues">IN ${fmtMs(this._inOf(i))} &nbsp;·&nbsp; OUT ${fmtMs(this._outOf(i))}</div>
             </div>
-            <div class="wv-labels">
-              <span class="wv-label in-lbl"  id="${wvId}-inlbl">IN ${fmtMs(this._inOf(i))}</span>
-              <span class="wv-label out-lbl" id="${wvId}-outlbl">OUT ${fmtMs(this._outOf(i))}</span>
+          </td>
+          <!-- Waveform interactive (mini, à droite) -->
+          <td class="cell-wv" style="width:220px;padding:4px 6px!important">
+            <div class="wv-outer" style="padding:0">
+              <div class="wv-wrap" id="${wvId}-wrap" style="height:80px">
+                <canvas class="wv-canvas" id="${wvId}" width="800" height="80"></canvas>
+                <div class="wv-pre"  id="${wvId}-pre"  style="width:${inPct}%"></div>
+                <div class="wv-post" id="${wvId}-post" style="left:${outPct}%"></div>
+                <div class="wv-playhead" id="${wvId}-ph"></div>
+                <div class="wv-handle wv-handle-in"  id="${wvId}-in"  data-label="IN"  style="left:${inPct}%"></div>
+                <div class="wv-handle wv-handle-out" id="${wvId}-out" data-label="OUT" style="left:${outPct}%"></div>
+                <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" title="Éditer IN/OUT">✎</button>
+              </div>
+              <div class="wv-labels">
+                <span class="wv-label in-lbl"  id="${wvId}-inlbl">IN ${fmtMs(this._inOf(i))}</span>
+                <span class="wv-label out-lbl" id="${wvId}-outlbl">OUT ${fmtMs(this._outOf(i))}</span>
+              </div>
             </div>
-          </div>
-        </td>
-        <td class="cell-dur">${fmtFull(this.durs[i]||0)}</td>
-        <td class="cell-cd">${cd}</td>
-        <td class="cell-bar"><span class="color-bar" style="background:${t.color}"></span></td>`;
-      tbody.appendChild(tr);
-      // Bind drag handles
-      this._bindHandles(wvId,i);
-      const cv=document.getElementById(wvId);
-      if(cv&&this.durs[i]>0){cv.width=800;cv.height=80;drawWaveform(cv,t.file);}
+          </td>
+          <!-- Durée -->
+          <td class="cell-dur"><span class="row-active-dur">${fmtFull(this.durs[i]||0)}</span></td>
+          <!-- Décompte en rouge -->
+          <td class="cell-cd"><span class="row-active-tc" id="${this.ids.body}-cd-${i}">${fmtFull(rem)}</span></td>
+          <!-- Barre couleur -->
+          <td class="cell-bar"><span class="color-bar" style="background:${t.color};height:96px"></span></td>`;
+        tbody.appendChild(tr);
+        this._bindHandles(wvId,i);
+        // Waveform mini (interactive)
+        const cv=document.getElementById(wvId);
+        if(cv&&this.durs[i]>0){cv.width=800;cv.height=80;drawWaveform(cv,t.file);}
+        // Waveform fond (grande, pleine ligne)
+        const bgCv=document.getElementById(wvId+'-bg');
+        if(bgCv&&this.durs[i]>0){
+          bgCv.width=1200;bgCv.height=96;
+          if(WV_DATA_CACHE[t.file]) drawWaveformBg(bgCv,WV_DATA_CACHE[t.file]);
+          else drawWaveform(document.createElement('canvas'),t.file).then(()=>{
+            if(WV_DATA_CACHE[t.file]&&document.getElementById(wvId+'-bg'))
+              drawWaveformBg(document.getElementById(wvId+'-bg'),WV_DATA_CACHE[t.file]);
+          });
+        }
+      } else {
+        // ── LIGNE NORMALE ──
+        tr.innerHTML=`
+          <td class="cell-num">${i+1}</td>
+          <td class="cell-time"><span>${hhmm}</span><span class="cell-sub">${sub}</span></td>
+          <td class="cell-title" style="display:flex;align-items:center;gap:4px">${delBtn}<span class="cell-simple" title="${t.title}">${t.title}</span></td>
+          <td class="cell-wv">
+            <div class="wv-outer">
+              <div class="wv-wrap" id="${wvId}-wrap">
+                <canvas class="wv-canvas" id="${wvId}" width="800" height="80"></canvas>
+                <div class="wv-pre"      id="${wvId}-pre"  style="width:${inPct}%"></div>
+                <div class="wv-post"     id="${wvId}-post" style="left:${outPct}%"></div>
+                <div class="wv-playhead" id="${wvId}-ph"></div>
+                <div class="wv-handle wv-handle-in"  id="${wvId}-in"  data-label="IN"  style="left:${inPct}%"></div>
+                <div class="wv-handle wv-handle-out" id="${wvId}-out" data-label="OUT" style="left:${outPct}%"></div>
+                <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" title="Éditer IN/OUT">✎</button>
+              </div>
+              <div class="wv-labels">
+                <span class="wv-label in-lbl"  id="${wvId}-inlbl">IN ${fmtMs(this._inOf(i))}</span>
+                <span class="wv-label out-lbl" id="${wvId}-outlbl">OUT ${fmtMs(this._outOf(i))}</span>
+              </div>
+            </div>
+          </td>
+          <td class="cell-dur">${fmtFull(this.durs[i]||0)}</td>
+          <td class="cell-cd">${fmtFull(this._playDur(i))}</td>
+          <td class="cell-bar"><span class="color-bar" style="background:${t.color}"></span></td>`;
+        tbody.appendChild(tr);
+        this._bindHandles(wvId,i);
+        const cv=document.getElementById(wvId);
+        if(cv&&this.durs[i]>0){cv.width=800;cv.height=80;drawWaveform(cv,t.file);}
+      }
     });
 
     document.getElementById(this.ids.counter).textContent=this.tracks.length?`${this.ci+1}/${this.tracks.length}`:'0/0';
