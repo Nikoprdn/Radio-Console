@@ -682,6 +682,9 @@
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(0,'loc');flashMacroItem(this)">
             <div><div class="mdrop-badge">START LOC</div><div class="mdrop-desc">Lance PUB SAT · DAB+ · Hz</div></div>
           </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(0,'raccro');flashMacroItem(this)">
+            <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
+          </div>
         </div>
       </div>
       <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060">PISTE <strong id="c1-counter" style="color:#5a7090;margin-left:4px">0/0</strong></span>
@@ -760,6 +763,9 @@
           </div>
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(1,'loc');flashMacroItem(this)">
             <div><div class="mdrop-badge">START LOC</div><div class="mdrop-desc">Lance PUB SAT · DAB+ · Hz</div></div>
+          </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(1,'raccro');flashMacroItem(this)">
+            <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
           </div>
         </div>
       </div>
@@ -844,6 +850,9 @@
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(5,'loc');flashMacroItem(this)">
             <div><div class="mdrop-badge">START LOC</div><div class="mdrop-desc">Lance PUB SAT · DAB+ · Hz</div></div>
           </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(5,'raccro');flashMacroItem(this)">
+            <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
+          </div>
         </div>
       </div>
       <span class="tag" style="background:#141618;color:#3a4048;border:1px solid #2a2e34;font-size:9px">PISTE <strong id="pn-counter" style="color:#4a5260;margin-left:3px">0/0</strong></span>
@@ -908,6 +917,9 @@
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(2,'loc');flashMacroItem(this)">
             <div><div class="mdrop-badge">START LOC</div><div class="mdrop-desc">Lance PUB SAT · DAB+ · Hz</div></div>
           </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(2,'raccro');flashMacroItem(this)">
+            <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
+          </div>
         </div>
       </div>
       <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060;font-size:9px">PISTE <strong id="ps-counter" style="color:#5a7090;margin-left:3px">0/0</strong></span>
@@ -967,6 +979,9 @@
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(3,'loc');flashMacroItem(this)">
             <div><div class="mdrop-badge">START LOC</div><div class="mdrop-desc">Lance PUB SAT · DAB+ · Hz</div></div>
           </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(3,'raccro');flashMacroItem(this)">
+            <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
+          </div>
         </div>
       </div>
       <span class="tag" style="background:#0c1428;color:#3a5070;border:1px solid #1e3060;font-size:9px">PISTE <strong id="pd-counter" style="color:#5a7090;margin-left:3px">0/0</strong></span>
@@ -1025,6 +1040,9 @@
           </div>
           <div class="macro-dropdown-item" onclick="insertMacroInDiff(4,'loc');flashMacroItem(this)">
             <div><div class="mdrop-badge">START LOC</div><div class="mdrop-desc">Lance PUB SAT · DAB+ · Hz</div></div>
+          </div>
+          <div class="macro-dropdown-item" onclick="insertMacroInDiff(4,'raccro');flashMacroItem(this)">
+            <div><div class="mdrop-badge">RACCRO</div><div class="mdrop-desc">Lance DIFF 1</div></div>
           </div>
         </div>
       </div>
@@ -1194,6 +1212,26 @@
       </div>
       <div style="border-top:1px solid var(--border);padding-top:8px">
         <button class="macro-run-btn" id="macro-loc-btn" onclick="runMacro('loc')">▶ EXÉCUTER MAINTENANT</button>
+      </div>
+    </div>
+
+    <!-- RACCRO -->
+    <div class="macro-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span class="diff-badge" style="background:#001a0a;color:#00d96a;border:1px solid #004a20;letter-spacing:3px;font-size:11px">RACCRO</span>
+      </div>
+      <div class="macro-desc" style="margin-bottom:10px">Lance DIFF 1 (raccrocher au local)</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);margin-bottom:8px;letter-spacing:1px">AJOUTER DANS →</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(0,'raccro',this)">DIFF 1</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(1,'raccro',this)">DIFF 2</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(2,'raccro',this)">PUB SAT</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(3,'raccro',this)">PUB DAB+</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(4,'raccro',this)">PUB Hz</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(5,'raccro',this)">NATIONAL</button>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:8px">
+        <button class="macro-run-btn" id="macro-raccro-btn" onclick="runMacro('raccro')">▶ EXÉCUTER MAINTENANT</button>
       </div>
     </div>
 
@@ -1824,23 +1862,114 @@ D[1].togglePlay=function(){
   getCtx().resume(); _t1();
 };
 
-// ── VU PUB SAT / DAB+ / Hz (wirés sur leurs diffuseurs dédiés) ──
-// Chaque PUB diffuseur alimente le VU-mètre de sa sortie
-let vuSat=null, vuDab=null, vuHz=null;
+// ══════════════════════════════════════════════════════
+// ROUTAGE AUDIO : SAT / DAB+ / Hz
+// Chaque départ = PUB dédié + NATIONAL en parallèle
+// ══════════════════════════════════════════════════════
+let vuSat=null, vuDab=null, vuHz=null, vuNat=null;
+
+// Gains de mix par départ (somme PUB + NATIONAL)
+// Créés une seule fois au premier wireVU d'un départ
+const MIX_GAINS={sat:null, dab:null, hz:null}; // GainNode sommateur → monGn
+
+// Connecte une source audio à UN départ spécifique
+// Retourne un objet {aL, aR, gn} pour les analyseurs VU
+function wireToDepart(audioEl, depart){
+  const ctx=getCtx();
+  // Créer le monGn du départ si pas encore fait
+  if(!MON_GAINS[depart]){
+    const monGn=ctx.createGain(); monGn.gain.value=1;
+    MON_GAINS[depart]=monGn;
+    monGn.connect(ctx.destination);
+    applyListenMode();
+  }
+  const gn=ctx.createGain(); gn.gain.value=1;
+  const src=ctx.createMediaElementSource(audioEl);
+  const sp=ctx.createChannelSplitter(2), mg=ctx.createChannelMerger(2);
+  const aL=ctx.createAnalyser(), aR=ctx.createAnalyser();
+  aL.fftSize=1024; aR.fftSize=1024; aL.smoothingTimeConstant=0.8; aR.smoothingTimeConstant=0.8;
+  src.connect(gn); gn.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
+  aL.connect(mg,0,0); aR.connect(mg,0,1);
+  mg.connect(MON_GAINS[depart]); // → vers monGn du départ → destination
+  return {aL, aR, gn};
+}
+
+// ── PUB SAT (D[2]) → départ SAT ──
 const _t2=D[2].togglePlay.bind(D[2]);
 D[2].togglePlay=function(){
-  if(!vuSat){getCtx().resume();vuSat=wireVU(D[2].audios[D[2].ci]||new Audio(),'vu-sat-L','vu-sat-R');registerMonGain('sat',vuSat.monGn);registerVUGain('sat',vuSat.gn);}
+  if(!vuSat){
+    getCtx().resume();
+    vuSat=wireToDepart(D[2].audios[D[2].ci]||new Audio(),'sat');
+    // Rebrancher NATIONAL sur ce départ si déjà wiré
+    if(vuNat) wireNatToDepart('sat');
+    buildBars('vu-sat-L'); buildBars('vu-sat-R');
+  }
   getCtx().resume(); _t2();
 };
+
+// ── PUB DAB+ (D[3]) → départ DAB+ ──
 const _t3=D[3].togglePlay.bind(D[3]);
 D[3].togglePlay=function(){
-  if(!vuDab){getCtx().resume();vuDab=wireVU(D[3].audios[D[3].ci]||new Audio(),'vu-dab-L','vu-dab-R');registerMonGain('dab',vuDab.monGn);registerVUGain('dab',vuDab.gn);}
+  if(!vuDab){
+    getCtx().resume();
+    vuDab=wireToDepart(D[3].audios[D[3].ci]||new Audio(),'dab');
+    if(vuNat) wireNatToDepart('dab');
+    buildBars('vu-dab-L'); buildBars('vu-dab-R');
+  }
   getCtx().resume(); _t3();
 };
+
+// ── PUB Hz (D[4]) → départ Hz ──
 const _t4=D[4].togglePlay.bind(D[4]);
 D[4].togglePlay=function(){
-  if(!vuHz){getCtx().resume();vuHz=wireVU(D[4].audios[D[4].ci]||new Audio(),'vu-hz-L','vu-hz-R');registerMonGain('hz',vuHz.monGn);registerVUGain('hz',vuHz.gn);}
+  if(!vuHz){
+    getCtx().resume();
+    vuHz=wireToDepart(D[4].audios[D[4].ci]||new Audio(),'hz');
+    if(vuNat) wireNatToDepart('hz');
+    buildBars('vu-hz-L'); buildBars('vu-hz-R');
+  }
   getCtx().resume(); _t4();
+};
+
+// ── NATIONAL (D[5]) → les 3 départs simultanément ──
+// Fonction pour connecter NATIONAL à un départ spécifique
+const _natNodesToDepart={}; // {sat:gainNode, dab:gainNode, hz:gainNode}
+
+function wireNatToDepart(depart){
+  if(_natNodesToDepart[depart]) return; // déjà connecté
+  if(!vuNat || !MON_GAINS[depart]) return;
+  // Créer un gain de branchement dédié pour ce départ
+  const ctx=getCtx();
+  const gn=ctx.createGain(); gn.gain.value=1;
+  // On réutilise les analyseurs de vuNat, on crée juste un chemin vers ce monGn
+  // En pratique on connecte le merger de vuNat vers ce nouveau gain → monGn
+  vuNat._mg.connect(MON_GAINS[depart]);
+  _natNodesToDepart[depart]=gn;
+}
+
+const _t5=D[5].togglePlay.bind(D[5]);
+D[5].togglePlay=function(){
+  if(!vuNat){
+    getCtx().resume();
+    const ctx=getCtx();
+    const audioEl=D[5].audios[D[5].ci]||new Audio();
+    const gn=ctx.createGain(); gn.gain.value=1;
+    const src=ctx.createMediaElementSource(audioEl);
+    const sp=ctx.createChannelSplitter(2), _mg=ctx.createChannelMerger(2);
+    const aL=ctx.createAnalyser(), aR=ctx.createAnalyser();
+    aL.fftSize=1024; aR.fftSize=1024; aL.smoothingTimeConstant=0.8; aR.smoothingTimeConstant=0.8;
+    src.connect(gn); gn.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
+    aL.connect(_mg,0,0); aR.connect(_mg,0,1);
+    vuNat={aL, aR, gn, _mg};
+    buildBars('vu-sat-L'); buildBars('vu-sat-R');
+    buildBars('vu-dab-L'); buildBars('vu-dab-R');
+    buildBars('vu-hz-L');  buildBars('vu-hz-R');
+    // Connecter aux monGn des 3 départs déjà initialisés
+    ['sat','dab','hz'].forEach(dep=>{
+      if(MON_GAINS[dep]) { _mg.connect(MON_GAINS[dep]); _natNodesToDepart[dep]=true; }
+    });
+  }
+  getCtx().resume(); _t5();
 };
 
 // ── Initialiser les barres SAT/DAB+/Hz ──
@@ -2011,12 +2140,11 @@ function vuLoop(){
   // Flux de diffusion : directs depuis les PUB diffuseurs
   // Si PUB pas encore joué → fallback mix DIFF+RM
   let dbSat, dbDab, dbHz;
-  if(vuSat) { paintBars('vu-sat-L','vu-sat-R',vuSat.aL,vuSat.aR,'vu-sat-db',vuSat.gn,'#00d4f0'); dbSat=getDbFromVU(vuSat); }
-  else       { dbSat=paintMix('sat',[vu1,vu2]); }
-  if(vuDab) { paintBars('vu-dab-L','vu-dab-R',vuDab.aL,vuDab.aR,'vu-dab-db',vuDab.gn,'#00d4f0'); dbDab=getDbFromVU(vuDab); }
-  else       { dbDab=paintMix('dab',[vuD2,vu2]); }
-  if(vuHz)  { paintBars('vu-hz-L','vu-hz-R',  vuHz.aL, vuHz.aR, 'vu-hz-db', vuHz.gn, '#00d4f0'); dbHz=getDbFromVU(vuHz); }
-  else       { dbHz =paintMix('hz',[vu1,vuD2,vu2]); }
+  // Chaque départ = mix PUB dédié + NATIONAL
+  // On prend le max des deux pour le VU-mètre (signal le plus fort)
+  dbSat = paintMix('sat', [vuSat, vuNat].filter(Boolean)) || -60;
+  dbDab = paintMix('dab', [vuDab, vuNat].filter(Boolean)) || -60;
+  dbHz  = paintMix('hz',  [vuHz,  vuNat].filter(Boolean)) || -60;
   checkSilence('sat',dbSat);
   checkSilence('dab',dbDab);
   checkSilence('hz', dbHz);
@@ -2240,15 +2368,20 @@ const MACROS={
   nat:{
     label:'START NAT',
     run(){
-      // Lance le diffuseur NATIONAL (D[5])
       if(D[5]&&!D[5].playing) D[5].togglePlay();
     }
   },
   loc:{
     label:'START LOC',
     run(){
-      // Lance PUB SAT (D[2]), PUB DAB+ (D[3]), PUB Hz (D[4])
       [2,3,4].forEach(i=>{ if(D[i]&&!D[i].playing) D[i].togglePlay(); });
+    }
+  },
+  raccro:{
+    label:'RACCRO',
+    run(){
+      // Lance le diffuseur DIFF 1
+      if(D[0]&&!D[0].playing) D[0].togglePlay();
     }
   }
 };
