@@ -2723,9 +2723,17 @@ class Diffuser{
     if(this.tracks.length < 2) return;
     // La piste suivante est à l'index 1 (la 0 est encore en train de jouer)
     const next = this.tracks[1];
-    if(!next || next.isMacro){
-      // Piste macro ou invalide — gérer normalement
-      if(this.tracks.length > 1) this._startTrack(1);
+    if(!next) return;
+    // Si la prochaine piste est une macro : l'exécuter et sauter à la suivante
+    if(next.isMacro){
+      if(typeof fireMacroTrack==='function') fireMacroTrack(next.macroKey, this.idx);
+      this.tracks.splice(1,1);
+      this.durs.splice(1,1);
+      this.audios.splice(1,1);
+      this._updateFdzCount();
+      this.render();
+      // Reprendre la chaîne sur la nouvelle position 1
+      if(this.tracks.length > 1) this._startNextAfterChain(currentIdx, token);
       return;
     }
     const nextAudio = this.audios[1];
@@ -2903,7 +2911,7 @@ function wireVU(audioEl,idL,idR){
 
 // ── Mode écoute Solo : SAT / DAB+ / Hz / MIX ──
 // monGn = gain vers les hauts-parleurs, indépendant de la mesure VU et de la détection silence
-let listenMode='mix';
+let listenMode='sat';
 const MON_GAINS={sat:null, dab:null, hz:null}; // monGn de chaque source PUB
 
 function registerMonGain(key, monGn){
@@ -3020,28 +3028,48 @@ function routeSrcToDepart(srcKey, dep, audioEl){
 let vuSat=null, vuDab=null, vuHz=null, vuNat=null;
 let vuNatSat=null, vuNatDab=null, vuNatHz=null;
 
-// DIFF 1
+// ── DIFF 1 ──
+// La source est créée UNE SEULE FOIS et routée vers les 3 départs.
+// Les analyseurs VU sont branchés sur la source, sans connexion directe à destination.
 const _t0_orig=D[0].togglePlay.bind(D[0]);
 D[0].togglePlay=function(){
   const el=D[0].audios[D[0].ci]; if(!el){getCtx().resume();return _t0_orig();}
   getCtx().resume();
   if(!SRCS.d0){
-    vu1=wireVU(el,'vu1-L','vu1-R');
-    SRCS.d0=true;
+    const ctx=getCtx();
+    const src=ctx.createMediaElementSource(el);
+    SRCS.d0=src; // stocker pour ensureSrc
+    // Analyseurs VU sticky (sans connexion à destination — le son sort par les départs)
+    const sp=ctx.createChannelSplitter(2),mg=ctx.createChannelMerger(2);
+    const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
+    aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
+    src.connect(sp);sp.connect(aL,0);sp.connect(aR,1);aL.connect(mg,0,0);aR.connect(mg,0,1);
+    const gn=ctx.createGain();gn.gain.value=1;
+    vu1={aL,aR,gn};
+    buildBars('vu1-L');buildBars('vu1-R');
+    // Router vers les 3 départs
     ['sat','dab','hz'].forEach(dep=>routeSrcToDepart('d0',dep,el));
   }
   wireStrip('d0',el);
   _t0_orig();
 };
 
-// DIFF 2
+// ── DIFF 2 ──
 const _t1_orig=D[1].togglePlay.bind(D[1]);
 D[1].togglePlay=function(){
   const el=D[1].audios[D[1].ci]; if(!el){getCtx().resume();return _t1_orig();}
   getCtx().resume();
   if(!SRCS.d1){
-    vuD2=wireVU(el,'vu-d2-L','vu-d2-R');
-    SRCS.d1=true;
+    const ctx=getCtx();
+    const src=ctx.createMediaElementSource(el);
+    SRCS.d1=src;
+    const sp=ctx.createChannelSplitter(2),mg=ctx.createChannelMerger(2);
+    const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
+    aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
+    src.connect(sp);sp.connect(aL,0);sp.connect(aR,1);aL.connect(mg,0,0);aR.connect(mg,0,1);
+    const gn=ctx.createGain();gn.gain.value=1;
+    vuD2={aL,aR,gn};
+    buildBars('vu-d2-L');buildBars('vu-d2-R');
     ['sat','dab','hz'].forEach(dep=>routeSrcToDepart('d1',dep,el));
   }
   wireStrip('d1',el);
@@ -3332,6 +3360,14 @@ function getDbFromVU(vu){
   return rms>0?Math.max(-60,20*Math.log10(rms)):-60;
 }
 vuLoop();
+
+// Init UI bouton écoute par défaut (SAT)
+(function(){
+  ['mix','sat','dab','hz'].forEach(k=>{
+    const btn=document.getElementById('listen-'+k);
+    if(btn) btn.classList.toggle('active', k===listenMode);
+  });
+})();
 
 // ── Contrôle volume bip ──
 let _bipVolume=0.05;
