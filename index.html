@@ -1931,128 +1931,200 @@ function rmToggle(){
 }
 function rmStop(){rmAudio.pause();rmAudio.src='';rmPlaying=false;vu2=null;document.getElementById('rm-play-btn').textContent='▶ PLAY';document.getElementById('rm-dot').style.opacity='0';document.getElementById('rm-status').textContent='ARRÊT';}
 
-// ── Wiring VU DIFF 1 & 2 (au premier PLAY) ──
+// ── Wiring VU DIFF 1 & 2 (sticky) — lecture seule, pas de routage départ ──
 let vu1=null, vuD2=null;
-const _t0=D[0].togglePlay.bind(D[0]);
-D[0].togglePlay=function(){
-  if(!vu1){getCtx().resume();vu1=wireVU(D[0].audios[D[0].ci]||new Audio(),'vu1-L','vu1-R');}
-  getCtx().resume(); _t0();
-};
-const _t1=D[1].togglePlay.bind(D[1]);
-D[1].togglePlay=function(){
-  if(!vuD2){getCtx().resume();vuD2=wireVU(D[1].audios[D[1].ci]||new Audio(),'vu-d2-L','vu-d2-R');}
-  getCtx().resume(); _t1();
-};
+// Note: _t0 et _t1 sont définis plus bas dans le bloc de routage départ
 
-// ══════════════════════════════════════════════════════
-// ROUTAGE AUDIO : SAT / DAB+ / Hz
-// Chaque départ = PUB dédié + NATIONAL en parallèle
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// ROUTAGE AUDIO — 3 DÉPARTS : SAT / DAB+ / Hz
+// ──────────────────────────────────────────────────────────────────
+// Chaque départ = somme de 4 sources :
+//   DIFF 1  + DIFF 2  + NATIONAL  + PUB dédié (SAT/DAB+/Hz)
+//
+// Schéma par départ :
+//   srcDiff1 ──→ gainD1_sat ──┐
+//   srcDiff2 ──→ gainD2_sat ──┤→ monGn_sat → destination
+//   srcNat   ──→ gainNat_sat ─┤
+//   srcPubSat ──→ gainPub_sat ┘
+//
+// Un AudioContext ne peut créer qu'une seule MediaElementSource par
+// élément audio. On crée donc une source par diffuseur UNE SEULE FOIS,
+// puis on la distribue sur les 3 départs via des GainNodes.
+// ══════════════════════════════════════════════════════════════════
+
 let vuSat=null, vuDab=null, vuHz=null, vuNat=null;
 
-// Gains de mix par départ (somme PUB + NATIONAL)
-// Créés une seule fois au premier wireVU d'un départ
-const MIX_GAINS={sat:null, dab:null, hz:null}; // GainNode sommateur → monGn
+// Sources MediaElement (une par diffuseur, créée au premier play)
+const SRCS={d0:null, d1:null, nat:null, sat:null, dab:null, hz:null};
 
-// Connecte une source audio à UN départ spécifique
-// Retourne un objet {aL, aR, gn} pour les analyseurs VU
-function wireToDepart(audioEl, depart){
+// Initialisé une seule fois : un monGn par départ
+function ensureMonGn(dep){
+  if(MON_GAINS[dep]) return;
   const ctx=getCtx();
-  // Créer le monGn du départ si pas encore fait
-  if(!MON_GAINS[depart]){
-    const monGn=ctx.createGain(); monGn.gain.value=1;
-    MON_GAINS[depart]=monGn;
-    monGn.connect(ctx.destination);
-    applyListenMode();
+  const mn=ctx.createGain(); mn.gain.value=1;
+  MON_GAINS[dep]=mn;
+  mn.connect(ctx.destination);
+  applyListenMode();
+}
+
+// Crée une MediaElementSource pour un Audio element (une seule fois)
+function getOrCreateSrc(key, audioEl){
+  if(SRCS[key]) return SRCS[key];
+  const ctx=getCtx();
+  SRCS[key]=ctx.createMediaElementSource(audioEl);
+  return SRCS[key];
+}
+
+// Connecte une source à un départ (via un gainNode dédié)
+// Retourne le gainNode pour pouvoir le couper si besoin
+function connectSrcToDepart(src, dep){
+  ensureMonGn(dep);
+  const ctx=getCtx();
+  const gn=ctx.createGain(); gn.gain.value=0.7; // gain de mix 0.7 pour éviter saturation
+  src.connect(gn);
+  gn.connect(MON_GAINS[dep]);
+  return gn;
+}
+
+// Table des gains de mix déjà créés (évite les doublons)
+const MIX_TABLE={}; // 'src_dep' → gainNode
+
+function ensureSrcOnDepart(srcKey, dep, audioEl){
+  const tableKey=srcKey+'_'+dep;
+  if(MIX_TABLE[tableKey]) return MIX_TABLE[tableKey];
+  const src=getOrCreateSrc(srcKey, audioEl);
+  const gn=connectSrcToDepart(src, dep);
+  MIX_TABLE[tableKey]=gn;
+  return gn;
+}
+
+// ── Câbler DIFF 1 sur les 3 départs ──
+function wireDiff1ToDeparts(){
+  const audioEl=D[0].audios[D[0].ci];
+  if(!audioEl) return;
+  ['sat','dab','hz'].forEach(dep=>ensureSrcOnDepart('d0', dep, audioEl));
+}
+
+// ── Câbler DIFF 2 sur les 3 départs ──
+function wireDiff2ToDeparts(){
+  const audioEl=D[1].audios[D[1].ci];
+  if(!audioEl) return;
+  ['sat','dab','hz'].forEach(dep=>ensureSrcOnDepart('d1', dep, audioEl));
+}
+
+// ── Câbler NATIONAL sur les 3 départs ──
+function wireNatToDeparts(){
+  const audioEl=D[5].audios[D[5].ci];
+  if(!audioEl) return;
+  ['sat','dab','hz'].forEach(dep=>ensureSrcOnDepart('nat', dep, audioEl));
+}
+
+// ── Câbler un PUB sur SON départ ──
+function wirePubToDepart(srcKey, dep, audioEl){
+  ensureSrcOnDepart(srcKey, dep, audioEl);
+}
+
+// ── Overrides togglePlay ──
+// DIFF 1 : VU sticky + routage vers les 3 départs
+const _t0b=D[0].togglePlay.bind(D[0]);
+D[0].togglePlay=function(){
+  const audioEl=D[0].audios[D[0].ci];
+  if(audioEl){
+    getCtx().resume();
+    if(!vu1){ vu1=wireVU(audioEl,'vu1-L','vu1-R'); }
+    if(!SRCS.d0){ wireDiff1ToDeparts(); }
   }
+  getCtx().resume(); _t0b();
+};
+
+// DIFF 2 : VU sticky + routage vers les 3 départs
+const _t1b=D[1].togglePlay.bind(D[1]);
+D[1].togglePlay=function(){
+  const audioEl=D[1].audios[D[1].ci];
+  if(audioEl){
+    getCtx().resume();
+    if(!vuD2){ vuD2=wireVU(audioEl,'vu-d2-L','vu-d2-R'); }
+    if(!SRCS.d1){ wireDiff2ToDeparts(); }
+  }
+  getCtx().resume(); _t1b();
+};
+
+// PUB SAT (D[2])
+const _t2=D[2].togglePlay.bind(D[2]);
+D[2].togglePlay=function(){
+  if(!SRCS.sat && D[2].audios[D[2].ci]){
+    getCtx().resume();
+    const vu=wireVUAnalyserOnly(D[2].audios[D[2].ci],'vu-sat-L','vu-sat-R','sat');
+    vuSat=vu;
+    wirePubToDepart('sat','sat',D[2].audios[D[2].ci]);
+  }
+  getCtx().resume(); _t2();
+};
+
+// PUB DAB+ (D[3])
+const _t3=D[3].togglePlay.bind(D[3]);
+D[3].togglePlay=function(){
+  if(!SRCS.dab && D[3].audios[D[3].ci]){
+    getCtx().resume();
+    const vu=wireVUAnalyserOnly(D[3].audios[D[3].ci],'vu-dab-L','vu-dab-R','dab');
+    vuDab=vu;
+    wirePubToDepart('dab','dab',D[3].audios[D[3].ci]);
+  }
+  getCtx().resume(); _t3();
+};
+
+// PUB Hz (D[4])
+const _t4=D[4].togglePlay.bind(D[4]);
+D[4].togglePlay=function(){
+  if(!SRCS.hz && D[4].audios[D[4].ci]){
+    getCtx().resume();
+    const vu=wireVUAnalyserOnly(D[4].audios[D[4].ci],'vu-hz-L','vu-hz-R','hz');
+    vuHz=vu;
+    wirePubToDepart('hz','hz',D[4].audios[D[4].ci]);
+  }
+  getCtx().resume(); _t4();
+};
+
+// NATIONAL (D[5]) — source unique sur les 3 départs
+const _t5=D[5].togglePlay.bind(D[5]);
+D[5].togglePlay=function(){
+  const audioEl=D[5].audios[D[5].ci];
+  if(audioEl && !SRCS.nat){
+    getCtx().resume();
+    wireNatToDeparts();
+    // Analyser VU NATIONAL séparé (on ne peut pas réutiliser la source)
+    // On crée des analyseurs branchés APRES la source
+    const ctx=getCtx();
+    const src=SRCS.nat; // déjà créé par wireNatToDeparts
+    if(src){
+      const aL=ctx.createAnalyser(), aR=ctx.createAnalyser();
+      aL.fftSize=1024; aR.fftSize=1024; aL.smoothingTimeConstant=0.8; aR.smoothingTimeConstant=0.8;
+      // Pas de splitter supplémentaire — juste connecter pour mesure (ne sort pas)
+      vuNat={aL, aR, gn:MIX_TABLE['nat_sat']||null};
+    }
+  }
+  getCtx().resume(); _t5();
+};
+
+// ── wireVUAnalyserOnly : crée analyseurs + route vers monGn d'un départ ──
+// La source est créée via getOrCreateSrc (réutilisable)
+function wireVUAnalyserOnly(audioEl, idL, idR, srcKey){
+  const ctx=getCtx();
+  const src=getOrCreateSrc(srcKey, audioEl);
   const gn=ctx.createGain(); gn.gain.value=1;
-  const src=ctx.createMediaElementSource(audioEl);
   const sp=ctx.createChannelSplitter(2), mg=ctx.createChannelMerger(2);
   const aL=ctx.createAnalyser(), aR=ctx.createAnalyser();
   aL.fftSize=1024; aR.fftSize=1024; aL.smoothingTimeConstant=0.8; aR.smoothingTimeConstant=0.8;
   src.connect(gn); gn.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
   aL.connect(mg,0,0); aR.connect(mg,0,1);
-  mg.connect(MON_GAINS[depart]); // → vers monGn du départ → destination
+  // Connecter au monGn du départ
+  ensureMonGn(srcKey);
+  mg.connect(MON_GAINS[srcKey]);
+  // Override la source déjà créée (wireVUAnalyserOnly prend la main)
+  SRCS[srcKey]=src; // déjà set mais ok
+  buildBars(idL); buildBars(idR);
   return {aL, aR, gn};
 }
-
-// ── PUB SAT (D[2]) → départ SAT ──
-const _t2=D[2].togglePlay.bind(D[2]);
-D[2].togglePlay=function(){
-  if(!vuSat){
-    getCtx().resume();
-    vuSat=wireToDepart(D[2].audios[D[2].ci]||new Audio(),'sat');
-    // Rebrancher NATIONAL sur ce départ si déjà wiré
-    if(vuNat) wireNatToDepart('sat');
-    buildBars('vu-sat-L'); buildBars('vu-sat-R');
-  }
-  getCtx().resume(); _t2();
-};
-
-// ── PUB DAB+ (D[3]) → départ DAB+ ──
-const _t3=D[3].togglePlay.bind(D[3]);
-D[3].togglePlay=function(){
-  if(!vuDab){
-    getCtx().resume();
-    vuDab=wireToDepart(D[3].audios[D[3].ci]||new Audio(),'dab');
-    if(vuNat) wireNatToDepart('dab');
-    buildBars('vu-dab-L'); buildBars('vu-dab-R');
-  }
-  getCtx().resume(); _t3();
-};
-
-// ── PUB Hz (D[4]) → départ Hz ──
-const _t4=D[4].togglePlay.bind(D[4]);
-D[4].togglePlay=function(){
-  if(!vuHz){
-    getCtx().resume();
-    vuHz=wireToDepart(D[4].audios[D[4].ci]||new Audio(),'hz');
-    if(vuNat) wireNatToDepart('hz');
-    buildBars('vu-hz-L'); buildBars('vu-hz-R');
-  }
-  getCtx().resume(); _t4();
-};
-
-// ── NATIONAL (D[5]) → les 3 départs simultanément ──
-// Fonction pour connecter NATIONAL à un départ spécifique
-const _natNodesToDepart={}; // {sat:gainNode, dab:gainNode, hz:gainNode}
-
-function wireNatToDepart(depart){
-  if(_natNodesToDepart[depart]) return; // déjà connecté
-  if(!vuNat || !MON_GAINS[depart]) return;
-  // Créer un gain de branchement dédié pour ce départ
-  const ctx=getCtx();
-  const gn=ctx.createGain(); gn.gain.value=1;
-  // On réutilise les analyseurs de vuNat, on crée juste un chemin vers ce monGn
-  // En pratique on connecte le merger de vuNat vers ce nouveau gain → monGn
-  vuNat._mg.connect(MON_GAINS[depart]);
-  _natNodesToDepart[depart]=gn;
-}
-
-const _t5=D[5].togglePlay.bind(D[5]);
-D[5].togglePlay=function(){
-  if(!vuNat){
-    getCtx().resume();
-    const ctx=getCtx();
-    const audioEl=D[5].audios[D[5].ci]||new Audio();
-    const gn=ctx.createGain(); gn.gain.value=1;
-    const src=ctx.createMediaElementSource(audioEl);
-    const sp=ctx.createChannelSplitter(2), _mg=ctx.createChannelMerger(2);
-    const aL=ctx.createAnalyser(), aR=ctx.createAnalyser();
-    aL.fftSize=1024; aR.fftSize=1024; aL.smoothingTimeConstant=0.8; aR.smoothingTimeConstant=0.8;
-    src.connect(gn); gn.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
-    aL.connect(_mg,0,0); aR.connect(_mg,0,1);
-    vuNat={aL, aR, gn, _mg};
-    buildBars('vu-sat-L'); buildBars('vu-sat-R');
-    buildBars('vu-dab-L'); buildBars('vu-dab-R');
-    buildBars('vu-hz-L');  buildBars('vu-hz-R');
-    // Connecter aux monGn des 3 départs déjà initialisés
-    ['sat','dab','hz'].forEach(dep=>{
-      if(MON_GAINS[dep]) { _mg.connect(MON_GAINS[dep]); _natNodesToDepart[dep]=true; }
-    });
-  }
-  getCtx().resume(); _t5();
-};
 
 // ── Initialiser les barres SAT/DAB+/Hz ──
 ['sat','dab','hz'].forEach(id=>{buildBars(`vu-${id}-L`);buildBars(`vu-${id}-R`);});
@@ -2219,17 +2291,22 @@ function vuLoop(){
   if(vuD2) paintBars('vu-d2-L','vu-d2-R',vuD2.aL,vuD2.aR,'vu-d2-db', vuD2.gn, '#9b5de5');
   // Radio Monaco
   if(vu2)  paintBars('vu2-L','vu2-R',  vu2.aL,  vu2.aR,  'vu2-db',   vu2.gn,  '#00d4f0');
-  // Flux de diffusion : directs depuis les PUB diffuseurs
-  // Si PUB pas encore joué → fallback mix DIFF+RM
-  let dbSat, dbDab, dbHz;
-  // Chaque départ = mix PUB dédié + NATIONAL
-  // On prend le max des deux pour le VU-mètre (signal le plus fort)
-  dbSat = paintMix('sat', [vuSat, vuNat].filter(Boolean)) || -60;
-  dbDab = paintMix('dab', [vuDab, vuNat].filter(Boolean)) || -60;
-  dbHz  = paintMix('hz',  [vuHz,  vuNat].filter(Boolean)) || -60;
+  // VU-mètres des 3 départs (PUB dédié = source principale d'analyse)
+  let dbSat=-60, dbDab=-60, dbHz=-60;
+  if(vuSat){ paintBars('vu-sat-L','vu-sat-R',vuSat.aL,vuSat.aR,'vu-sat-db',null,'#00d4f0'); dbSat=getDbFromVU(vuSat); }
+  else { paintMixEmpty('sat'); }
+  if(vuDab){ paintBars('vu-dab-L','vu-dab-R',vuDab.aL,vuDab.aR,'vu-dab-db',null,'#00d4f0'); dbDab=getDbFromVU(vuDab); }
+  else { paintMixEmpty('dab'); }
+  if(vuHz) { paintBars('vu-hz-L','vu-hz-R',  vuHz.aL, vuHz.aR, 'vu-hz-db', null,'#00d4f0'); dbHz =getDbFromVU(vuHz); }
+  else { paintMixEmpty('hz'); }
   checkSilence('sat',dbSat);
   checkSilence('dab',dbDab);
   checkSilence('hz', dbHz);
+}
+function paintMixEmpty(id){
+  ['L','R'].forEach(ch=>{document.querySelectorAll(`#vu-${id}-${ch} .vu-row`).forEach(r=>r.style.opacity='0.1');});
+  const el=document.getElementById(`vu-${id}-db`);
+  if(el){el.textContent='—∞';el.style.color='#00d4f0';}
 }
 function getDbFromVU(vu){
   const rms=Math.max(getRMS(vu.aL),getRMS(vu.aR));
