@@ -1588,6 +1588,7 @@ class Diffuser{
     this.ci=0;
     this.auto=false;
     this._chainDone=new Set(); // pistes dont l'enchainement a été déclenché
+    this._playToken=0;         // token unique par session de lecture
   }
 
   addTracks(newTracks){
@@ -1813,14 +1814,12 @@ class Diffuser{
     // ── MACRO ──
     if(t.isMacro){
       if(typeof fireMacroTrack==='function') fireMacroTrack(t.macroKey, this.idx);
-      // Supprimer la macro immédiatement puis avancer
       this.tracks.splice(i,1);
       this.durs.splice(i,1);
       this.audios.splice(i,1);
       this.ci=0;
       this._chainDone.clear();
       this._updateFdzCount();
-      // Si RACCRO/stop3 a stoppé la lecture → ne pas relancer
       if(this.playing){
         if(this.tracks.length) this._startTrack(0);
         else this.playing=false;
@@ -1833,20 +1832,24 @@ class Diffuser{
     const audio=this.audios[i];
     if(!audio) return;
 
-    // Annuler tout onended précédent sur cet audio
+    // Token unique pour cette session de lecture — évite les onended en boucle
+    const token=++this._playToken;
+
+    // Réinitialiser proprement l'audio
     audio.onended=null;
     audio.currentTime=this._inOf(i);
 
-    // Quand le son se termine → supprimer et jouer suivant
     audio.onended=()=>{
-      // Ignorer si le diffuseur a été stoppé entre-temps
-      if(!this.playing) return;
-      // Supprimer la piste qui vient de se terminer
-      const removeIdx=0; // ci est toujours 0
-      if(t.file && t.file.startsWith('blob:')) URL.revokeObjectURL(t.file);
-      this.tracks.splice(removeIdx,1);
-      this.durs.splice(removeIdx,1);
-      const old=this.audios.splice(removeIdx,1)[0];
+      // Ignorer si ce n'est plus la même session ou si stoppé
+      if(!this.playing || token!==this._playToken) return;
+      // Invalider immédiatement le token pour bloquer tout doublon
+      this._playToken++;
+      // Supprimer la piste
+      const track=this.tracks[0];
+      if(track && track.file && track.file.startsWith('blob:')) URL.revokeObjectURL(track.file);
+      this.tracks.splice(0,1);
+      this.durs.splice(0,1);
+      const old=this.audios.splice(0,1)[0];
       if(old){ old.onended=null; }
       this.ci=0;
       this._chainDone.clear();
@@ -1878,7 +1881,8 @@ class Diffuser{
       this._startTrack(0);
       this.render();
     } else {
-      // Pause — annuler les onended pour éviter les redémarrages fantômes
+      // Pause — invalider le token ET annuler les onended
+      this._playToken++;
       this.audios.forEach(a=>{
         if(a){ a.onended=null; if(!a.paused)a.pause(); }
       });
@@ -1888,7 +1892,8 @@ class Diffuser{
   }
 
   stopAll(){
-    // Annuler tous les onended AVANT de pauser (évite relance fantôme)
+    // Invalider le token + annuler onended — aucune relance possible
+    this._playToken++;
     this.audios.forEach(a=>{
       if(a){ a.onended=null; a.pause(); a.currentTime=0; }
     });
