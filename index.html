@@ -32,6 +32,7 @@
   .diff-badge{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;padding:2px 10px;border-radius:4px;}
   .notification.is-onair{background:var(--s2);border:1px solid var(--border);border-top:none;border-radius:0;padding:.5rem 1rem;margin:0;display:flex;align-items:center;justify-content:space-between;}
   .onair-title{font-family:var(--display);font-size:22px;font-weight:700;color:var(--txt);letter-spacing:3px;}
+  .onair-track-name{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:2px;color:var(--yellow);margin-left:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px;transition:opacity .3s;}
   .dot-live{display:inline-block;width:8px;height:8px;background:var(--red);border-radius:50%;animation:blink 1s step-start infinite;vertical-align:middle;margin-right:6px;}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
   .timer-group{display:flex;gap:1rem;align-items:center;margin-left:auto;padding-right:1rem;}
@@ -139,70 +140,169 @@
   }
   .wv-edit-btn:hover{border-color:var(--cyan);color:var(--cyan);}
 
-  /* ── Modal éditeur waveform ── */
+  /* ── Modal éditeur waveform — style broadcast ── */
   .wv-modal-overlay{
-    display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,16,.92);
     z-index:2000;align-items:center;justify-content:center;
   }
   .wv-modal-overlay.open{display:flex;}
+
   .wv-modal{
-    background:var(--s1);border:1px solid var(--cyan);border-radius:8px;
-    width:min(900px,94vw);padding:1.2rem 1.4rem;
-    box-shadow:0 20px 60px rgba(0,0,0,.8);
-    display:flex;flex-direction:column;gap:1rem;
+    background:#03050f;
+    border:3px solid #1a3a9a;
+    border-radius:10px;
+    width:min(780px,96vw);
+    box-shadow:0 0 40px rgba(0,60,255,.25), inset 0 0 80px rgba(0,10,40,.8);
+    overflow:hidden;
+    font-family:'Share Tech Mono',monospace;
   }
-  .wv-modal-header{
-    display:flex;align-items:center;justify-content:space-between;
-    font-family:var(--display);font-size:16px;color:var(--txt);letter-spacing:2px;
+
+  /* Barre titre broadcast */
+  .wvm-titlebar{
+    background:#050a1e;
+    border-bottom:2px solid #1a3a9a;
+    padding:5px 14px;
+    display:flex; align-items:center; justify-content:space-between;
   }
-  .wv-modal-title{color:var(--cyan);}
-  .wv-modal-close{
-    background:transparent;border:1px solid var(--border);color:var(--txt-mute);
-    font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:2px;
-    cursor:pointer;transition:all .12s;
+  .wvm-ver{font-size:10px;color:#4a6aaa;letter-spacing:1px;}
+  .wvm-trackname{
+    font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;
+    color:#00d4f0;letter-spacing:2px;text-align:center;flex:1;
+    text-transform:uppercase; overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    padding:0 1rem;
   }
-  .wv-modal-close:hover{border-color:var(--red);color:var(--red);}
-  .wv-modal-canvas-wrap{position:relative;height:160px;}
-  .wv-modal-canvas{display:block;width:100%;height:160px;border-radius:4px;}
-  .wv-modal-pre{position:absolute;top:0;bottom:0;left:0;background:rgba(0,0,0,.55);pointer-events:none;border-radius:4px 0 0 4px;}
-  .wv-modal-post{position:absolute;top:0;bottom:0;right:0;background:rgba(0,0,0,.55);pointer-events:none;border-radius:0 4px 4px 0;}
-  .wv-modal-ph{position:absolute;top:0;bottom:0;width:2px;background:rgba(0,212,240,.9);pointer-events:none;display:none;z-index:2;}
-  .wv-modal-handle{
-    position:absolute;top:0;bottom:0;width:5px;cursor:ew-resize;z-index:4;transform:translateX(-2.5px);
+  .wvm-close{
+    background:transparent;border:1px solid #3a1010;color:#e03020;
+    font-family:'Share Tech Mono',monospace;font-size:10px;padding:2px 8px;
+    border-radius:2px;cursor:pointer;letter-spacing:1px;transition:all .12s;
   }
-  .wv-modal-handle::after{content:'';position:absolute;top:0;bottom:0;left:-12px;right:-12px;}
-  .wv-modal-handle::before{
-    content:attr(data-label);position:absolute;bottom:calc(100%+4px);left:50%;transform:translateX(-50%);
-    font-family:var(--mono);font-size:9px;white-space:nowrap;padding:2px 6px;border-radius:2px;pointer-events:none;
+  .wvm-close:hover{background:#2a0000;}
+
+  /* Écran waveform */
+  .wvm-screen{
+    background:#000;
+    border-bottom:2px solid #0a1a40;
+    position:relative;
   }
-  .wv-modal-in{background:#00d96a;}
-  .wv-modal-in::before{color:#00d96a;background:rgba(0,30,10,.95);}
-  .wv-modal-out{background:#e03020;}
-  .wv-modal-out::before{color:#e03020;background:rgba(30,0,0,.95);}
-  /* Zoom strip */
-  .wv-modal-zoom-wrap{position:relative;height:50px;margin-top:2px;}
-  .wv-modal-zoom-canvas{display:block;width:100%;height:50px;border-radius:3px;border:1px solid var(--border);}
-  .wv-modal-zoom-region{position:absolute;top:0;bottom:0;background:rgba(0,212,240,.12);border:1px solid rgba(0,212,240,.4);pointer-events:none;}
-  /* Contrôles IN/OUT texte */
-  .wv-modal-controls{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;}
-  .wv-modal-cue-group{display:flex;align-items:center;gap:.5rem;}
-  .wv-modal-cue-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;}
-  .wv-modal-cue-input{
-    background:var(--s3);border:1px solid var(--border);color:var(--txt);
-    font-family:var(--mono);font-size:12px;padding:3px 8px;border-radius:3px;
-    width:80px;text-align:center;outline:none;
+  .wvm-canvas-main{display:block;width:100%;height:180px;}
+  .wvm-pre{position:absolute;top:0;bottom:0;left:0;background:rgba(0,0,0,.6);pointer-events:none;}
+  .wvm-post{position:absolute;top:0;bottom:0;right:0;background:rgba(0,0,0,.6);pointer-events:none;}
+  .wvm-ph{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,100,.9);pointer-events:none;z-index:3;}
+  .wvm-handle{
+    position:absolute;top:0;bottom:0;width:3px;cursor:ew-resize;z-index:4;
   }
-  .wv-modal-cue-input:focus{border-color:var(--cyan);}
-  .wv-modal-cue-input.in{border-color:#00d96a;color:#00d96a;}
-  .wv-modal-cue-input.out{border-color:#e03020;color:#e03020;}
-  .wv-modal-btn{
-    background:transparent;border:1px solid var(--border);color:var(--txt-mute);
-    font-family:var(--mono);font-size:10px;padding:4px 12px;border-radius:2px;
-    cursor:pointer;letter-spacing:1px;transition:all .12s;
+  .wvm-handle::after{content:'';position:absolute;top:0;bottom:0;left:-14px;right:-14px;}
+  .wvm-handle-in{background:#00ff60;}
+  .wvm-handle-out{background:#ff2020;}
+  /* Timecode flags sur les poignées */
+  .wvm-handle-in::before{
+    content:attr(data-tc);
+    position:absolute;bottom:4px;left:6px;
+    font-size:9px;color:#00ff60;background:rgba(0,20,0,.85);
+    padding:1px 5px;border-radius:2px;white-space:nowrap;pointer-events:none;
   }
-  .wv-modal-btn:hover{border-color:var(--cyan);color:var(--cyan);}
-  .wv-modal-btn.apply{border-color:var(--green);color:var(--green);}
-  .wv-modal-btn.apply:hover{background:#001a08;}
+  .wvm-handle-out::before{
+    content:attr(data-tc);
+    position:absolute;bottom:4px;right:6px;left:auto;
+    font-size:9px;color:#ff2020;background:rgba(20,0,0,.85);
+    padding:1px 5px;border-radius:2px;white-space:nowrap;pointer-events:none;
+  }
+
+  /* Bande de timecodes */
+  .wvm-timecodes{
+    background:#050a1e;border-bottom:2px solid #0a1a40;
+    display:grid;grid-template-columns:repeat(6,1fr);
+    padding:4px 8px;gap:4px;
+  }
+  .wvm-tc-cell{display:flex;flex-direction:column;align-items:center;gap:1px;}
+  .wvm-tc-label{font-size:7px;color:#2a4a8a;letter-spacing:2px;text-transform:uppercase;}
+  .wvm-tc-value{font-size:13px;letter-spacing:1px;font-family:'Share Tech Mono',monospace;}
+
+  /* VU horizontal L/R */
+  .wvm-vu-section{
+    background:#030710;border-bottom:2px solid #0a1a40;
+    padding:5px 10px;display:flex;flex-direction:column;gap:4px;
+  }
+  .wvm-vu-row{display:flex;align-items:center;gap:6px;}
+  .wvm-vu-lbl{font-size:9px;color:#4a6aaa;width:10px;text-align:center;letter-spacing:0;}
+  .wvm-vu-bar-wrap{
+    flex:1;height:12px;background:#020510;
+    border:1px solid #0a1a40;border-radius:1px;position:relative;overflow:hidden;
+  }
+  .wvm-vu-bar{height:100%;width:0%;transition:width .04s linear;border-radius:1px;}
+  .wvm-vu-scale{
+    display:flex;justify-content:space-between;
+    padding:0 2px;margin-top:1px;
+  }
+  .wvm-vu-scale span{font-size:6px;color:#2a4060;letter-spacing:0;}
+  .wvm-vu-threshold{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.15);pointer-events:none;}
+
+  /* Barre du bas : overview + transport */
+  .wvm-bottom{
+    background:#050a1e;
+    display:grid;grid-template-columns:100px 1fr 110px;
+    gap:0;
+  }
+  /* Format / cues */
+  .wvm-cues-panel{
+    border-right:2px solid #0a1a40;
+    padding:8px 10px;display:flex;flex-direction:column;gap:5px;
+    justify-content:center;
+  }
+  .wvm-cue-row{display:flex;align-items:center;gap:5px;}
+  .wvm-cue-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .wvm-cue-input{
+    background:#020510;border:1px solid #1a3060;color:#ddeeff;
+    font-family:'Share Tech Mono',monospace;font-size:11px;
+    padding:2px 6px;border-radius:2px;outline:none;width:76px;text-align:center;
+  }
+  .wvm-cue-input.in{border-color:#00ff60;color:#00ff60;}
+  .wvm-cue-input.out{border-color:#ff2020;color:#ff2020;}
+  .wvm-cue-input:focus{background:#030a14;}
+
+  /* Transport */
+  .wvm-transport{
+    border-right:2px solid #0a1a40;
+    padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  }
+  .wvm-transport-row{display:flex;gap:5px;}
+  .wvm-tbtn{
+    width:34px;height:28px;
+    background:linear-gradient(180deg,#1a2a6a,#0a1440);
+    border:1px solid #2a4a9a;
+    border-radius:4px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:#8ab0ff;
+    transition:all .1s;position:relative;
+  }
+  .wvm-tbtn:hover{background:linear-gradient(180deg,#2a3a8a,#1a2450);border-color:#4a6abb;}
+  .wvm-tbtn:active{background:#0a1030;transform:scale(.95);}
+  .wvm-tbtn.red{background:linear-gradient(180deg,#6a1010,#3a0808);border-color:#9a2020;color:#ff6060;}
+  .wvm-tbtn.red:hover{background:linear-gradient(180deg,#8a1a1a,#5a1010);}
+  .wvm-tbtn.green{background:linear-gradient(180deg,#0a4a1a,#052810);border-color:#1a8a40;color:#60ff90;}
+  .wvm-tbtn.green:hover{background:linear-gradient(180deg,#1a5a2a,#0a3820);}
+  .wvm-tbtn.active-btn{background:linear-gradient(180deg,#3a5a1a,#1a3008);border-color:#6aaa30;color:#aaff50;}
+
+  /* OPTIONS */
+  .wvm-options{
+    padding:6px 8px;display:flex;flex-direction:column;gap:3px;justify-content:center;
+  }
+  .wvm-opt-title{font-size:7px;color:#2a4a8a;letter-spacing:2px;margin-bottom:2px;}
+  .wvm-opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;}
+  .wvm-opt-btn{
+    font-size:8px;padding:3px 4px;text-align:center;
+    background:#030810;border:1px solid #0a1a40;border-radius:2px;
+    color:#2a4a8a;cursor:pointer;letter-spacing:1px;transition:all .12s;
+  }
+  .wvm-opt-btn:hover{border-color:#4a6aaa;color:#8ab0ff;}
+  .wvm-opt-btn.active{border-color:#00d4f0;color:#00d4f0;background:#020a14;}
+
+  /* Overview */
+  .wvm-overview-wrap{position:relative;height:36px;background:#000;border-top:1px solid #0a1a40;}
+  .wvm-overview-canvas{display:block;width:100%;height:36px;}
+  .wvm-overview-region{position:absolute;top:0;bottom:0;background:rgba(0,120,220,.15);border:1px solid rgba(0,180,255,.5);pointer-events:none;}
+
 
   /* ── VU Mètre ── */
   .vu-row-title {
@@ -753,40 +853,131 @@
 <!-- ══ MODAL ÉDITEUR WAVEFORM ══ -->
 <div class="wv-modal-overlay" id="wv-modal">
   <div class="wv-modal">
-    <div class="wv-modal-header">
-      <span class="wv-modal-title" id="wv-modal-title">Éditeur IN / OUT</span>
-      <button class="wv-modal-close" onclick="wvModalClose()">✕ FERMER</button>
+
+    <!-- Barre titre -->
+    <div class="wvm-titlebar">
+      <span class="wvm-ver">ÉDITEUR IN/OUT</span>
+      <span class="wvm-trackname" id="wv-modal-title">—</span>
+      <button class="wvm-close" onclick="wvModalClose()">✕</button>
     </div>
-    <!-- Canvas principal grand -->
-    <div class="wv-modal-canvas-wrap" id="wv-modal-wrap">
-      <canvas class="wv-modal-canvas" id="wv-modal-canvas" width="900" height="160"></canvas>
-      <div class="wv-modal-pre"  id="wv-modal-pre"></div>
-      <div class="wv-modal-post" id="wv-modal-post"></div>
-      <div class="wv-modal-ph"   id="wv-modal-ph"></div>
-      <div class="wv-modal-handle wv-modal-in"  id="wv-modal-in"  data-label="IN"></div>
-      <div class="wv-modal-handle wv-modal-out" id="wv-modal-out" data-label="OUT"></div>
+
+    <!-- Écran waveform -->
+    <div class="wvm-screen" id="wv-modal-wrap">
+      <canvas class="wvm-canvas-main" id="wv-modal-canvas" width="780" height="180"></canvas>
+      <div class="wvm-pre"  id="wv-modal-pre"></div>
+      <div class="wvm-post" id="wv-modal-post"></div>
+      <div class="wvm-ph"   id="wv-modal-ph" style="display:none"></div>
+      <div class="wvm-handle wvm-handle-in"  id="wv-modal-in"  data-tc="IN 00:00.0"></div>
+      <div class="wvm-handle wvm-handle-out" id="wv-modal-out" data-tc="OUT 00:00.0"></div>
     </div>
-    <!-- Mini canvas zoom -->
-    <div style="font-family:var(--mono);font-size:8px;color:var(--txt-mute);letter-spacing:1px;margin-bottom:-6px">VUE D'ENSEMBLE</div>
-    <div class="wv-modal-zoom-wrap">
-      <canvas class="wv-modal-zoom-canvas" id="wv-modal-zoom" width="900" height="50"></canvas>
-      <div class="wv-modal-zoom-region" id="wv-modal-zoom-region"></div>
-    </div>
-    <!-- Contrôles texte -->
-    <div class="wv-modal-controls">
-      <div class="wv-modal-cue-group">
-        <span class="wv-modal-cue-label" style="color:#00d96a">IN</span>
-        <input class="wv-modal-cue-input in" id="wv-modal-in-input" type="text" placeholder="0.000">
-        <button class="wv-modal-btn" onclick="wvModalSetIn()">Appliquer</button>
+
+    <!-- Timecodes row -->
+    <div class="wvm-timecodes">
+      <div class="wvm-tc-cell">
+        <span class="wvm-tc-label">POSITION</span>
+        <span class="wvm-tc-value" id="wvm-tc-pos" style="color:#f5c400">00:00:000</span>
       </div>
-      <div class="wv-modal-cue-group">
-        <span class="wv-modal-cue-label" style="color:#e03020">OUT</span>
-        <input class="wv-modal-cue-input out" id="wv-modal-out-input" type="text" placeholder="0.000">
-        <button class="wv-modal-btn" onclick="wvModalSetOut()">Appliquer</button>
+      <div class="wvm-tc-cell">
+        <span class="wvm-tc-label">IN</span>
+        <span class="wvm-tc-value" id="wvm-tc-in" style="color:#00ff60">00:00:000</span>
       </div>
-      <button class="wv-modal-btn" onclick="wvModalReset()">↺ Réinitialiser</button>
-      <button class="wv-modal-btn apply" onclick="wvModalApply()">✓ APPLIQUER</button>
+      <div class="wvm-tc-cell">
+        <span class="wvm-tc-label">OUT</span>
+        <span class="wvm-tc-value" id="wvm-tc-out" style="color:#ff3030">00:00:000</span>
+      </div>
+      <div class="wvm-tc-cell">
+        <span class="wvm-tc-label">DURÉE</span>
+        <span class="wvm-tc-value" id="wvm-tc-dur" style="color:#ddeeff">00:00:000</span>
+      </div>
+      <div class="wvm-tc-cell">
+        <span class="wvm-tc-label">RESTANT</span>
+        <span class="wvm-tc-value" id="wvm-tc-rem" style="color:#f07800">00:00:000</span>
+      </div>
+      <div class="wvm-tc-cell">
+        <span class="wvm-tc-label">TOTAL</span>
+        <span class="wvm-tc-value" id="wvm-tc-total" style="color:#5a7090">00:00:000</span>
+      </div>
     </div>
+
+    <!-- VU-mètres L/R -->
+    <div class="wvm-vu-section">
+      <div class="wvm-vu-row">
+        <span class="wvm-vu-lbl" style="color:#00d96a">L</span>
+        <div class="wvm-vu-bar-wrap">
+          <div class="wvm-vu-bar" id="wvm-vu-L" style="background:linear-gradient(90deg,#00d96a 0%,#f5c400 70%,#e03020 90%)"></div>
+          <div class="wvm-vu-threshold" style="left:70%"></div>
+          <div class="wvm-vu-threshold" style="left:85%"></div>
+        </div>
+      </div>
+      <div class="wvm-vu-row">
+        <span class="wvm-vu-lbl" style="color:#00d96a">R</span>
+        <div class="wvm-vu-bar-wrap">
+          <div class="wvm-vu-bar" id="wvm-vu-R" style="background:linear-gradient(90deg,#00d96a 0%,#f5c400 70%,#e03020 90%)"></div>
+          <div class="wvm-vu-threshold" style="left:70%"></div>
+          <div class="wvm-vu-threshold" style="left:85%"></div>
+        </div>
+      </div>
+      <div class="wvm-vu-scale">
+        <span>-50</span><span>-40</span><span>-30</span><span>-20</span>
+        <span>LOOP</span><span>THRESHOLD</span><span>-18</span><span>-9</span><span>0</span>
+      </div>
+    </div>
+
+    <!-- Bande du bas -->
+    <div class="wvm-bottom">
+
+      <!-- Cues IN/OUT -->
+      <div class="wvm-cues-panel">
+        <div class="wvm-cue-row">
+          <div class="wvm-cue-dot" style="background:#00ff60"></div>
+          <input class="wvm-cue-input in" id="wv-modal-in-input"  type="text" placeholder="0.000" title="IN en secondes" onchange="wvModalSetIn()">
+        </div>
+        <div class="wvm-cue-row">
+          <div class="wvm-cue-dot" style="background:#ff2020"></div>
+          <input class="wvm-cue-input out" id="wv-modal-out-input" type="text" placeholder="0.000" title="OUT en secondes" onchange="wvModalSetOut()">
+        </div>
+      </div>
+
+      <!-- Transport -->
+      <div class="wvm-transport">
+        <div class="wvm-transport-row">
+          <button class="wvm-tbtn red"   onclick="wvModalStop()"    title="STOP">■</button>
+          <button class="wvm-tbtn"       onclick="wvModalGoIn()"    title="Aller au IN">|◀</button>
+          <button class="wvm-tbtn green" id="wvm-play-btn" onclick="wvModalPlayPause()" title="PLAY">▶</button>
+          <button class="wvm-tbtn"       onclick="wvModalGoOut()"   title="Aller au OUT">▶|</button>
+          <button class="wvm-tbtn"       onclick="wvModalReset()"   title="Réinitialiser">↺</button>
+        </div>
+        <div class="wvm-transport-row">
+          <button class="wvm-tbtn apply" onclick="wvModalApply()" title="Appliquer et fermer"
+            style="width:auto;padding:0 10px;font-size:9px;letter-spacing:1px;color:#60ff90;border-color:#1a8a40;background:linear-gradient(180deg,#0a4a1a,#052810)">
+            ✓ APPLIQUER
+          </button>
+        </div>
+      </div>
+
+      <!-- Options -->
+      <div class="wvm-options">
+        <div class="wvm-opt-title">OPTIONS</div>
+        <div class="wvm-opt-grid">
+          <div class="wvm-opt-btn" onclick="this.classList.toggle('active')">INTRO</div>
+          <div class="wvm-opt-btn" onclick="this.classList.toggle('active')">HOOK</div>
+          <div class="wvm-opt-btn active" onclick="this.classList.toggle('active')">MACRO</div>
+          <div class="wvm-opt-btn" onclick="this.classList.toggle('active')">PONT</div>
+          <div class="wvm-opt-btn" onclick="this.classList.toggle('active')">REPÈRE</div>
+          <div class="wvm-opt-btn" onclick="this.classList.toggle('active')">CHAIN</div>
+          <div class="wvm-opt-btn" onclick="this.classList.toggle('active')">ÉVÈNEM.</div>
+          <div class="wvm-opt-btn" onclick="this.classList.toggle('active')">FIN</div>
+        </div>
+      </div>
+
+    </div><!-- /bottom -->
+
+    <!-- Overview -->
+    <div class="wvm-overview-wrap">
+      <canvas class="wvm-overview-canvas" id="wv-modal-zoom" width="780" height="36"></canvas>
+      <div class="wvm-overview-region" id="wv-modal-zoom-region"></div>
+    </div>
+
   </div>
 </div>
 
@@ -854,7 +1045,7 @@
   </div>
   <div class="notification is-onair">
     <div style="display:flex;align-items:center;gap:10px">
-      <span class="dot-live"></span><span class="onair-title">DIFF 1 — MONTRÉAL</span>
+      <span class="dot-live"></span><span class="onair-title">DIFF 1</span><span id="onair-track-0" class="onair-track-name"></span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="button is-success is-small is-outlined" onclick="D[0].togglePlay()">▶ PLAY</button>
@@ -940,7 +1131,7 @@
   </div>
   <div class="notification is-onair">
     <div style="display:flex;align-items:center;gap:10px">
-      <span class="dot-live"></span><span class="onair-title">DIFF 2 — MONTRÉAL</span>
+      <span class="dot-live"></span><span class="onair-title">DIFF 2</span><span id="onair-track-1" class="onair-track-name"></span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="button is-success is-small is-outlined" onclick="D[1].togglePlay()">▶ PLAY</button>
@@ -1030,7 +1221,7 @@
   <div class="notification is-onair" style="padding:.4rem .75rem">
     <div style="display:flex;align-items:center;gap:8px">
       <span class="dot-live" style="background:#5a6370"></span>
-      <span class="onair-title" style="font-size:16px;letter-spacing:4px;color:#6a7280">NATIONAL</span>
+      <span class="onair-title" style="font-size:16px;letter-spacing:4px;color:#6a7280">NATIONAL</span><span id="onair-track-5" class="onair-track-name" style="font-size:13px;color:#8a9098"></span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <button class="button is-success is-small is-outlined" style="border-color:#3a4a3a!important;color:#5a7a5a!important" onclick="D[5].togglePlay()">▶ PLAY</button>
@@ -1527,7 +1718,7 @@
   <div class="notification is-onair">
     <div style="display:flex;align-items:center;gap:10px">
       <span class="dot-live"></span>
-      <span class="onair-title" style="color:#00e5ff">DIFF TEST</span>
+      <span class="onair-title" style="color:#00e5ff">TEST</span><span id="onair-track-6" class="onair-track-name" style="color:#00e5ff"></span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="button is-success is-small is-outlined" onclick="D[6].togglePlay()">▶ PLAY</button>
@@ -1995,6 +2186,13 @@ class Diffuser{
     document.getElementById(this.ids.suffix).textContent=this.playing?'EN DIRECT':'A';
     const btn=document.getElementById(this.cfg.autoBtn);
     if(btn)btn.classList.toggle('active',this.auto);
+    // Nom de la piste en lecture dans la barre is-onair
+    const trackNameEl=document.getElementById('onair-track-'+this.idx);
+    if(trackNameEl){
+      const activeTrack=this.playing&&this.tracks[this.ci];
+      trackNameEl.textContent=activeTrack&&!activeTrack.isMacro?'— '+activeTrack.title:'';
+      trackNameEl.style.opacity=activeTrack?'1':'0';
+    }
   }
 
   _bindHandles(wvId,trackIdx){
@@ -3203,22 +3401,25 @@ function wvModalOpen(wvId, diffIdx, trackIdx){
   const d=D[diffIdx]; if(!d) return;
   const t=d.tracks[trackIdx]; if(!t||!t.file) return;
   const dur=d.durs[trackIdx]||1;
-  _wvModal={diffIdx,trackIdx,wvId,dur,dragging:null};
+  _wvModal={diffIdx,trackIdx,wvId,dur,dragging:null,playing:false};
 
   // Titre
-  document.getElementById('wv-modal-title').textContent='✎ '+t.title;
+  document.getElementById('wv-modal-title').textContent=t.title;
 
   // Canvas principal
   const cv=document.getElementById('wv-modal-canvas');
-  cv.width=900; cv.height=160;
+  cv.width=780; cv.height=180;
   const data=WV_DATA_CACHE[t.file];
-  if(data) drawWaveformFromData(cv,data,0,1);
-  else drawWaveform(cv,t.file).then(()=>wvModalRedraw());
+  if(data){ drawWaveformFromData(cv,data,0,1); }
+  else { drawWaveform(cv,t.file).then(()=>wvModalRedraw()); }
 
-  // Mini zoom
+  // Overview
   const zv=document.getElementById('wv-modal-zoom');
-  zv.width=900; zv.height=50;
+  zv.width=780; zv.height=36;
   if(data) drawWaveformFromData(zv,data,0,1);
+
+  // Timecodes initiaux
+  _wvModalUpdateTC();
 
   // Poignées
   _wvModalUpdateHandles();
@@ -3229,10 +3430,110 @@ function wvModalOpen(wvId, diffIdx, trackIdx){
 
   document.getElementById('wv-modal').classList.add('open');
   _wvModalBindDrag();
+  _wvModalVULoop();
+}
+
+function _wvModalUpdateTC(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+  const dur=_wvModal.dur;
+  const inT=t.inCue||0;
+  const outT=t.outCue??dur;
+  const selDur=Math.max(0,outT-inT);
+  // Position de l'audio si en lecture
+  const audio=d.audios[_wvModal.trackIdx];
+  const pos=audio?audio.currentTime:inT;
+  const rem=Math.max(0,outT-pos);
+  const tc=s=>{const ms=Math.round((s%1)*1000);const sec=Math.floor(s%60);const min=Math.floor(s/60);return fmt2(min)+':'+fmt2(sec)+'.'+String(ms).padStart(3,'0');};
+  const el=id=>document.getElementById(id);
+  if(el('wvm-tc-pos'))  el('wvm-tc-pos').textContent  = tc(pos);
+  if(el('wvm-tc-in'))   el('wvm-tc-in').textContent   = tc(inT);
+  if(el('wvm-tc-out'))  el('wvm-tc-out').textContent  = tc(outT);
+  if(el('wvm-tc-dur'))  el('wvm-tc-dur').textContent  = tc(selDur);
+  if(el('wvm-tc-rem'))  el('wvm-tc-rem').textContent  = tc(rem);
+  if(el('wvm-tc-total')) el('wvm-tc-total').textContent = tc(dur);
+  // data-tc sur les poignées
+  const inH=document.getElementById('wv-modal-in');
+  const outH=document.getElementById('wv-modal-out');
+  if(inH)  inH.setAttribute('data-tc',  'IN  '+tc(inT));
+  if(outH) outH.setAttribute('data-tc', 'OUT '+tc(outT));
+}
+
+// VU loop dans le modal (lecture de l'audio en preview)
+let _wvModalVUFrame=null;
+function _wvModalVULoop(){
+  if(_wvModalVUFrame) cancelAnimationFrame(_wvModalVUFrame);
+  const step=()=>{
+    if(!document.getElementById('wv-modal').classList.contains('open')) return;
+    _wvModalVUFrame=requestAnimationFrame(step);
+    _wvModalUpdateTC();
+    // VU depuis l'analyseur du diffuseur si disponible
+    const diffIdx=_wvModal.diffIdx;
+    const vuSrc=diffIdx===0?vu1:diffIdx===1?vuD2:diffIdx===6?vuTx:null;
+    const barL=document.getElementById('wvm-vu-L');
+    const barR=document.getElementById('wvm-vu-R');
+    if(vuSrc&&barL&&barR){
+      const rL=getRMS(vuSrc.aL),rR=getRMS(vuSrc.aR);
+      const pctL=Math.min(100,Math.max(0,((Math.max(-60,rL>0?20*Math.log10(rL):-60)+60)/60)*100));
+      const pctR=Math.min(100,Math.max(0,((Math.max(-60,rR>0?20*Math.log10(rR):-60)+60)/60)*100));
+      barL.style.width=pctL+'%';
+      barR.style.width=pctR+'%';
+    }
+    // Playhead
+    const d=D[_wvModal.diffIdx]; if(!d) return;
+    const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+    const audio=d.audios[_wvModal.trackIdx];
+    if(audio&&!audio.paused){
+      const pct=(audio.currentTime/_wvModal.dur)*100;
+      const ph=document.getElementById('wv-modal-ph');
+      if(ph){ph.style.display='block';ph.style.left=pct+'%';}
+    }
+  };
+  _wvModalVUFrame=requestAnimationFrame(step);
+}
+
+function wvModalPlayPause(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const audio=d.audios[_wvModal.trackIdx]; if(!audio) return;
+  const btn=document.getElementById('wvm-play-btn');
+  if(audio.paused){
+    if(audio.currentTime<(d.tracks[_wvModal.trackIdx]?.inCue||0)||
+       audio.currentTime>=(d.tracks[_wvModal.trackIdx]?.outCue??_wvModal.dur)){
+      audio.currentTime=d.tracks[_wvModal.trackIdx]?.inCue||0;
+    }
+    audio.play().catch(e=>console.warn(e));
+    if(btn){btn.textContent='⏸';btn.classList.add('green');}
+  }else{
+    audio.pause();
+    if(btn){btn.textContent='▶';btn.classList.remove('green');}
+  }
+}
+function wvModalStop(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const audio=d.audios[_wvModal.trackIdx]; if(!audio) return;
+  audio.pause();
+  audio.currentTime=d.tracks[_wvModal.trackIdx]?.inCue||0;
+  const btn=document.getElementById('wvm-play-btn');
+  if(btn){btn.textContent='▶';btn.classList.remove('green');}
+  const ph=document.getElementById('wv-modal-ph');
+  if(ph) ph.style.display='none';
+}
+function wvModalGoIn(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const audio=d.audios[_wvModal.trackIdx]; if(!audio) return;
+  audio.currentTime=d.tracks[_wvModal.trackIdx]?.inCue||0;
+}
+function wvModalGoOut(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const audio=d.audios[_wvModal.trackIdx]; if(!audio) return;
+  const t=d.tracks[_wvModal.trackIdx];
+  audio.currentTime=Math.max(0,(t?.outCue??_wvModal.dur)-1);
 }
 
 function wvModalClose(){
+  wvModalStop();
   document.getElementById('wv-modal').classList.remove('open');
+  if(_wvModalVUFrame){cancelAnimationFrame(_wvModalVUFrame);_wvModalVUFrame=null;}
   _wvModal={diffIdx:null,trackIdx:null,wvId:null,dur:1,dragging:null};
 }
 
@@ -3252,6 +3553,7 @@ function wvModalRedraw(){
   const zr=document.getElementById('wv-modal-zoom-region');
   if(zr){ zr.style.left=(s*100)+'%'; zr.style.width=((e-s)*100)+'%'; }
   _wvModalUpdateHandles(s,e);
+  _wvModalUpdateTC();
 }
 
 function _wvModalUpdateHandles(startR=0,endR=1){
