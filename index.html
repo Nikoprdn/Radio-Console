@@ -94,52 +94,115 @@
   .fdz-add-badge{font-family:var(--mono);font-size:9px;color:var(--green);background:#052210;border:1px solid var(--green-dk);border-radius:3px;padding:1px 6px;margin-left:4px;}
 
   /* ── Waveform IN/OUT ── */
-  .wv-outer{padding:4px 14px 0;}
+  .wv-outer{padding:4px 6px 0;}
   .wv-wrap{
     position:relative;
-    height:52px;           /* plus haute = plus lisible */
+    height:80px;
     cursor:crosshair;
     user-select:none;
     border-radius:3px;
-    /* PAS d'overflow:hidden — les poignées doivent rester visibles aux extrémités */
   }
-  .wv-canvas{display:block;width:100%;height:52px;border-radius:3px;}
-  .wv-pre{position:absolute;top:0;bottom:0;left:0;background:rgba(0,0,0,.58);pointer-events:none;border-radius:3px 0 0 3px;}
-  .wv-post{position:absolute;top:0;bottom:0;right:0;background:rgba(0,0,0,.58);pointer-events:none;border-radius:0 3px 3px 0;}
+  .wv-canvas{display:block;width:100%;height:80px;border-radius:3px;}
+  .wv-pre{position:absolute;top:0;bottom:0;left:0;background:rgba(0,0,0,.55);pointer-events:none;border-radius:3px 0 0 3px;}
+  .wv-post{position:absolute;top:0;bottom:0;right:0;background:rgba(0,0,0,.55);pointer-events:none;border-radius:0 3px 3px 0;}
   .wv-playhead{position:absolute;top:0;bottom:0;width:2px;background:rgba(0,212,240,.9);pointer-events:none;display:none;z-index:2;}
-  /* Poignées : largeur généreuse, zone cliquable étendue via padding */
   .wv-handle{
     position:absolute;top:0;bottom:0;
-    width:4px;
-    cursor:ew-resize;
-    z-index:4;
-    /* décalage de -2px pour centrer sur la ligne */
+    width:4px;cursor:ew-resize;z-index:4;
     transform:translateX(-2px);
   }
   .wv-handle-in {background:#00d96a;}
   .wv-handle-out{background:#e03020;}
-  /* Étiquette au-dessus de la poignée */
   .wv-handle::before{
     content:attr(data-label);
     position:absolute;
-    bottom:calc(100% + 2px);
-    left:50%;
-    transform:translateX(-50%);
-    font-family:var(--mono);
-    font-size:8px;
-    white-space:nowrap;
-    padding:1px 4px;
-    border-radius:2px;
-    pointer-events:none;
+    bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:8px;white-space:nowrap;
+    padding:1px 4px;border-radius:2px;pointer-events:none;
   }
-  .wv-handle-in::before {color:#00d96a;background:rgba(0,30,10,.85);}
-  .wv-handle-out::before{color:#e03020;background:rgba(30,0,0,.85);}
-  /* Zone de clic élargie (pseudo-élément transparent) */
-  .wv-handle::after{content:'';position:absolute;top:0;bottom:0;left:-8px;right:-8px;}
+  .wv-handle-in::before {color:#00d96a;background:rgba(0,30,10,.9);}
+  .wv-handle-out::before{color:#e03020;background:rgba(30,0,0,.9);}
+  .wv-handle::after{content:'';position:absolute;top:0;bottom:0;left:-10px;right:-10px;}
   .wv-labels{display:flex;justify-content:space-between;margin-top:3px;padding:0 2px;}
   .wv-label{font-family:var(--mono);font-size:8px;color:var(--txt-mute);}
   .wv-label.in-lbl{color:var(--green);}
   .wv-label.out-lbl{color:var(--red);}
+  /* Indicateur zoom actif */
+  .wv-wrap.zoomed .wv-canvas{border:1px solid rgba(0,212,240,.3);}
+  /* Bouton ouvrir éditeur */
+  .wv-edit-btn{
+    position:absolute;bottom:4px;right:4px;z-index:6;
+    background:rgba(6,11,24,.8);border:1px solid var(--border);
+    color:var(--txt-mute);font-family:var(--mono);font-size:8px;
+    padding:1px 6px;border-radius:2px;cursor:pointer;letter-spacing:1px;
+    transition:all .12s;
+  }
+  .wv-edit-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+
+  /* ── Modal éditeur waveform ── */
+  .wv-modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);
+    z-index:2000;align-items:center;justify-content:center;
+  }
+  .wv-modal-overlay.open{display:flex;}
+  .wv-modal{
+    background:var(--s1);border:1px solid var(--cyan);border-radius:8px;
+    width:min(900px,94vw);padding:1.2rem 1.4rem;
+    box-shadow:0 20px 60px rgba(0,0,0,.8);
+    display:flex;flex-direction:column;gap:1rem;
+  }
+  .wv-modal-header{
+    display:flex;align-items:center;justify-content:space-between;
+    font-family:var(--display);font-size:16px;color:var(--txt);letter-spacing:2px;
+  }
+  .wv-modal-title{color:var(--cyan);}
+  .wv-modal-close{
+    background:transparent;border:1px solid var(--border);color:var(--txt-mute);
+    font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:2px;
+    cursor:pointer;transition:all .12s;
+  }
+  .wv-modal-close:hover{border-color:var(--red);color:var(--red);}
+  .wv-modal-canvas-wrap{position:relative;height:160px;}
+  .wv-modal-canvas{display:block;width:100%;height:160px;border-radius:4px;}
+  .wv-modal-pre{position:absolute;top:0;bottom:0;left:0;background:rgba(0,0,0,.55);pointer-events:none;border-radius:4px 0 0 4px;}
+  .wv-modal-post{position:absolute;top:0;bottom:0;right:0;background:rgba(0,0,0,.55);pointer-events:none;border-radius:0 4px 4px 0;}
+  .wv-modal-ph{position:absolute;top:0;bottom:0;width:2px;background:rgba(0,212,240,.9);pointer-events:none;display:none;z-index:2;}
+  .wv-modal-handle{
+    position:absolute;top:0;bottom:0;width:5px;cursor:ew-resize;z-index:4;transform:translateX(-2.5px);
+  }
+  .wv-modal-handle::after{content:'';position:absolute;top:0;bottom:0;left:-12px;right:-12px;}
+  .wv-modal-handle::before{
+    content:attr(data-label);position:absolute;bottom:calc(100%+4px);left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:9px;white-space:nowrap;padding:2px 6px;border-radius:2px;pointer-events:none;
+  }
+  .wv-modal-in{background:#00d96a;}
+  .wv-modal-in::before{color:#00d96a;background:rgba(0,30,10,.95);}
+  .wv-modal-out{background:#e03020;}
+  .wv-modal-out::before{color:#e03020;background:rgba(30,0,0,.95);}
+  /* Zoom strip */
+  .wv-modal-zoom-wrap{position:relative;height:50px;margin-top:2px;}
+  .wv-modal-zoom-canvas{display:block;width:100%;height:50px;border-radius:3px;border:1px solid var(--border);}
+  .wv-modal-zoom-region{position:absolute;top:0;bottom:0;background:rgba(0,212,240,.12);border:1px solid rgba(0,212,240,.4);pointer-events:none;}
+  /* Contrôles IN/OUT texte */
+  .wv-modal-controls{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;}
+  .wv-modal-cue-group{display:flex;align-items:center;gap:.5rem;}
+  .wv-modal-cue-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;}
+  .wv-modal-cue-input{
+    background:var(--s3);border:1px solid var(--border);color:var(--txt);
+    font-family:var(--mono);font-size:12px;padding:3px 8px;border-radius:3px;
+    width:80px;text-align:center;outline:none;
+  }
+  .wv-modal-cue-input:focus{border-color:var(--cyan);}
+  .wv-modal-cue-input.in{border-color:#00d96a;color:#00d96a;}
+  .wv-modal-cue-input.out{border-color:#e03020;color:#e03020;}
+  .wv-modal-btn{
+    background:transparent;border:1px solid var(--border);color:var(--txt-mute);
+    font-family:var(--mono);font-size:10px;padding:4px 12px;border-radius:2px;
+    cursor:pointer;letter-spacing:1px;transition:all .12s;
+  }
+  .wv-modal-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  .wv-modal-btn.apply{border-color:var(--green);color:var(--green);}
+  .wv-modal-btn.apply:hover{background:#001a08;}
 
   /* ── VU Mètre ── */
   .vu-row-title {
@@ -685,6 +748,47 @@
 </style>
 </head>
 <body>
+
+
+<!-- ══ MODAL ÉDITEUR WAVEFORM ══ -->
+<div class="wv-modal-overlay" id="wv-modal">
+  <div class="wv-modal">
+    <div class="wv-modal-header">
+      <span class="wv-modal-title" id="wv-modal-title">Éditeur IN / OUT</span>
+      <button class="wv-modal-close" onclick="wvModalClose()">✕ FERMER</button>
+    </div>
+    <!-- Canvas principal grand -->
+    <div class="wv-modal-canvas-wrap" id="wv-modal-wrap">
+      <canvas class="wv-modal-canvas" id="wv-modal-canvas" width="900" height="160"></canvas>
+      <div class="wv-modal-pre"  id="wv-modal-pre"></div>
+      <div class="wv-modal-post" id="wv-modal-post"></div>
+      <div class="wv-modal-ph"   id="wv-modal-ph"></div>
+      <div class="wv-modal-handle wv-modal-in"  id="wv-modal-in"  data-label="IN"></div>
+      <div class="wv-modal-handle wv-modal-out" id="wv-modal-out" data-label="OUT"></div>
+    </div>
+    <!-- Mini canvas zoom -->
+    <div style="font-family:var(--mono);font-size:8px;color:var(--txt-mute);letter-spacing:1px;margin-bottom:-6px">VUE D'ENSEMBLE</div>
+    <div class="wv-modal-zoom-wrap">
+      <canvas class="wv-modal-zoom-canvas" id="wv-modal-zoom" width="900" height="50"></canvas>
+      <div class="wv-modal-zoom-region" id="wv-modal-zoom-region"></div>
+    </div>
+    <!-- Contrôles texte -->
+    <div class="wv-modal-controls">
+      <div class="wv-modal-cue-group">
+        <span class="wv-modal-cue-label" style="color:#00d96a">IN</span>
+        <input class="wv-modal-cue-input in" id="wv-modal-in-input" type="text" placeholder="0.000">
+        <button class="wv-modal-btn" onclick="wvModalSetIn()">Appliquer</button>
+      </div>
+      <div class="wv-modal-cue-group">
+        <span class="wv-modal-cue-label" style="color:#e03020">OUT</span>
+        <input class="wv-modal-cue-input out" id="wv-modal-out-input" type="text" placeholder="0.000">
+        <button class="wv-modal-btn" onclick="wvModalSetOut()">Appliquer</button>
+      </div>
+      <button class="wv-modal-btn" onclick="wvModalReset()">↺ Réinitialiser</button>
+      <button class="wv-modal-btn apply" onclick="wvModalApply()">✓ APPLIQUER</button>
+    </div>
+  </div>
+</div>
 
 <nav class="navbar is-console" role="navigation">
   <div class="navbar-brand">
@@ -1699,28 +1803,17 @@ function handleFiles(files,idx){
 function handleDrop(ev,idx){ev.preventDefault();document.getElementById('fdz'+(idx+1)).classList.remove('drag-over');handleFiles(ev.dataTransfer.files,idx);}
 
 // ── Dessin waveform ──
-async function drawWaveform(canvas,file){
+// Cache audio data pour le zoom
+const WV_DATA_CACHE={}; // file→Float32Array
+
+async function drawWaveform(canvas,file,startRatio=0,endRatio=1){
   try{
     const resp=await fetch(file);const buf=await resp.arrayBuffer();
     const offCtx=new OfflineAudioContext(1,1,44100);
     const ab=await offCtx.decodeAudioData(buf);
-    const data=ab.getChannelData(0);
-    const W=canvas.width,H=canvas.height;
-    const c=canvas.getContext('2d');
-    c.fillStyle='#0a1428';c.fillRect(0,0,W,H);
-    const step=Math.max(1,Math.floor(data.length/W));
-    // Fond de grille légère
-    c.strokeStyle='#1a3050';c.lineWidth=1;
-    c.beginPath();c.moveTo(0,H/2);c.lineTo(W,H/2);c.stroke();
-    // Waveform — couleur plus vive
-    c.strokeStyle='#2090c0';c.lineWidth=1;
-    for(let x=0;x<W;x++){
-      let mn=0,mx=0;
-      for(let j=0;j<step;j++){const v=data[x*step+j]||0;if(v<mn)mn=v;if(v>mx)mx=v;}
-      const y1=Math.round((1+mn)/2*H);
-      const y2=Math.round((1+mx)/2*H);
-      c.beginPath();c.moveTo(x+.5,y1);c.lineTo(x+.5,Math.max(y2,y1+1));c.stroke();
-    }
+    const rawData=ab.getChannelData(0);
+    WV_DATA_CACHE[file]=rawData;
+    drawWaveformFromData(canvas,rawData,startRatio,endRatio);
     // Remplissage semi-transparent sous la waveform
     const grad=c.createLinearGradient(0,0,0,H);
     grad.addColorStop(0,'rgba(0,160,220,0.15)');
@@ -1849,12 +1942,13 @@ class Diffuser{
         <td class="cell-wv">
           <div class="wv-outer">
             <div class="wv-wrap" id="${wvId}-wrap">
-              <canvas class="wv-canvas" id="${wvId}" width="400" height="52"></canvas>
+              <canvas class="wv-canvas" id="${wvId}" width="800" height="80"></canvas>
               <div class="wv-pre"      id="${wvId}-pre"  style="width:${inPct}%"></div>
               <div class="wv-post"     id="${wvId}-post" style="left:${outPct}%"></div>
               <div class="wv-playhead" id="${wvId}-ph"></div>
               <div class="wv-handle wv-handle-in"  id="${wvId}-in"  data-label="IN"  style="left:${inPct}%"></div>
               <div class="wv-handle wv-handle-out" id="${wvId}-out" data-label="OUT" style="left:${outPct}%"></div>
+              <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" title="Éditer IN/OUT">✎</button>
             </div>
             <div class="wv-labels">
               <span class="wv-label in-lbl"  id="${wvId}-inlbl">IN ${fmtMs(this._inOf(i))}</span>
@@ -1869,7 +1963,7 @@ class Diffuser{
       // Bind drag handles
       this._bindHandles(wvId,i);
       const cv=document.getElementById(wvId);
-      if(cv&&this.durs[i]>0){cv.width=400;cv.height=52;drawWaveform(cv,t.file);}
+      if(cv&&this.durs[i]>0){cv.width=800;cv.height=80;drawWaveform(cv,t.file);}
     });
 
     document.getElementById(this.ids.counter).textContent=this.tracks.length?`${this.ci+1}/${this.tracks.length}`:'0/0';
@@ -1909,16 +2003,38 @@ class Diffuser{
         const lbl=document.getElementById(wvId+'-outlbl');
         if(lbl)lbl.textContent='OUT '+fmtMs(t.outCue);
       }
+      // ── Zoom sur la zone IN/OUT ──
+      const cv=document.getElementById(wvId);
+      const file=this.tracks[trackIdx]?.file;
+      if(cv && file && WV_DATA_CACHE[file]){
+        const inR=this._inOf(trackIdx)/dur;
+        const outR=this._outOf(trackIdx)/dur;
+        const pad=0.05;
+        const s=Math.max(0,inR-pad);
+        const e=Math.min(1,outR+pad);
+        drawWaveformFromData(cv,WV_DATA_CACHE[file],s,e);
+        wrap.classList.add('zoomed');
+      }
+    };
+
+    const onUp=()=>{
+      // Restituer la waveform complète après drag
+      const cv=document.getElementById(wvId);
+      const file=this.tracks[trackIdx]?.file;
+      if(cv&&file&&WV_DATA_CACHE[file]){
+        drawWaveformFromData(cv,WV_DATA_CACHE[file],0,1);
+        wrap.classList.remove('zoomed');
+      }
     };
 
     const bindDrag=(el,type)=>{
       let dragging=false;
       el.addEventListener('mousedown',e=>{e.stopPropagation();dragging=true;});
       document.addEventListener('mousemove',e=>{if(dragging)move(el,type,e.clientX);});
-      document.addEventListener('mouseup',()=>{dragging=false;});
+      document.addEventListener('mouseup',()=>{if(dragging){dragging=false;onUp();}});
       el.addEventListener('touchstart',e=>{e.stopPropagation();dragging=true;},{passive:true});
       document.addEventListener('touchmove',e=>{if(dragging)move(el,type,e.touches[0].clientX);},{passive:true});
-      document.addEventListener('touchend',()=>{dragging=false;});
+      document.addEventListener('touchend',()=>{if(dragging){dragging=false;onUp();}});
     };
     bindDrag(inH,'in');
     bindDrag(outH,'out');
@@ -3057,6 +3173,186 @@ D[6].togglePlay=function(){
   }
   getCtx().resume(); _tx_orig();
 };
+
+// ══════════════════════════════════════════════════════════════
+// MODAL ÉDITEUR WAVEFORM
+// ══════════════════════════════════════════════════════════════
+let _wvModal={diffIdx:null, trackIdx:null, wvId:null, dur:1, dragging:null};
+
+function wvModalOpen(wvId, diffIdx, trackIdx){
+  const d=D[diffIdx]; if(!d) return;
+  const t=d.tracks[trackIdx]; if(!t||!t.file) return;
+  const dur=d.durs[trackIdx]||1;
+  _wvModal={diffIdx,trackIdx,wvId,dur,dragging:null};
+
+  // Titre
+  document.getElementById('wv-modal-title').textContent='✎ '+t.title;
+
+  // Canvas principal
+  const cv=document.getElementById('wv-modal-canvas');
+  cv.width=900; cv.height=160;
+  const data=WV_DATA_CACHE[t.file];
+  if(data) drawWaveformFromData(cv,data,0,1);
+  else drawWaveform(cv,t.file).then(()=>wvModalRedraw());
+
+  // Mini zoom
+  const zv=document.getElementById('wv-modal-zoom');
+  zv.width=900; zv.height=50;
+  if(data) drawWaveformFromData(zv,data,0,1);
+
+  // Poignées
+  _wvModalUpdateHandles();
+
+  // Inputs
+  document.getElementById('wv-modal-in-input').value=t.inCue.toFixed(3);
+  document.getElementById('wv-modal-out-input').value=(t.outCue??dur).toFixed(3);
+
+  document.getElementById('wv-modal').classList.add('open');
+  _wvModalBindDrag();
+}
+
+function wvModalClose(){
+  document.getElementById('wv-modal').classList.remove('open');
+  _wvModal={diffIdx:null,trackIdx:null,wvId:null,dur:1,dragging:null};
+}
+
+function wvModalRedraw(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+  const dur=_wvModal.dur;
+  const data=WV_DATA_CACHE[t.file]; if(!data) return;
+  const inR=t.inCue/dur;
+  const outR=(t.outCue??dur)/dur;
+  const pad=0.04;
+  const s=Math.max(0,inR-pad);
+  const e=Math.min(1,outR+pad);
+  const cv=document.getElementById('wv-modal-canvas');
+  drawWaveformFromData(cv,data,s,e);
+  // Zoom region sur le mini
+  const zr=document.getElementById('wv-modal-zoom-region');
+  if(zr){ zr.style.left=(s*100)+'%'; zr.style.width=((e-s)*100)+'%'; }
+  _wvModalUpdateHandles(s,e);
+}
+
+function _wvModalUpdateHandles(startR=0,endR=1){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+  const dur=_wvModal.dur;
+  const range=endR-startR;
+  const inPct=range>0?((t.inCue/dur-startR)/range*100).toFixed(2):0;
+  const outPct=range>0?(((t.outCue??dur)/dur-startR)/range*100).toFixed(2):100;
+  const inH=document.getElementById('wv-modal-in');
+  const outH=document.getElementById('wv-modal-out');
+  const pre=document.getElementById('wv-modal-pre');
+  const post=document.getElementById('wv-modal-post');
+  if(inH) inH.style.left=Math.max(0,Math.min(98,inPct))+'%';
+  if(outH) outH.style.left=Math.max(0,Math.min(98,outPct))+'%';
+  if(pre) pre.style.width=Math.max(0,inPct)+'%';
+  if(post) post.style.left=Math.max(0,outPct)+'%';
+  // Stocker pour le drag
+  _wvModal._startR=startR; _wvModal._endR=endR;
+  // Inputs
+  document.getElementById('wv-modal-in-input').value=t.inCue.toFixed(3);
+  document.getElementById('wv-modal-out-input').value=(t.outCue??_wvModal.dur).toFixed(3);
+}
+
+function _wvModalBindDrag(){
+  const wrap=document.getElementById('wv-modal-wrap');
+  const inH=document.getElementById('wv-modal-in');
+  const outH=document.getElementById('wv-modal-out');
+
+  const move=(type,clientX)=>{
+    const rect=wrap.getBoundingClientRect();
+    const pct=Math.min(1,Math.max(0,(clientX-rect.left)/rect.width));
+    const d=D[_wvModal.diffIdx]; if(!d) return;
+    const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+    const dur=_wvModal.dur;
+    const sR=_wvModal._startR||0;
+    const eR=_wvModal._endR||1;
+    const realPct=sR+pct*(eR-sR);
+    const realTime=realPct*dur;
+    if(type==='in'){
+      t.inCue=Math.min(realTime,(t.outCue??dur)-0.05);
+      t.inCue=Math.max(0,t.inCue);
+    } else {
+      t.outCue=Math.max(realTime,t.inCue+0.05);
+      t.outCue=Math.min(dur,t.outCue);
+    }
+    wvModalRedraw();
+    // Sync waveform dans la playlist
+    const wvId=_wvModal.wvId;
+    const dur2=dur;
+    const inPct=(t.inCue/dur2*100).toFixed(1);
+    const outPct=Math.min(98,(t.outCue??dur2)/dur2*100).toFixed(1);
+    const hdIn=document.getElementById(wvId+'-in');
+    const hdOut=document.getElementById(wvId+'-out');
+    const pr=document.getElementById(wvId+'-pre');
+    const po=document.getElementById(wvId+'-post');
+    const lIn=document.getElementById(wvId+'-inlbl');
+    const lOut=document.getElementById(wvId+'-outlbl');
+    if(hdIn)hdIn.style.left=inPct+'%';
+    if(hdOut)hdOut.style.left=outPct+'%';
+    if(pr)pr.style.width=inPct+'%';
+    if(po)po.style.left=outPct+'%';
+    if(lIn)lIn.textContent='IN '+fmtMs(t.inCue);
+    if(lOut)lOut.textContent='OUT '+fmtMs(t.outCue??dur2);
+  };
+
+  inH._wvBound=true;
+  ['in','out'].forEach(type=>{
+    const el=type==='in'?inH:outH;
+    if(el._wvBound&&el._wvBound!==true) return;
+    el._wvBound='done';
+    el.addEventListener('mousedown',e=>{e.stopPropagation();_wvModal.dragging=type;});
+    el.addEventListener('touchstart',e=>{e.stopPropagation();_wvModal.dragging=type;},{passive:true});
+  });
+  // Listeners globaux (une seule fois)
+  if(!window._wvModalListeners){
+    window._wvModalListeners=true;
+    document.addEventListener('mousemove',e=>{if(_wvModal.dragging)move(_wvModal.dragging,e.clientX);});
+    document.addEventListener('mouseup',()=>{_wvModal.dragging=null;});
+    document.addEventListener('touchmove',e=>{if(_wvModal.dragging)move(_wvModal.dragging,e.touches[0].clientX);},{passive:true});
+    document.addEventListener('touchend',()=>{_wvModal.dragging=null;});
+  }
+}
+
+function wvModalSetIn(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+  const v=parseFloat(document.getElementById('wv-modal-in-input').value);
+  if(isNaN(v)) return;
+  t.inCue=Math.max(0,Math.min(v,(t.outCue??_wvModal.dur)-0.05));
+  wvModalRedraw();
+}
+function wvModalSetOut(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+  const v=parseFloat(document.getElementById('wv-modal-out-input').value);
+  if(isNaN(v)) return;
+  t.outCue=Math.min(_wvModal.dur,Math.max(v,t.inCue+0.05));
+  wvModalRedraw();
+}
+function wvModalReset(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+  t.inCue=0; t.outCue=_wvModal.dur;
+  _wvModal._startR=0; _wvModal._endR=1;
+  const cv=document.getElementById('wv-modal-canvas');
+  const data=WV_DATA_CACHE[t.file];
+  if(cv&&data) drawWaveformFromData(cv,data,0,1);
+  wvModalRedraw();
+}
+function wvModalApply(){
+  // Les changements sont déjà appliqués en temps réel
+  // Re-render la ligne dans la playlist pour mettre les labels à jour
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  d.render();
+  wvModalClose();
+}
+// Fermer en cliquant sur l'overlay
+document.getElementById('wv-modal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('wv-modal')) wvModalClose();
+});
 
 setTimeout(bindMacroDropZones,500);
 
