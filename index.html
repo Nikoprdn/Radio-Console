@@ -2148,86 +2148,101 @@ async function drawWaveform(canvas, file, startRatio=0, endRatio=1){
   }catch(e){ console.warn('waveform',e); return 0; }
 }
 
+// ── Dessin waveform standard (playlist) ──
 function drawWaveformFromData(canvas, data, startRatio=0, endRatio=1){
   const W=canvas.width, H=canvas.height;
   const c=canvas.getContext('2d');
-  c.fillStyle='#06101e';
+
+  // Fond
+  c.fillStyle='#080e1c';
   c.fillRect(0,0,W,H);
-  // Ligne centrale
-  c.strokeStyle='#1a3050'; c.lineWidth=1;
-  c.beginPath(); c.moveTo(0,H/2); c.lineTo(W,H/2); c.stroke();
+
+  // Grille légère
+  c.strokeStyle='rgba(30,50,90,.6)'; c.lineWidth=1;
+  [0.25,0.5,0.75].forEach(y=>{
+    c.beginPath(); c.moveTo(0,Math.round(H*y)+.5); c.lineTo(W,Math.round(H*y)+.5); c.stroke();
+  });
 
   const start=Math.floor(startRatio*data.length);
   const end=Math.floor(endRatio*data.length);
   const len=Math.max(1,end-start);
   const step=Math.max(1,Math.floor(len/W));
 
-  // Remplissage sous la courbe
-  c.fillStyle='rgba(0,140,200,0.10)';
+  // Zone remplie (silhouette symétrique)
+  const grad=c.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(0,180,220,0.08)');
+  grad.addColorStop(0.5,'rgba(0,200,240,0.18)');
+  grad.addColorStop(1,'rgba(0,180,220,0.08)');
+  c.fillStyle=grad;
   c.beginPath(); c.moveTo(0,H/2);
   for(let x=0;x<W;x++){
     let mx=0;
     for(let j=0;j<step;j++){const v=Math.abs(data[start+x*step+j]||0);if(v>mx)mx=v;}
-    c.lineTo(x, H/2 - Math.round(mx*(H/2)));
+    c.lineTo(x, H/2-mx*(H/2)*.95);
   }
   for(let x=W-1;x>=0;x--){
     let mx=0;
     for(let j=0;j<step;j++){const v=Math.abs(data[start+x*step+j]||0);if(v>mx)mx=v;}
-    c.lineTo(x, H/2 + Math.round(mx*(H/2)));
+    c.lineTo(x, H/2+mx*(H/2)*.95);
   }
   c.closePath(); c.fill();
 
-  // Barres min/max
+  // Traits min/max — couleur uniforme cyan
+  c.strokeStyle='rgba(0,212,240,0.8)';
+  c.lineWidth=1;
   for(let x=0;x<W;x++){
     let mn=0,mx=0;
     for(let j=0;j<step;j++){
       const v=data[start+x*step+j]||0;
       if(v<mn)mn=v; if(v>mx)mx=v;
     }
-    const bright=Math.min(220, 70+Math.round((x/W)*120));
-    c.strokeStyle=`rgb(0,${bright},${Math.min(255,bright+80)})`;
-    c.lineWidth=1;
     const y1=Math.round((1+mn)/2*H);
     const y2=Math.round((1+mx)/2*H);
-    c.beginPath(); c.moveTo(x+.5,y1); c.lineTo(x+.5,Math.max(y2,y1+1)); c.stroke();
+    if(y2>y1){
+      c.beginPath(); c.moveTo(x+.5,y1); c.lineTo(x+.5,y2); c.stroke();
+    }
   }
 }
 
-// Waveform fond de ligne active — couleurs broadcast, semi-transparent
+// ── Waveform fond de la ligne active ──
 function drawWaveformBg(canvas, data){
   const W=canvas.width, H=canvas.height;
   const c=canvas.getContext('2d');
   c.clearRect(0,0,W,H);
-  // Fond sombre semi-transparent
-  c.fillStyle='rgba(4,6,16,.0)';
-  c.fillRect(0,0,W,H);
 
   const step=Math.max(1,Math.floor(data.length/W));
 
-  // Remplissage cyan semi-transparent
-  c.fillStyle='rgba(0,160,220,0.18)';
+  // Zone remplie cyan transparente
+  c.fillStyle='rgba(0,190,230,0.12)';
   c.beginPath(); c.moveTo(0,H/2);
   for(let x=0;x<W;x++){
     let mx=0;
     for(let j=0;j<step;j++){const v=Math.abs(data[x*step+j]||0);if(v>mx)mx=v;}
-    c.lineTo(x, H/2 - mx*(H/2)*0.9);
+    c.lineTo(x, H/2-mx*(H/2)*.9);
   }
   for(let x=W-1;x>=0;x--){
     let mx=0;
     for(let j=0;j<step;j++){const v=Math.abs(data[x*step+j]||0);if(v>mx)mx=v;}
-    c.lineTo(x, H/2 + mx*(H/2)*0.9);
+    c.lineTo(x, H/2+mx*(H/2)*.9);
   }
   c.closePath(); c.fill();
 
-  // Barres min/max — bleu cyan vif
+  // Traits — blanc cassé pour contraster sur fond rouge
+  c.strokeStyle='rgba(255,255,255,0.5)';
+  c.lineWidth=1;
   for(let x=0;x<W;x++){
     let mn=0,mx=0;
     for(let j=0;j<step;j++){
       const v=data[x*step+j]||0;
       if(v<mn)mn=v; if(v>mx)mx=v;
     }
-    // Couleur : cyan pour le corps, rouge/orange pour les pics
-    const amp=Math.max(Math.abs(mn),Math.abs(mx));
+    const y1=Math.round((1+mn)/2*H);
+    const y2=Math.round((1+mx)/2*H);
+    if(y2>y1){
+      c.beginPath(); c.moveTo(x+.5,y1); c.lineTo(x+.5,y2); c.stroke();
+    }
+  }
+}
     const r=amp>0.8?255:amp>0.6?Math.round(amp*200):0;
     const g=Math.round(160+amp*60);
     const b=Math.round(220-amp*80);
@@ -2512,71 +2527,49 @@ class Diffuser{
     bindDrag(outH,'out');
   }
 
+  // tick() = mise à jour UI UNIQUEMENT — jamais de déclenchement de lecture
   tick(){
-    if(!this.tracks.length)return;
-    this.tracks.forEach((t,i)=>{
-      const audio=this.audios[i];
-      if(!audio || audio.paused) return; // skip si pas d'audio ou en pause
+    if(!this.playing || !this.tracks.length) return;
+    const i=0; // toujours piste 0
+    const audio=this.audios[i];
+    if(!audio || audio.paused) return;
 
-      const pos=audio.currentTime;
-      const outCue=this._outOf(i);
-      const dur=this.durs[i]||1;
-      const rem=Math.max(0,outCue-pos);
+    const pos=audio.currentTime;
+    const outCue=this._outOf(i);
+    const dur=this.durs[i]||1;
+    const rem=Math.max(0,outCue-pos);
 
-      // Playhead
-      const ph=document.getElementById(`wv-${this.idx}-${i}-ph`);
-      if(ph){ph.style.display='block';ph.style.left=(pos/dur*100).toFixed(2)+'%';}
+    // Playhead waveform
+    const ph=document.getElementById(`wv-${this.idx}-${i}-ph`);
+    if(ph){ph.style.display='block';ph.style.left=(pos/dur*100).toFixed(2)+'%';}
 
-      // Décompte
-      const cd=document.getElementById(`${this.ids.body}-cd-${i}`);
-      if(cd)cd.textContent=fmtFull(rem);
+    // Décompte dans le tableau
+    const cd=document.getElementById(`${this.ids.body}-cd-${i}`);
+    if(cd)cd.textContent=fmtFull(rem);
 
-      // Barre de progression (piste active principale)
-      if(i===this.ci){
-        const prog=(pos-this._inOf(i))/Math.max(0.01,this._playDur(i));
-        const ar=document.querySelector(`#${this.ids.body} tr.row-active`);
-        if(ar)ar.style.setProperty('--prog',Math.min(1,prog).toFixed(4));
-        const pb=document.getElementById(this.ids.progress);
-        if(pb)pb.value=Math.round(Math.min(1,prog)*100);
-        document.getElementById(this.ids.avant).textContent=fmtFull(rem);
-        document.getElementById(this.ids.avance).textContent=fmtFull(pos-this._inOf(i));
-        document.getElementById(this.ids.micros).textContent=fmtSec(pos-this._inOf(i));
-      }
-
-      // ── Out-cue = point de chaîne ──
-      // Le morceau i continue jusqu'à sa fin naturelle.
-      // En AUTO : dès que le out-cue est atteint, le suivant démarre en overlap.
-      if(this.auto && !this._chainDone.has(i) && pos>=outCue-0.08){
-        this._chainDone.add(i);
-        const next=i+1;
-        if(next<this.tracks.length){
-          // Démarrer la piste suivante — i continue de jouer (mix)
-          this.ci=next;
-          this._startTrack(next);
-          this.render();
-        }
-        // Pas d'arrêt forcé : le morceau i se termine naturellement
-      }
-
-      // OUT-cue = point de chaîne uniquement (pas de fin forcée)
-      // Le morceau continue toujours jusqu'à sa fin naturelle.
-      // En AUTO : le suivant démarre au out-cue (déjà géré ci-dessus).
-      // Sans AUTO : le out-cue n'a aucun effet sur la lecture en cours.
-    });
+    // Barre de progression + timers footer
+    const prog=(pos-this._inOf(i))/Math.max(0.01,this._playDur(i));
+    const ar=document.querySelector(`#${this.ids.body} tr.row-active`);
+    if(ar) ar.style.setProperty('--prog',Math.min(1,prog).toFixed(4));
+    const pb=document.getElementById(this.ids.progress);
+    if(pb) pb.value=Math.round(Math.min(1,prog)*100);
+    document.getElementById(this.ids.avant).textContent=fmtFull(rem);
+    document.getElementById(this.ids.avance).textContent=fmtFull(pos-this._inOf(i));
+    document.getElementById(this.ids.micros).textContent=fmtSec(pos-this._inOf(i));
   }
 
+  // Lance la piste en tête (index 0) — UNE SEULE lecture à la fois
   _startTrack(i){
     const t=this.tracks[i];
     if(!t) return;
 
-    // ── MACRO : exécuter, supprimer, passer à la suivante ──
+    // ── MACRO ──
     if(t.isMacro){
       if(typeof fireMacroTrack==='function') fireMacroTrack(t.macroKey, this.idx);
       this.tracks.splice(i,1);
       this.durs.splice(i,1);
       this.audios.splice(i,1);
       this.ci=0;
-      this._chainDone.clear();
       this._updateFdzCount();
       if(this.playing){
         if(this.tracks.length) this._startTrack(0);
@@ -2590,40 +2583,31 @@ class Diffuser{
     const audio=this.audios[i];
     if(!audio) return;
 
-    // Nouveau token — invalide tous les onended précédents
+    // Incrémenter le token — invalide tous les onended en attente
     const token=++this._playToken;
-
-    // Annuler tout onended existant sur cet élément audio
-    audio.onended=null;
+    audio.onended=null; // annuler l'ancien handler
     audio.currentTime=this._inOf(i);
 
-    // Poser le onended avec vérification stricte du token
     audio.onended=()=>{
-      // Double protection : token + this.playing
+      // Ignorer si ce n'est plus notre session ou si stoppé
       if(token!==this._playToken || !this.playing) return;
 
-      // Invalider IMMÉDIATEMENT pour bloquer tout re-déclenchement
+      // Verrouiller — empêche tout autre déclenchement
       this._playToken++;
-
-      // Annuler onended sur l'objet audio
       audio.onended=null;
 
-      // Supprimer LA piste qui vient de finir (toujours l'index i capturé)
-      const capturedIdx=i; // i est capturé par closure
-      if(capturedIdx < this.tracks.length){
-        const track=this.tracks[capturedIdx];
-        if(track && track.file && track.file.startsWith('blob:')) URL.revokeObjectURL(track.file);
-        this.tracks.splice(capturedIdx,1);
-        this.durs.splice(capturedIdx,1);
-        const removed=this.audios.splice(capturedIdx,1)[0];
-        if(removed && removed!==audio) removed.onended=null;
+      // Supprimer la piste qui vient de finir
+      if(i < this.tracks.length){
+        const track=this.tracks[i];
+        if(track?.file?.startsWith('blob:')) URL.revokeObjectURL(track.file);
+        this.tracks.splice(i,1);
+        this.durs.splice(i,1);
+        this.audios.splice(i,1);
       }
-
       this.ci=0;
-      this._chainDone.clear();
       this._updateFdzCount();
 
-      // Lancer la nouvelle piste 0, ou s'arrêter
+      // Enchaîner sur la nouvelle piste 0, ou s'arrêter proprement
       if(this.tracks.length){
         this._startTrack(0);
       } else {
@@ -2632,7 +2616,7 @@ class Diffuser{
       this.render();
     };
 
-    audio.play().catch(e=>console.warn(e));
+    audio.play().catch(e=>{ audio.onended=null; console.warn(e); });
   }
 
   // Mettre à jour le compteur de fichiers dans la dropzone
