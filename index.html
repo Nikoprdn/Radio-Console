@@ -480,6 +480,13 @@
   }
   .macro-run-btn:hover { border-color:var(--yellow); color:var(--yellow); }
   .macro-run-btn.running { background:#1a1400; border-color:var(--yellow); color:var(--yellow); animation:blink .6s step-start infinite; }
+  .macro-add-diff-btn {
+    font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 8px;
+    border:1px solid var(--border); border-radius:2px; background:transparent;
+    color:var(--txt-mute); cursor:pointer; transition:all .12s;
+  }
+  .macro-add-diff-btn:hover { border-color:var(--yellow); color:var(--yellow); background:#1a1400; }
+  .macro-add-diff-btn.added { border-color:var(--green); color:var(--green); background:#001a08; }
   .macro-draggable { cursor:grab; user-select:none; }
   .macro-draggable:active { cursor:grabbing; }
   /* Macros dans la playlist */
@@ -1050,34 +1057,50 @@
 <div id="tab-macros" class="tab-panel">
 <div class="rdv-section" style="min-height:80vh;padding-bottom:120px">
   <div class="rdv-title">Macros</div>
-  <p style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);margin-bottom:1rem;letter-spacing:1px;">
-    Glisse une macro dans n'importe quelle playlist pour l'insérer comme action déclenchée à la lecture.
-    Tu peux aussi l'exécuter immédiatement avec ▶.
+  <p style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);margin-bottom:1.5rem;letter-spacing:1px;">
+    Clique sur un diffuseur pour y ajouter la macro comme action dans la playlist.
+    La macro s'exécutera automatiquement quand le diffuseur arrivera à cette position.
   </p>
   <div class="macro-grid">
 
     <!-- START NAT -->
-    <div class="macro-card macro-draggable" draggable="true"
-         ondragstart="macroDragStart(event,'nat')"
-         ondragend="macroDragEnd(event)">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span class="diff-badge" style="background:#1c1c1c;color:#909090;border:1px solid #404040;letter-spacing:3px;font-size:10px">START NAT</span>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);cursor:grab">⠿ glisser</span>
+    <div class="macro-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span class="diff-badge" style="background:#1c1c1c;color:#909090;border:1px solid #404040;letter-spacing:3px;font-size:11px">START NAT</span>
       </div>
-      <div class="macro-desc">Lance le diffuseur NATIONAL (D[5])</div>
-      <button class="macro-run-btn" id="macro-nat-btn" onclick="runMacro('nat')">▶ EXÉCUTER</button>
+      <div class="macro-desc" style="margin-bottom:10px">Lance le diffuseur NATIONAL</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);margin-bottom:8px;letter-spacing:1px">AJOUTER DANS →</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px" id="macro-nat-add-btns">
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(0,'nat',this)">DIFF 1</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(1,'nat',this)">DIFF 2</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(2,'nat',this)">PUB SAT</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(3,'nat',this)">PUB DAB+</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(4,'nat',this)">PUB Hz</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(5,'nat',this)">NATIONAL</button>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:8px">
+        <button class="macro-run-btn" id="macro-nat-btn" onclick="runMacro('nat')">▶ EXÉCUTER MAINTENANT</button>
+      </div>
     </div>
 
     <!-- START LOC -->
-    <div class="macro-card macro-draggable" draggable="true"
-         ondragstart="macroDragStart(event,'loc')"
-         ondragend="macroDragEnd(event)">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span class="diff-badge" style="background:#0d1020;color:#6a8890;border:1px solid #1a3040;letter-spacing:3px;font-size:10px">START LOC</span>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);cursor:grab">⠿ glisser</span>
+    <div class="macro-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span class="diff-badge" style="background:#0d1020;color:#6a8890;border:1px solid #1a3040;letter-spacing:3px;font-size:11px">START LOC</span>
       </div>
-      <div class="macro-desc">Lance PUB SAT · PUB DAB+ · PUB Hz</div>
-      <button class="macro-run-btn" id="macro-loc-btn" onclick="runMacro('loc')">▶ EXÉCUTER</button>
+      <div class="macro-desc" style="margin-bottom:10px">Lance PUB SAT · PUB DAB+ · PUB Hz</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);margin-bottom:8px;letter-spacing:1px">AJOUTER DANS →</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(0,'loc',this)">DIFF 1</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(1,'loc',this)">DIFF 2</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(2,'loc',this)">PUB SAT</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(3,'loc',this)">PUB DAB+</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(4,'loc',this)">PUB Hz</button>
+        <button class="macro-add-diff-btn" onclick="insertMacroInDiff(5,'loc',this)">NATIONAL</button>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:8px">
+        <button class="macro-run-btn" id="macro-loc-btn" onclick="runMacro('loc')">▶ EXÉCUTER MAINTENANT</button>
+      </div>
     </div>
 
   </div>
@@ -1116,10 +1139,10 @@
     <div class="vu-row-title" style="color:#2a4a8a;letter-spacing:4px;margin-bottom:0;">— Flux de diffusion —</div>
     <div style="display:flex;align-items:center;gap:10px;">
       <span style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;">BIP SILENCE</span>
-      <input type="range" id="bip-vol" min="0" max="100" value="35"
+      <input type="range" id="bip-vol" min="0" max="100" value="5"
         style="-webkit-appearance:none;width:80px;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;"
         oninput="bipVolChange(this.value)">
-      <span id="bip-vol-val" style="font-family:var(--mono);font-size:9px;color:var(--cyan);min-width:28px;">35%</span>
+      <span id="bip-vol-val" style="font-family:var(--mono);font-size:9px;color:var(--cyan);min-width:28px;">5%</span>
       <button onclick="playBip()" style="background:transparent;border:1px solid var(--border);color:var(--txt-mute);font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px;"
         onmouseover="this.style.borderColor='#00d4f0';this.style.color='#00d4f0'"
         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--txt-mute)'">▶ TEST</button>
@@ -1902,7 +1925,7 @@ function getDbFromVU(vu){
 vuLoop();
 
 // ── Contrôle volume bip ──
-let _bipVolume=0.35;
+let _bipVolume=0.05;
 function bipVolChange(v){
   _bipVolume=v/100;
   document.getElementById('bip-vol-val').textContent=v+'%';
@@ -2185,7 +2208,7 @@ function bindMacroDropZones(){
   });
 }
 
-function insertMacroInDiff(diffIdx,macroKey){
+function insertMacroInDiff(diffIdx,macroKey,btn){
   const m=MACROS[macroKey];if(!m)return;
   const d=D[diffIdx];if(!d)return;
   const macroTrack={file:null,title:m.label,color:'#6a5a00',inCue:0,outCue:null,isMacro:true,macroKey:macroKey};
@@ -2196,6 +2219,13 @@ function insertMacroInDiff(diffIdx,macroKey){
   const fdzEl=document.getElementById(CONFIGS[diffIdx].fdzCount);
   if(fdzEl) fdzEl.textContent=n+' fichier'+(n>1?'s':'');
   d.render();
+  // Feedback visuel sur le bouton
+  if(btn){
+    const orig=btn.textContent;
+    btn.classList.add('added');
+    btn.textContent='✓ AJOUTÉ';
+    setTimeout(()=>{ btn.classList.remove('added'); btn.textContent=orig; },1500);
+  }
 }
 
 function fireMacroTrack(macroKey){
