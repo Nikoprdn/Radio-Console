@@ -595,6 +595,25 @@
   .pl-chevron { font-size:10px; color:var(--txt-mute); transition:transform .2s; }
   .pl-collapsed .pl-chevron { transform:rotate(-90deg); }
 
+  /* ── Voyants macro (onglet TEST) ── */
+  .macro-voyant-card {
+    background:var(--s2); border:1px solid var(--border); border-radius:6px;
+    padding:.75rem 1rem; display:flex; align-items:center; gap:.75rem;
+    transition:border-color .15s;
+  }
+  .macro-voyant-card.active { border-color:var(--yellow); background:#0a0e00; }
+  .macro-voyant-dot {
+    width:18px; height:18px; border-radius:50%; flex-shrink:0;
+    background:#f5c400; border:2px solid #6a5000;
+    opacity:.2; transition:opacity .08s, box-shadow .08s;
+  }
+  .macro-voyant-dot.on {
+    opacity:1;
+    box-shadow:0 0 10px 3px currentColor;
+  }
+  .macro-voyant-label { font-family:var(--mono); font-size:11px; letter-spacing:2px; color:var(--yellow); }
+  .macro-voyant-desc  { font-family:var(--mono); font-size:8px; color:var(--txt-mute); margin-top:2px; letter-spacing:1px; }
+
   /* ── Macros CSS (déjà existant, complété) ── */
   /* ── VU strip latéral sur chaque diffuseur ── */
   .card.is-dark-card { position:relative; }
@@ -1384,7 +1403,8 @@
 
 <!-- Panneau TEST -->
 <div id="tab-test" class="tab-panel">
-<section class="section is-console" style="max-width:800px">
+<section class="section is-console">
+<div style="display:grid;grid-template-columns:1fr 260px;gap:1.5rem;align-items:start">
 
 <!-- ══ DIFFUSEUR TEST ══ -->
 <div class="card is-dark-card">
@@ -1476,6 +1496,56 @@
   Il partage toute la logique (playlist, macros, waveform, IN/OUT, auto-suppression après lecture).
   Les modifications validées ici seront appliquées à tous les diffuseurs.
 </div>
+
+</div><!-- col diffuseur -->
+
+<!-- ══ VOYANTS MACRO ══ -->
+<div style="display:flex;flex-direction:column;gap:1rem;padding-top:0">
+
+  <div style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Voyants Macro</div>
+
+  <!-- START NAT -->
+  <div class="macro-voyant-card" id="voyant-nat">
+    <div class="macro-voyant-dot" id="voyant-dot-nat"></div>
+    <div>
+      <div class="macro-voyant-label">START NAT</div>
+      <div class="macro-voyant-desc">Lance NATIONAL</div>
+    </div>
+  </div>
+
+  <!-- START LOC -->
+  <div class="macro-voyant-card" id="voyant-loc">
+    <div class="macro-voyant-dot" id="voyant-dot-loc"></div>
+    <div>
+      <div class="macro-voyant-label">START LOC</div>
+      <div class="macro-voyant-desc">Lance PUB SAT · DAB+ · Hz</div>
+    </div>
+  </div>
+
+  <!-- RACCRO -->
+  <div class="macro-voyant-card" id="voyant-raccro">
+    <div class="macro-voyant-dot" id="voyant-dot-raccro" style="background:#00d96a;border-color:#004a20"></div>
+    <div>
+      <div class="macro-voyant-label" style="color:#00d96a">RACCRO</div>
+      <div class="macro-voyant-desc">Stoppe ce diffuseur</div>
+    </div>
+  </div>
+
+  <!-- STOP −3s -->
+  <div class="macro-voyant-card" id="voyant-stop3">
+    <div class="macro-voyant-dot" id="voyant-dot-stop3" style="background:#e03020;border-color:#5a1010"></div>
+    <div>
+      <div class="macro-voyant-label" style="color:#e03020">STOP −3s</div>
+      <div class="macro-voyant-desc">Arrêt avec délai 3s</div>
+    </div>
+  </div>
+
+  <div style="font-family:var(--mono);font-size:8px;color:var(--txt-mute);margin-top:.5rem;letter-spacing:1px">
+    Les voyants s'allument 1,5s à chaque déclenchement.
+  </div>
+</div><!-- col voyants -->
+
+</div><!-- /grid test -->
 
 </section>
 </div><!-- /tab-test -->
@@ -2735,11 +2805,13 @@ const MACROS={
 
 function fireMacroTrack(macroKey, diffIdx){
   const m=MACROS[macroKey];if(!m)return;
+  flashVoyant(macroKey);
   m.run(diffIdx);
 }
 
 function runMacro(key, diffIdx){
   const m=MACROS[key]; if(!m)return;
+  flashVoyant(key);
   m.run(diffIdx);
   const btn=document.getElementById('macro-'+key+'-btn');
   if(btn){
@@ -2747,6 +2819,20 @@ function runMacro(key, diffIdx){
     btn.textContent='▶ EN COURS';
     setTimeout(()=>{ btn.classList.remove('running'); btn.textContent='▶ EXÉCUTER'; },3500);
   }
+}
+
+// Flash un voyant dans l'onglet TEST
+function flashVoyant(macroKey){
+  const dot=document.getElementById('voyant-dot-'+macroKey);
+  const card=document.getElementById('voyant-'+macroKey);
+  if(!dot||!card) return;
+  dot.classList.add('on');
+  card.classList.add('active');
+  clearTimeout(dot._flashTimer);
+  dot._flashTimer=setTimeout(()=>{
+    dot.classList.remove('on');
+    card.classList.remove('active');
+  },1500);
 }
 function rdvWinAdj(){}
 function rdvToggleArm(){}
