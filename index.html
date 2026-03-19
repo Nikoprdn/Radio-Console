@@ -2739,6 +2739,8 @@ function wireVU(audioEl,idL,idR){
   return{aL,aR,gn,monGn};
 }
 
+
+
 // ── Mode écoute Solo : SAT / DAB+ / Hz / MIX ──
 // monGn = gain vers les hauts-parleurs, indépendant de la mesure VU et de la détection silence
 let listenMode='mix';
@@ -2820,7 +2822,10 @@ function ensureMonGn(dep){
 
 // ── Créer ou récupérer la MediaElementSource d'un diffuseur ──
 function ensureSrc(key, audioEl){
-  if(SRCS[key]) return SRCS[key];
+  // Si déjà une vraie MediaElementSource, retourner
+  if(SRCS[key] && SRCS[key].numberOfOutputs !== undefined) return SRCS[key];
+  // Si marqué comme déjà créé par wireVU (valeur truthy non-Source), ne pas recréer
+  if(SRCS[key]) return null; // source gérée par wireVU, ne pas recréer
   if(!audioEl) return null;
   try{
     const ctx=getCtx();
@@ -2851,27 +2856,27 @@ function routeSrcToDepart(srcKey, dep, audioEl){
   return {aL, aR, gn};
 }
 
-// ── Wiring DIFF 1 : VU sticky + 3 départs ──
+// ── Wiring DIFF 1 : VU sticky + routage 3 départs ──
 const _t0_orig=D[0].togglePlay.bind(D[0]);
 D[0].togglePlay=function(){
   const el=D[0].audios[D[0].ci];
   if(el && !SRCS.d0){
     getCtx().resume();
-    // VU sticky
     vu1=wireVU(el,'vu1-L','vu1-R');
-    // 3 départs
+    SRCS.d0=vu1.gn.context?vu1.gn:null; // marquer comme créé
     ['sat','dab','hz'].forEach(dep=>routeSrcToDepart('d0',dep,el));
   }
   getCtx().resume(); _t0_orig();
 };
 
-// ── Wiring DIFF 2 : VU sticky + 3 départs ──
+// ── Wiring DIFF 2 : VU sticky + routage 3 départs ──
 const _t1_orig=D[1].togglePlay.bind(D[1]);
 D[1].togglePlay=function(){
   const el=D[1].audios[D[1].ci];
   if(el && !SRCS.d1){
     getCtx().resume();
     vuD2=wireVU(el,'vu-d2-L','vu-d2-R');
+    SRCS.d1=vuD2.gn.context?vuD2.gn:null;
     ['sat','dab','hz'].forEach(dep=>routeSrcToDepart('d1',dep,el));
   }
   getCtx().resume(); _t1_orig();
@@ -3102,32 +3107,32 @@ function checkSilence(key,db){
 // ── Boucle VU principale ──
 function vuLoop(){
   requestAnimationFrame(vuLoop);
-  // Diffuseurs principaux (sticky)
-  if(vu1)  paintBars('vu1-L','vu1-R',  vu1.aL,  vu1.aR,  'vu1-db',   vu1.gn,  '#00d4f0');
-  if(vuD2) paintBars('vu-d2-L','vu-d2-R',vuD2.aL,vuD2.aR,'vu-d2-db', vuD2.gn, '#9b5de5');
-  // Radio Monaco (caché mais routage audio actif)
-  if(vu2)  paintBars('vu2-L','vu2-R',  vu2.aL,  vu2.aR,  'vu2-db',   vu2.gn,  '#00d4f0');
-  // NATIONAL seul (présent sur les 3 départs)
-  if(vuNat) paintBars('vu-nat-L','vu-nat-R',vuNat.aL,vuNat.aR,'vu-nat-db',null,'#7a9098');
-  else { paintMixEmpty('nat'); }
-  // VU-mètres des 3 départs (PUB dédié + NATIONAL)
+
+  // ── VU diffuseurs individuels (bande sticky gauche) ──
+  if(vu1)   paintBars('vu1-L','vu1-R',    vu1.aL,   vu1.aR,   'vu1-db',    vu1.gn,  '#00d4f0');
+  if(vuD2)  paintBars('vu-d2-L','vu-d2-R',vuD2.aL,  vuD2.aR,  'vu-d2-db',  vuD2.gn, '#9b5de5');
+  if(vu2)   paintBars('vu2-L','vu2-R',    vu2.aL,   vu2.aR,   'vu2-db',    vu2.gn,  '#00d4f0');
+  if(vuNat) paintBars('vu-nat-L','vu-nat-R',vuNat.aL,vuNat.aR,'vu-nat-db', null,    '#8a9098');
+  else paintMixEmpty('nat');
+  if(vuSat) paintBars('vu-sat-sm-L','vu-sat-sm-R',vuSat.aL,vuSat.aR,'vu-sat-sm-db',null,'#8a9098');
+  if(vuDab) paintBars('vu-dab-sm-L','vu-dab-sm-R',vuDab.aL,vuDab.aR,'vu-dab-sm-db',null,'#8a9098');
+  if(vuHz)  paintBars('vu-hz-sm-L', 'vu-hz-sm-R', vuHz.aL, vuHz.aR, 'vu-hz-sm-db', null,'#8a9098');
+
+  // ── VU 3 départs : DIFF1 + DIFF2 + NATIONAL + PUB dédié ──
   let dbSat=-60, dbDab=-60, dbHz=-60;
-  const srcsSat=[vuSat,vuNatSat].filter(Boolean);
-  if(srcsSat.length){ dbSat=paintMix('sat',srcsSat); }
-  else { paintMixEmpty('sat'); }
-  const srcsDab=[vuDab,vuNatDab].filter(Boolean);
-  if(srcsDab.length){ dbDab=paintMix('dab',srcsDab); }
-  else { paintMixEmpty('dab'); }
-  const srcsHz=[vuHz,vuNatHz].filter(Boolean);
-  if(srcsHz.length){ dbHz=paintMix('hz',srcsHz); }
-  else { paintMixEmpty('hz'); }
-  checkSilence('sat',dbSat);
-  checkSilence('dab',dbDab);
-  checkSilence('hz', dbHz);
-  // Petits VU diffuseurs (col gauche) — miroir des vrais analyseurs
-  if(vuSat)  paintBars('vu-sat-sm-L','vu-sat-sm-R',vuSat.aL,vuSat.aR,'vu-sat-sm-db',null,'#f5c400');
-  if(vuDab)  paintBars('vu-dab-sm-L','vu-dab-sm-R',vuDab.aL,vuDab.aR,'vu-dab-sm-db',null,'#f5c400');
-  if(vuHz)   paintBars('vu-hz-sm-L','vu-hz-sm-R',  vuHz.aL, vuHz.aR, 'vu-hz-sm-db', null,'#f5c400');
+
+  const srcsSat=[vu1, vuD2, vuNatSat, vuSat].filter(Boolean);
+  if(srcsSat.length) dbSat=paintMix('sat', srcsSat); else paintMixEmpty('sat');
+
+  const srcsDab=[vu1, vuD2, vuNatDab, vuDab].filter(Boolean);
+  if(srcsDab.length) dbDab=paintMix('dab', srcsDab); else paintMixEmpty('dab');
+
+  const srcsHz=[vu1, vuD2, vuNatHz, vuHz].filter(Boolean);
+  if(srcsHz.length) dbHz=paintMix('hz', srcsHz); else paintMixEmpty('hz');
+
+  checkSilence('sat', dbSat);
+  checkSilence('dab', dbDab);
+  checkSilence('hz',  dbHz);
 }
 function paintMixEmpty(id){
   ['L','R'].forEach(ch=>{document.querySelectorAll(`#vu-${id}-${ch} .vu-row`).forEach(r=>r.style.opacity='0.1');});
