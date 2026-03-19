@@ -1808,73 +1808,92 @@ class Diffuser{
 
   _startTrack(i){
     const t=this.tracks[i];
-    // Si c'est une macro, l'exécuter et supprimer + passer à la suivante
-    if(t && t.isMacro){
+    if(!t) return;
+
+    // ── MACRO ──
+    if(t.isMacro){
       if(typeof fireMacroTrack==='function') fireMacroTrack(t.macroKey, this.idx);
-      // Supprimer la macro et démarrer la piste 0 suivante
-      setTimeout(()=>{
-        if(this.playing){
-          // Supprimer cette macro de la playlist
-          this.tracks.splice(i,1);
-          this.durs.splice(i,1);
-          this.audios.splice(i,1);
-          this.ci=0;
-          this._chainDone.clear();
-          if(this.tracks.length) this._startTrack(0);
-          else { this.playing=false; }
-          this.render();
-        }
-      },200);
+      // Supprimer la macro immédiatement puis avancer
+      this.tracks.splice(i,1);
+      this.durs.splice(i,1);
+      this.audios.splice(i,1);
+      this.ci=0;
+      this._chainDone.clear();
+      this._updateFdzCount();
+      // Si RACCRO/stop3 a stoppé la lecture → ne pas relancer
+      if(this.playing){
+        if(this.tracks.length) this._startTrack(0);
+        else this.playing=false;
+      }
+      this.render();
       return;
     }
+
+    // ── SON AUDIO ──
     const audio=this.audios[i];
-    if(!audio)return;
+    if(!audio) return;
+
+    // Annuler tout onended précédent sur cet audio
+    audio.onended=null;
     audio.currentTime=this._inOf(i);
-    // Quand le son se termine naturellement → le supprimer et jouer piste 0
+
+    // Quand le son se termine → supprimer et jouer suivant
     audio.onended=()=>{
-      if(!this.playing)return;
-      // Supprimer la piste qui vient de se terminer (ci=0 toujours)
-      const removeIdx=this.ci; // toujours 0
+      // Ignorer si le diffuseur a été stoppé entre-temps
+      if(!this.playing) return;
+      // Supprimer la piste qui vient de se terminer
+      const removeIdx=0; // ci est toujours 0
       if(t.file && t.file.startsWith('blob:')) URL.revokeObjectURL(t.file);
       this.tracks.splice(removeIdx,1);
       this.durs.splice(removeIdx,1);
-      const oldAudio=this.audios.splice(removeIdx,1)[0];
-      if(oldAudio){ oldAudio.onended=null; }
+      const old=this.audios.splice(removeIdx,1)[0];
+      if(old){ old.onended=null; }
       this.ci=0;
       this._chainDone.clear();
-      // Mettre à jour le compteur fichiers
-      const cfg=CONFIGS[this.idx];
-      if(cfg){
-        cfg.tracks=this.tracks;
-        const n=this.tracks.length;
-        const fdzEl=document.getElementById(cfg.fdzCount);
-        if(fdzEl) fdzEl.textContent=n?n+' fichier'+(n>1?'s':''):'Aucun fichier';
-      }
+      this._updateFdzCount();
       if(this.tracks.length){ this._startTrack(0); }
       else { this.playing=false; }
       this.render();
     };
+
     audio.play().catch(e=>console.warn(e));
+  }
+
+  // Mettre à jour le compteur de fichiers dans la dropzone
+  _updateFdzCount(){
+    const cfg=CONFIGS[this.idx];
+    if(!cfg) return;
+    cfg.tracks=this.tracks;
+    const n=this.tracks.length;
+    const el=document.getElementById(cfg.fdzCount);
+    if(el) el.textContent=n?n+' fichier'+(n>1?'s':''):'Aucun fichier';
   }
 
   togglePlay(){
     if(!this.tracks.length)return;
     if(!this.playing){
       this.playing=true;
-      this.ci=0; // Toujours démarrer depuis la première piste
+      this.ci=0;
       this._chainDone.clear();
       this._startTrack(0);
       this.render();
     } else {
-      this.audios.forEach(a=>{if(a&&!a.paused)a.pause();});
+      // Pause — annuler les onended pour éviter les redémarrages fantômes
+      this.audios.forEach(a=>{
+        if(a){ a.onended=null; if(!a.paused)a.pause(); }
+      });
       this.playing=false;
       this.render();
     }
   }
 
   stopAll(){
-    this.audios.forEach(a=>{if(a){a.pause();a.currentTime=0;}});
+    // Annuler tous les onended AVANT de pauser (évite relance fantôme)
+    this.audios.forEach(a=>{
+      if(a){ a.onended=null; a.pause(); a.currentTime=0; }
+    });
     this.playing=false;
+    this.ci=0;
     this._chainDone.clear();
     const pb=document.getElementById(this.ids.progress);if(pb)pb.value=0;
     this.render();
@@ -2586,31 +2605,23 @@ const MACROS={
   stop3:{
     label:'STOP −3s',
     run(diffIdx){
-      // Stoppe le diffuseur qui contient cette macro, avec un délai de 3 secondes
-      const targetIdx = (diffIdx !== undefined && diffIdx !== null) ? diffIdx : 0;
-      const d = D[targetIdx];
+      const idx=(diffIdx!==undefined&&diffIdx!==null)?diffIdx:0;
+      const d=D[idx];
       if(!d) return;
-      // Afficher un compte à rebours visuel sur le footer du diffuseur
-      const cfg = CONFIGS[targetIdx];
-      const totalEl = cfg ? document.getElementById(cfg.ids.total) : null;
-      let remaining = 3;
-      const origText = totalEl ? totalEl.textContent : null;
-      const tick = setInterval(()=>{
-        if(totalEl){
-          totalEl.textContent = '00:00:0' + remaining;
-          totalEl.style.color = '#e03020';
-          totalEl.style.animation = 'silence-blink .5s step-start infinite';
-        }
+      const cfg=CONFIGS[idx];
+      const totalEl=cfg?document.getElementById(cfg.ids.total):null;
+      let remaining=3;
+      if(totalEl){ totalEl.style.color='#e03020'; totalEl.style.animation='silence-blink .5s step-start infinite'; }
+      const tick=setInterval(()=>{
+        if(totalEl) totalEl.textContent='00:00:0'+remaining;
         remaining--;
-        if(remaining < 0){
+        if(remaining<0){
           clearInterval(tick);
-          if(totalEl){
-            totalEl.style.animation = '';
-            totalEl.style.color = '';
-          }
-          if(d.playing) d.stopAll();
+          if(totalEl){ totalEl.style.animation=''; totalEl.style.color=''; }
+          // stopAll annule les onended — pas de relance fantôme
+          d.stopAll();
         }
-      }, 1000);
+      },1000);
     }
   }
 };
