@@ -361,37 +361,72 @@
 
 
   /* ── VU Mètre ── */
-  .vu-row-title {
-    font-family: var(--mono);
-    font-size: 9px;
-    color: var(--txt-mute);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    padding: 0 0 .5rem 2px;
+  /* ══ VU Section sticky ══ */
+  .vu-section{
+    background:#060b16;
+    border-top:2px solid var(--border);
+    padding:.6rem 1rem;
+    position:sticky;bottom:0;z-index:10;
   }
-  .vu-row-wrap {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: .5rem;
+
+  /* Grille : col gauche (diffuseurs) + col droite (départs) */
+  .vu-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:.75rem;
   }
-  .vu-divider {
-    height: 1px;
-    background: var(--border);
-    margin: .75rem 0;
+  .vu-group{
+    display:flex;
+    flex-direction:column;
+    gap:.3rem;
   }
-  .vu-section{background:#060b16;border-top:2px solid var(--border);padding:.75rem 1rem;position:sticky;bottom:0;z-index:10;}
-  .vu-wrap{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:.75rem 1.25rem;display:flex;align-items:stretch;gap:1.5rem;}
-  .vu-label-block{display:flex;flex-direction:column;justify-content:space-between;min-width:52px;}
-  .vu-main-title{font-family:var(--mono);font-size:10px;color:var(--txt-dim);letter-spacing:2px;text-transform:uppercase;}
+  .vu-group-label{
+    font-family:var(--mono);font-size:7px;color:var(--txt-mute);
+    letter-spacing:3px;text-transform:uppercase;margin-bottom:2px;
+  }
+  .vu-row-wrap{display:flex;gap:.5rem;}
+
+  /* Card VU — diffuseurs (compacts, hauteur commune) */
+  .vu-wrap{
+    background:var(--s1);border:1px solid var(--border);border-radius:6px;
+    padding:.5rem .75rem;
+    display:flex;align-items:stretch;gap:.75rem;
+    flex:1;
+  }
+  /* Card VU — départs (plus grands) */
+  .vu-wrap.vu-depart{
+    background:#080d18;
+    border-color:#1a3060;
+    border-radius:6px;
+    padding:.6rem 1rem;
+    gap:1rem;
+  }
+
+  .vu-label-block{display:flex;flex-direction:column;justify-content:space-between;min-width:44px;}
+  .vu-main-title{
+    font-family:var(--mono);font-size:9px;color:var(--txt-dim);
+    letter-spacing:2px;text-transform:uppercase;
+  }
+  .vu-wrap.vu-depart .vu-main-title{
+    font-size:10px;color:var(--cyan);letter-spacing:3px;
+  }
   .vu-db-group{display:flex;flex-direction:column;}
-  .vu-db-val{font-family:var(--mono);font-size:20px;color:var(--cyan);letter-spacing:1px;line-height:1;}
-  .vu-db-unit{font-family:var(--mono);font-size:9px;color:var(--txt-dim);margin-top:2px;}
-  .vu-channel-v{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;max-width:80px;}
-  .vu-ch-label{font-family:var(--mono);font-size:9px;color:var(--txt-dim);letter-spacing:2px;text-transform:uppercase;}
-  .vu-meter-v{display:flex;flex-direction:column-reverse;gap:2px;width:100%;height:120px;}
-  .vu-row{flex:1;border-radius:2px;min-height:2px;transition:opacity .05s ease-out;}
-  .vu-scale-v{display:flex;flex-direction:column;justify-content:space-between;height:120px;padding:2px 0;}
-  .vu-scale-v span{font-family:var(--mono);font-size:7px;color:var(--txt-dim);text-align:right;line-height:1;}
+  .vu-db-val{font-family:var(--mono);font-size:16px;color:var(--cyan);letter-spacing:1px;line-height:1;}
+  .vu-wrap.vu-depart .vu-db-val{font-size:20px;}
+  .vu-db-unit{font-family:var(--mono);font-size:8px;color:var(--txt-mute);margin-top:1px;}
+
+  /* Barres verticales — hauteur unifiée */
+  .vu-channel-v{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;max-width:60px;}
+  .vu-wrap.vu-depart .vu-channel-v{max-width:80px;}
+  .vu-ch-label{font-family:var(--mono);font-size:8px;color:var(--txt-mute);letter-spacing:1px;}
+  .vu-meter-v{display:flex;flex-direction:column-reverse;gap:1px;width:100%;height:80px;}
+  .vu-wrap.vu-depart .vu-meter-v{height:100px;}
+  .vu-row{flex:1;border-radius:1px;min-height:2px;transition:opacity .05s ease-out;}
+  .vu-scale-v{display:flex;flex-direction:column;justify-content:space-between;height:80px;padding:2px 0;}
+  .vu-wrap.vu-depart .vu-scale-v{height:100px;}
+  .vu-scale-v span{font-family:var(--mono);font-size:7px;color:var(--txt-mute);text-align:right;line-height:1;}
+
+  /* Silence alert */
   .rm-vol-wrap{display:flex;flex-direction:column;gap:4px;justify-content:center;}
   .rm-vol-label{font-family:var(--mono);font-size:8px;color:var(--txt-dim);letter-spacing:1px;text-transform:uppercase;}
   input[type=range].rm-vol{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--border);outline:none;}
@@ -850,6 +885,26 @@
     opacity:0.08; transition:opacity .05s ease-out;
   }
 
+
+  /* ── Diff cards — gris clair (harmonisé avec PUB) ── */
+  .card.is-diff-card { background:#1c2028; border:1px solid #323840; border-radius:8px; box-shadow:none; position:relative; }
+  .card.is-diff-card .card-header { background:#242830; border-bottom:1px solid #323840; box-shadow:none; border-radius:8px 8px 0 0; }
+  .card.is-diff-card .card-content { padding:0; }
+  .card.is-diff-card .card-footer { background:#181c22; border-top:1px solid #323840; border-radius:0 0 8px 8px; padding:.6rem 1rem; gap:1rem; }
+  .card.is-diff-card .card-footer-item { color:#6a7890; font-family:var(--mono); font-size:11px; border:none; padding:0; justify-content:flex-start; }
+  .card.is-diff-card .notification.is-onair { background:#242830; border:1px solid #323840; border-top:none; border-radius:0; padding:.5rem 1rem; margin:0; display:flex; align-items:center; justify-content:space-between; }
+  .card.is-diff-card .onair-title { color:#c0c8d8; font-size:22px; font-weight:700; letter-spacing:3px; }
+  .card.is-diff-card .progress.is-elapsed { background:#2a3040; }
+  .card.is-diff-card .progress.is-elapsed::-webkit-progress-value { background:#e03020; }
+  .card.is-diff-card .file-drop-zone { border-color:#323840; }
+  .card.is-diff-card .file-drop-zone:hover { border-color:#5a6470; background:#1e2228; }
+  .card.is-diff-card .table.is-radio thead th { background:#181c22; color:#4a5870; border-color:#2a3040!important; }
+  .card.is-diff-card .table.is-radio tbody td { border-color:#2a3040!important; }
+  .card.is-diff-card .table.is-radio tbody tr:hover td { background:#1e2430; }
+  .card.is-diff-card .table.is-radio tbody tr.row-active { background:#200808; border-left:3px solid var(--red); }
+  .card.is-diff-card .button.is-success { border-color:#00d96a!important; color:#00d96a!important; }
+  .card.is-diff-card .button.is-danger  { border-color:#e03020!important; color:#e03020!important; }
+
   .card.is-pub-card { background:#181c20; border:1px solid #2a2e34; border-radius:8px; box-shadow:none; position:relative; }
   .card.is-pub-card .card-header { background:#1f2328; border-bottom:1px solid #2a2e34; box-shadow:none; border-radius:8px 8px 0 0; }
   .card.is-pub-card .card-header-title { color:#b0b8c0; font-family:var(--display); font-size:13px; letter-spacing:1px; padding:.5rem .75rem; }
@@ -1084,7 +1139,7 @@
 <!-- ══ LIGNE 1 : DIFF 1 + DIFF 2 ══ -->
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
 <!-- ══ DIFF 1 ══ -->
-<div class="card is-dark-card">
+<div class="card is-diff-card">
   <div class="card-header" style="display:flex;align-items:stretch">
     <div style="display:flex;align-items:center;padding:0 1rem;border-right:1px solid #1e3060">
       <span class="tag diff-badge" style="background:#1a2a00;color:#f5c400;border:1px solid #3a4a00">DIFF 1</span>
@@ -1170,7 +1225,7 @@
 </div>
 
 <!-- ══ DIFF 2 ══ -->
-<div class="card is-dark-card">
+<div class="card is-diff-card">
   <div class="card-header" style="display:flex;align-items:stretch">
     <div style="display:flex;align-items:center;padding:0 1rem;border-right:1px solid #1e3060">
       <span class="tag diff-badge" style="background:#160d2a;color:#9b5de5;border:1px solid #6a3aaa">DIFF 2</span>
@@ -1895,97 +1950,144 @@
 <!-- VU MÈTRES STICKY : DIFF 1 + DIFF 2 — toujours visible -->
 <div class="vu-section">
 
-  <!-- ── Ligne 1 : Diffuseurs principaux ── -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
-    <div class="vu-row-title" style="margin-bottom:0">Diffuseurs</div>
+  <!-- Ligne 1 : VU de chaque diffuseur -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
+    <div class="vu-group-label">Diffuseurs</div>
   </div>
-  <div class="vu-row-wrap" style="margin-bottom:.75rem">
-    <div class="vu-wrap" style="flex:1">
-      <div class="vu-label-block">
-        <div class="vu-main-title">DIFF 1</div>
-        <div class="vu-db-group"><div class="vu-db-val" id="vu1-db" style="color:#00d4f0">—∞</div><div class="vu-db-unit">dB</div></div>
-        
-      </div>
-      <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu1-L"></div><div class="vu-ch-label">L</div></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu1-R"></div><div class="vu-ch-label">R</div></div>
-    </div>
-    <div class="vu-wrap" style="flex:1">
-      <div class="vu-label-block">
-        <div class="vu-main-title">DIFF 2</div>
-        <div class="vu-db-group"><div class="vu-db-val" id="vu-d2-db" style="color:#9b5de5">—∞</div><div class="vu-db-unit">dB</div></div>
-        
-      </div>
-      <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-d2-L"></div><div class="vu-ch-label">L</div></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-d2-R"></div><div class="vu-ch-label">R</div></div>
-    </div>
+  <div class="vu-row-wrap" style="margin-bottom:.6rem">
+        <div class="vu-wrap">
+          <div class="vu-label-block">
+            <div class="vu-main-title">DIFF 1</div>
+            <div class="vu-db-group">
+              <div class="vu-db-val" id="vu1-db" style="color:#c0c8d8">—∞</div>
+              <div class="vu-db-unit">dB</div>
+            </div>
+          </div>
+          <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-60</span></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu1-L"></div><div class="vu-ch-label">L</div></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu1-R"></div><div class="vu-ch-label">R</div></div>
+        </div>
+        <div class="vu-wrap">
+          <div class="vu-label-block">
+            <div class="vu-main-title">DIFF 2</div>
+            <div class="vu-db-group">
+              <div class="vu-db-val" id="vu-d2-db" style="color:#c0c8d8">—∞</div>
+              <div class="vu-db-unit">dB</div>
+            </div>
+          </div>
+          <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-60</span></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-d2-L"></div><div class="vu-ch-label">L</div></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-d2-R"></div><div class="vu-ch-label">R</div></div>
+        </div>
+        <div class="vu-wrap">
+          <div class="vu-label-block">
+            <div class="vu-main-title">NAT</div>
+            <div class="vu-db-group">
+              <div class="vu-db-val" id="vu-nat-db" style="color:#8a9098">—∞</div>
+              <div class="vu-db-unit">dB</div>
+            </div><div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:3px;letter-spacing:1px">NATIONAL</div>
+          </div>
+          <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-60</span></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-nat-L"></div><div class="vu-ch-label">L</div></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-nat-R"></div><div class="vu-ch-label">R</div></div>
+        </div>
+        <div class="vu-wrap">
+          <div class="vu-label-block">
+            <div class="vu-main-title">SAT</div>
+            <div class="vu-db-group">
+              <div class="vu-db-val" id="vu-sat-sm-db" style="color:#8a9098">—∞</div>
+              <div class="vu-db-unit">dB</div>
+            </div><div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:3px;letter-spacing:1px">PUB SAT</div>
+          </div>
+          <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-60</span></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-sat-sm-L"></div><div class="vu-ch-label">L</div></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-sat-sm-R"></div><div class="vu-ch-label">R</div></div>
+        </div>
+        <div class="vu-wrap">
+          <div class="vu-label-block">
+            <div class="vu-main-title">DAB+</div>
+            <div class="vu-db-group">
+              <div class="vu-db-val" id="vu-dab-sm-db" style="color:#8a9098">—∞</div>
+              <div class="vu-db-unit">dB</div>
+            </div><div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:3px;letter-spacing:1px">PUB DAB+</div>
+          </div>
+          <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-60</span></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-dab-sm-L"></div><div class="vu-ch-label">L</div></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-dab-sm-R"></div><div class="vu-ch-label">R</div></div>
+        </div>
+        <div class="vu-wrap">
+          <div class="vu-label-block">
+            <div class="vu-main-title">Hz</div>
+            <div class="vu-db-group">
+              <div class="vu-db-val" id="vu-hz-sm-db" style="color:#8a9098">—∞</div>
+              <div class="vu-db-unit">dB</div>
+            </div><div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:3px;letter-spacing:1px">PUB Hz</div>
+          </div>
+          <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-60</span></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-hz-sm-L"></div><div class="vu-ch-label">L</div></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-hz-sm-R"></div><div class="vu-ch-label">R</div></div>
+        </div>
   </div>
 
-  <div style="height:1px;background:#1a2840;margin:.5rem 0"></div>
+  <!-- Séparateur -->
+  <div style="height:1px;background:#1e2840;margin-bottom:.5rem"></div>
 
-  <!-- ── Ligne 2 : Départs de diffusion ── -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
-    <div class="vu-row-title" style="color:#2a4a8a;letter-spacing:4px;margin-bottom:0;">— Flux de diffusion —</div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <span style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;">BIP SILENCE</span>
+  <!-- Ligne 2 : 3 départs de diffusion + BIP SILENCE -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
+    <div class="vu-group-label" style="color:#2a4a8a;letter-spacing:4px">— Flux de diffusion —</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-family:var(--mono);font-size:8px;color:var(--txt-mute);letter-spacing:1px">BIP SILENCE</span>
       <input type="range" id="bip-vol" min="0" max="100" value="5"
-        style="-webkit-appearance:none;width:80px;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;"
+        style="-webkit-appearance:none;width:70px;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;"
         oninput="bipVolChange(this.value)">
-      <span id="bip-vol-val" style="font-family:var(--mono);font-size:9px;color:var(--cyan);min-width:28px;">5%</span>
-      <button onclick="playBip()" style="background:transparent;border:1px solid var(--border);color:var(--txt-mute);font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px;"
+      <span id="bip-vol-val" style="font-family:var(--mono);font-size:8px;color:var(--cyan);min-width:24px">5%</span>
+      <button onclick="playBip()" style="background:transparent;border:1px solid var(--border);color:var(--txt-mute);font-family:var(--mono);font-size:8px;padding:1px 6px;border-radius:2px;cursor:pointer"
         onmouseover="this.style.borderColor='#00d4f0';this.style.color='#00d4f0'"
         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--txt-mute)'">▶ TEST</button>
     </div>
   </div>
   <div class="vu-row-wrap">
-    <div class="vu-wrap" style="flex:1">
-      <div class="vu-label-block">
-        <div class="vu-main-title">NATIONAL</div>
-        <div class="vu-db-group"><div class="vu-db-val" id="vu-nat-db" style="color:#7a9098">—∞</div><div class="vu-db-unit">dB</div></div>
-        <div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:4px;letter-spacing:1px">DIFF1 + DIFF2 + NAT</div>
-      </div>
-      <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-nat-L"></div><div class="vu-ch-label">L</div></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-nat-R"></div><div class="vu-ch-label">R</div></div>
-    </div>
-    <div class="vu-wrap" style="flex:1">
-      <div class="vu-label-block">
-        <div class="vu-main-title">SATELLITE</div>
-        <div class="vu-db-group"><div class="vu-db-val" id="vu-sat-db" style="color:#00d4f0">—∞</div><div class="vu-db-unit">dB</div></div>
-        <div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:4px;letter-spacing:1px">+ PUB SAT</div><div class="vu-silence-alert" id="sil-sat">⚠ SILENCE</div>
-      </div>
-      <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-sat-L"></div><div class="vu-ch-label">L</div></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-sat-R"></div><div class="vu-ch-label">R</div></div>
-    </div>
-    <div class="vu-wrap" style="flex:1">
-      <div class="vu-label-block">
-        <div class="vu-main-title">DAB+</div>
-        <div class="vu-db-group"><div class="vu-db-val" id="vu-dab-db" style="color:#00d4f0">—∞</div><div class="vu-db-unit">dB</div></div>
-        <div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:4px;letter-spacing:1px">+ PUB DAB+</div><div class="vu-silence-alert" id="sil-dab">⚠ SILENCE</div>
-      </div>
-      <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-dab-L"></div><div class="vu-ch-label">L</div></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-dab-R"></div><div class="vu-ch-label">R</div></div>
-    </div>
-    <div class="vu-wrap" style="flex:1">
-      <div class="vu-label-block">
-        <div class="vu-main-title">Hz FM</div>
-        <div class="vu-db-group"><div class="vu-db-val" id="vu-hz-db" style="color:#00d4f0">—∞</div><div class="vu-db-unit">dB</div></div>
-        <div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:4px;letter-spacing:1px">+ PUB Hz</div><div class="vu-silence-alert" id="sil-hz">⚠ SILENCE</div>
-      </div>
-      <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-hz-L"></div><div class="vu-ch-label">L</div></div>
-      <div class="vu-channel-v"><div class="vu-meter-v" id="vu-hz-R"></div><div class="vu-ch-label">R</div></div>
-    </div>
+        <div class="vu-wrap vu-depart" id="vu-wrap-satellite">
+          <div class="vu-label-block">
+            <div class="vu-main-title">SATELLITE</div>
+            <div class="vu-db-group">
+              <div class="vu-db-val" id="vu-sat-db" style="color:#00d4f0">—∞</div>
+              <div class="vu-db-unit">dB</div>
+            </div><div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:4px;letter-spacing:1px">DIFF1 · DIFF2 · NAT · PUB SAT</div><div class="vu-silence-alert" id="sil-sat">⚠ SILENCE</div>
+          </div>
+          <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-sat-L"></div><div class="vu-ch-label">L</div></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-sat-R"></div><div class="vu-ch-label">R</div></div>
+        </div>
+        <div class="vu-wrap vu-depart" id="vu-wrap-dabplus">
+          <div class="vu-label-block">
+            <div class="vu-main-title">DAB+</div>
+            <div class="vu-db-group">
+              <div class="vu-db-val" id="vu-dab-db" style="color:#00d4f0">—∞</div>
+              <div class="vu-db-unit">dB</div>
+            </div><div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:4px;letter-spacing:1px">DIFF1 · DIFF2 · NAT · PUB DAB+</div><div class="vu-silence-alert" id="sil-dab">⚠ SILENCE</div>
+          </div>
+          <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-dab-L"></div><div class="vu-ch-label">L</div></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-dab-R"></div><div class="vu-ch-label">R</div></div>
+        </div>
+        <div class="vu-wrap vu-depart" id="vu-wrap-hz-fm">
+          <div class="vu-label-block">
+            <div class="vu-main-title">Hz FM</div>
+            <div class="vu-db-group">
+              <div class="vu-db-val" id="vu-hz-db" style="color:#00d4f0">—∞</div>
+              <div class="vu-db-unit">dB</div>
+            </div><div style="font-family:var(--mono);font-size:7px;color:#2a4060;margin-top:4px;letter-spacing:1px">DIFF1 · DIFF2 · NAT · PUB Hz</div><div class="vu-silence-alert" id="sil-hz">⚠ SILENCE</div>
+          </div>
+          <div class="vu-scale-v"><span>0</span><span>-3</span><span>-6</span><span>-10</span><span>-20</span><span>-40</span><span>-60</span></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-hz-L"></div><div class="vu-ch-label">L</div></div>
+          <div class="vu-channel-v"><div class="vu-meter-v" id="vu-hz-R"></div><div class="vu-ch-label">R</div></div>
+        </div>
   </div>
 
-  <!-- Radio Monaco VU caché (audio routage actif mais UI non affichée) -->
+  <!-- IDs cachés Radio Monaco -->
   <div style="display:none">
-    <div class="vu-meter-v" id="vu2-L"></div>
-    <div class="vu-meter-v" id="vu2-R"></div>
-    <div id="vu2-db">—∞</div>
+    <div id="vu2-L"></div><div id="vu2-R"></div><div id="vu2-db">—∞</div>
   </div>
 
 </div>
@@ -2839,7 +2941,10 @@ D[5].togglePlay=function(){
 
 // ── Initialiser les barres SAT/DAB+/Hz ──
 
-['sat','dab','hz','nat'].forEach(id=>{buildBars(`vu-${id}-L`);buildBars(`vu-${id}-R`);});
+// Barres VU départs (grands)
+['sat','dab','hz','nat'].forEach(id=>{buildBars('vu-'+id+'-L');buildBars('vu-'+id+'-R');});
+// Barres VU diffuseurs (petits — dans la grille gauche)
+['sat-sm','dab-sm','hz-sm'].forEach(id=>{buildBars('vu-'+id+'-L');buildBars('vu-'+id+'-R');});
 
 // ── Mix flux de diffusion ──
 function paintMix(id, sources){
@@ -3020,6 +3125,10 @@ function vuLoop(){
   checkSilence('sat',dbSat);
   checkSilence('dab',dbDab);
   checkSilence('hz', dbHz);
+  // Petits VU diffuseurs (col gauche) — miroir des vrais analyseurs
+  if(vuSat)  paintBars('vu-sat-sm-L','vu-sat-sm-R',vuSat.aL,vuSat.aR,'vu-sat-sm-db',null,'#f5c400');
+  if(vuDab)  paintBars('vu-dab-sm-L','vu-dab-sm-R',vuDab.aL,vuDab.aR,'vu-dab-sm-db',null,'#f5c400');
+  if(vuHz)   paintBars('vu-hz-sm-L','vu-hz-sm-R',  vuHz.aL, vuHz.aR, 'vu-hz-sm-db', null,'#f5c400');
 }
 function paintMixEmpty(id){
   ['L','R'].forEach(ch=>{document.querySelectorAll(`#vu-${id}-${ch} .vu-row`).forEach(r=>r.style.opacity='0.1');});
