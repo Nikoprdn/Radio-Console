@@ -2619,9 +2619,44 @@ class Diffuser{
     const dur    = this.durs[i]||1;
     const rem    = Math.max(0, outCue - pos);
 
-    // Playhead sur la waveform (position absolue dans le fichier)
-    const ph=document.getElementById(`wv-${this.idx}-${i}-ph`);
-    if(ph){ ph.style.display='block'; ph.style.left=(pos/dur*100).toFixed(2)+'%'; }
+    // ── Zoom waveform sur les 30 dernières secondes avant OUT ──
+    const ZOOM_WIN = 30;
+    const cv = document.getElementById(`wv-${this.idx}-${i}`);
+    const ph = document.getElementById(`wv-${this.idx}-${i}-ph`);
+    const trackFile = this.tracks[i]?.file;
+
+    if(cv && trackFile && WV_DATA_CACHE[trackFile]){
+      const data = WV_DATA_CACHE[trackFile];
+      if(rem <= ZOOM_WIN && rem > 0){
+        // Zone : 5s de contexte avant pos → jusqu'au OUT
+        const startR = Math.max(0, (pos - 5) / dur);
+        const endR   = Math.min(1, (outCue + 0.5) / dur);
+        // Redessiner seulement si la fenêtre a bougé de >0.3%
+        const newKey = (startR*1000|0) + '_' + (endR*1000|0);
+        if(cv._zoomKey !== newKey){
+          cv._zoomKey = newKey;
+          cv._zoomed  = true;
+          drawWaveformFromData(cv, data, startR, endR);
+        }
+        // Playhead relatif à la fenêtre zoomée
+        if(ph){
+          const range = endR - startR || 0.001;
+          const relPct = Math.max(0, Math.min(100, ((pos/dur) - startR) / range * 100));
+          ph.style.display = 'block';
+          ph.style.left = relPct.toFixed(2) + '%';
+        }
+      } else {
+        // Hors zoom : vue complète
+        if(cv._zoomed){
+          cv._zoomed  = false;
+          cv._zoomKey = null;
+          drawWaveformFromData(cv, data, 0, 1);
+        }
+        if(ph){ ph.style.display='block'; ph.style.left=(pos/dur*100).toFixed(2)+'%'; }
+      }
+    } else if(ph){
+      ph.style.display='block'; ph.style.left=(pos/dur*100).toFixed(2)+'%';
+    }
 
     // Décompte jusqu'au point d'enchaînement
     const cd=document.getElementById(`${this.ids.body}-cd-${i}`);
@@ -3028,33 +3063,49 @@ function routeSrcToDepart(srcKey, dep, audioEl){
 let vuSat=null, vuDab=null, vuHz=null, vuNat=null;
 let vuNatSat=null, vuNatDab=null, vuNatHz=null;
 
-// ── DIFF 1 ──
-// La source est créée UNE SEULE FOIS et routée vers les 3 départs.
-// Les analyseurs VU sont branchés sur la source, sans connexion directe à destination.
+// ── DIFF 1 — source unique → VU sticky + 3 départs ──
 const _t0_orig=D[0].togglePlay.bind(D[0]);
 D[0].togglePlay=function(){
   const el=D[0].audios[D[0].ci]; if(!el){getCtx().resume();return _t0_orig();}
   getCtx().resume();
   if(!SRCS.d0){
     const ctx=getCtx();
+    // Source unique
     const src=ctx.createMediaElementSource(el);
-    SRCS.d0=src; // stocker pour ensureSrc
-    // Analyseurs VU sticky (sans connexion à destination — le son sort par les départs)
-    const sp=ctx.createChannelSplitter(2),mg=ctx.createChannelMerger(2);
+    SRCS.d0=src;
+    // Splitter stéréo pour mesurer L/R
+    const sp=ctx.createChannelSplitter(2);
     const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
     aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-    src.connect(sp);sp.connect(aL,0);sp.connect(aR,1);aL.connect(mg,0,0);aR.connect(mg,0,1);
-    const gn=ctx.createGain();gn.gain.value=1;
-    vu1={aL,aR,gn};
+    // Gain master → splitter → analyseurs VU
+    const masterGn=ctx.createGain(); masterGn.gain.value=1;
+    src.connect(masterGn);
+    masterGn.connect(sp);
+    sp.connect(aL,0); sp.connect(aR,1);
+    vu1={aL,aR,gn:masterGn};
     buildBars('vu1-L');buildBars('vu1-R');
-    // Router vers les 3 départs
-    ['sat','dab','hz'].forEach(dep=>routeSrcToDepart('d0',dep,el));
+    // Depuis le même gain master → 3 départs (SAT, DAB+, Hz)
+    ['sat','dab','hz'].forEach(dep=>{
+      const rkey='d0_'+dep;
+      if(ROUTE_DONE.has(rkey)) return;
+      const mn=ensureMonGn(dep);
+      const gnDep=ctx.createGain(); gnDep.gain.value=0.7;
+      // Analyser par départ pour le VU mix
+      const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
+      dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
+      const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
+      masterGn.connect(gnDep); gnDep.connect(sp2);
+      sp2.connect(dAL,0); sp2.connect(dAR,1);
+      dAL.connect(mg2,0,0); dAR.connect(mg2,0,1);
+      mg2.connect(mn);
+      ROUTE_DONE.add(rkey);
+    });
   }
   wireStrip('d0',el);
   _t0_orig();
 };
 
-// ── DIFF 2 ──
+// ── DIFF 2 — même architecture ──
 const _t1_orig=D[1].togglePlay.bind(D[1]);
 D[1].togglePlay=function(){
   const el=D[1].audios[D[1].ci]; if(!el){getCtx().resume();return _t1_orig();}
@@ -3063,14 +3114,29 @@ D[1].togglePlay=function(){
     const ctx=getCtx();
     const src=ctx.createMediaElementSource(el);
     SRCS.d1=src;
-    const sp=ctx.createChannelSplitter(2),mg=ctx.createChannelMerger(2);
+    const sp=ctx.createChannelSplitter(2);
     const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
     aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-    src.connect(sp);sp.connect(aL,0);sp.connect(aR,1);aL.connect(mg,0,0);aR.connect(mg,0,1);
-    const gn=ctx.createGain();gn.gain.value=1;
-    vuD2={aL,aR,gn};
+    const masterGn=ctx.createGain(); masterGn.gain.value=1;
+    src.connect(masterGn);
+    masterGn.connect(sp);
+    sp.connect(aL,0); sp.connect(aR,1);
+    vuD2={aL,aR,gn:masterGn};
     buildBars('vu-d2-L');buildBars('vu-d2-R');
-    ['sat','dab','hz'].forEach(dep=>routeSrcToDepart('d1',dep,el));
+    ['sat','dab','hz'].forEach(dep=>{
+      const rkey='d1_'+dep;
+      if(ROUTE_DONE.has(rkey)) return;
+      const mn=ensureMonGn(dep);
+      const gnDep=ctx.createGain(); gnDep.gain.value=0.7;
+      const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
+      dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
+      const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
+      masterGn.connect(gnDep); gnDep.connect(sp2);
+      sp2.connect(dAL,0); sp2.connect(dAR,1);
+      dAL.connect(mg2,0,0); dAR.connect(mg2,0,1);
+      mg2.connect(mn);
+      ROUTE_DONE.add(rkey);
+    });
   }
   wireStrip('d1',el);
   _t1_orig();
