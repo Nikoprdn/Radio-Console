@@ -17,7 +17,7 @@
     --yellow:#f5c400; --orange:#f07800; --red:#e03020;
     --txt:#ddeeff; --txt-dim:#5a7090; --txt-mute:#3a5070;
   }
-  html,body{background:var(--bg)!important;min-height:100vh;}
+  html,body{background:var(--bg)!important;min-height:100vh;overflow-x:hidden;width:100%;}
   .navbar.is-console{background:var(--s1);border-bottom:1px solid var(--border);}
   .navbar-brand .navbar-item{font-family:var(--display);font-size:20px;font-weight:700;color:var(--cyan);letter-spacing:2px;}
   .navbar-end .navbar-item{font-family:var(--mono);font-size:11px;color:var(--txt-dim);}
@@ -1013,6 +1013,90 @@
   .mod-journal-line.absence .mod-journal-txt{color:#ff6060;}
   .mod-journal-line.reprise  .mod-journal-txt{color:#00d96a;}
   .mod-journal-line .mod-journal-time{color:#3a5070;font-size:9px;flex-shrink:0;}
+
+  /* ══════════════════════════════
+     RESPONSIVE — tous écrans
+  ════════════════════════════════ */
+
+  /* Conteneur principal */
+  .section.is-console { padding: .5rem !important; }
+
+  /* Grilles diffuseurs */
+  .diff-grid-2   { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  .diff-grid-3   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; }
+  .diff-grid-full{ width: 100%; }
+
+  /* Bande VU sticky */
+  .vu-section { padding: .4rem .6rem !important; }
+  .vu-row-wrap { gap: .35rem !important; flex-wrap: wrap; }
+  .vu-wrap { padding: .4rem .6rem !important; min-width: 60px; }
+
+  /* Tableau playlist */
+  .table.is-radio { font-size: 11px; }
+  .cell-time, .cell-dur { display: none; }
+
+  /* Notification is-onair */
+  .notification.is-onair { flex-wrap: wrap; gap: .25rem; padding: .35rem .6rem !important; }
+
+  /* Tab bar */
+  .tab-bar { flex-wrap: wrap; gap: .25rem; padding: .4rem .6rem; }
+  .tab-btn  { font-size: 10px !important; padding: .3rem .6rem !important; }
+
+  /* Navbar */
+  .navbar.is-console { flex-wrap: wrap; }
+  .navbar-end { flex-wrap: wrap; gap: .2rem; }
+
+  /* Cards */
+  .card.is-dark-card, .card.is-pub-card, .card.is-diff-card {
+    min-width: 0;
+  }
+
+  /* ── Tablette (≤900px) ── */
+  @media (max-width: 900px) {
+    .diff-grid-2 { grid-template-columns: 1fr 1fr; }
+    .diff-grid-3 { grid-template-columns: 1fr 1fr; }
+    .vu-meter-v  { height: 60px !important; }
+    .vu-wrap.vu-depart .vu-meter-v { height: 70px !important; }
+    .vu-scale-v  { height: 60px !important; }
+    .vu-wrap.vu-depart .vu-scale-v { height: 70px !important; }
+    .cell-wv { display: none !important; }
+    .row-active-title { font-size: 16px !important; }
+  }
+
+  /* ── Mobile (≤600px) ── */
+  @media (max-width: 600px) {
+    .diff-grid-2, .diff-grid-3 { grid-template-columns: 1fr !important; }
+    .vu-row-wrap { gap: .2rem !important; }
+    .vu-wrap { padding: .3rem .4rem !important; min-width: 45px; }
+    .vu-meter-v  { height: 50px !important; }
+    .vu-wrap.vu-depart .vu-meter-v { height: 60px !important; }
+    .vu-scale-v  { height: 50px !important; }
+    .vu-wrap.vu-depart .vu-scale-v { height: 60px !important; }
+    .vu-main-title { font-size: 8px !important; }
+    .vu-db-val { font-size: 12px !important; }
+    .vu-wrap.vu-depart .vu-db-val { font-size: 14px !important; }
+    .onair-title { font-size: 16px !important; }
+    .row-active-title { font-size: 13px !important; }
+    .cell-time, .cell-dur, .cell-cd { display: none !important; }
+    .tab-btn { font-size: 9px !important; padding: .25rem .4rem !important; }
+    .clock-display { font-size: 16px !important; }
+    .mod-journal { max-height: 80px; }
+    .vu-section { position: static !important; } /* pas sticky sur mobile */
+  }
+
+  /* Waveform responsive */
+  .wv-canvas { height: 60px !important; }
+  .wv-wrap   { height: 60px !important; }
+  @media (max-width: 600px) {
+    .wv-canvas { height: 40px !important; }
+    .wv-wrap   { height: 40px !important; }
+  }
+
+  @media (max-width: 700px) {
+    .timer-group { display: none !important; }
+    .card-header-title { font-size: 11px !important; }
+    .diff-badge { font-size: 9px !important; padding: 1px 6px !important; }
+  }
 </style>
 </head>
 <body>
@@ -1194,7 +1278,7 @@
 <div style="display:flex;flex-direction:column;gap:1rem;">
 
 <!-- ══ LIGNE 1 : DIFF 1 + DIFF 2 ══ -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+<div class="diff-grid-2">
 <!-- ══ DIFF 1 ══ -->
 <div class="card is-dark-card">
   <div class="card-header diff-card-header" id="diff-header-0" style="display:flex;align-items:stretch">
@@ -1391,11 +1475,8 @@
       <span class="onair-title" style="font-size:16px;letter-spacing:4px;color:#6a7280">NATIONAL</span><span id="onair-track-5" class="onair-track-name" style="font-size:13px;color:#8a9098"></span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="button is-success is-small is-outlined" style="border-color:#3a4a3a!important;color:#5a7a5a!important" onclick="D[5].togglePlay()">▶ PLAY</button>
-      <button class="button is-danger is-small is-outlined"  style="border-color:#4a3030!important;color:#7a5050!important" onclick="D[5].stopAll()">■ STOP</button>
-      <button class="button is-dark is-small" onclick="D[5].prevTrack()">|◀</button>
-      <button class="button is-dark is-small" onclick="D[5].nextTrack()">▶|</button>
-      <button class="button is-auto is-small" id="auto-btn-5" onclick="D[5].toggleAuto()">AUTO</button>
+      <button class="button is-success is-small is-outlined" onclick="D[5].togglePlay()" id="play-btn-5">▶ PLAY</button>
+      <button class="button is-danger is-small is-outlined" onclick="D[5].stopAll()">■</button>
       <div class="macro-dropdown-wrap">
         <button class="macro-dropdown-btn" id="mdrop-btn-5" onclick="toggleMacroMenu(5)">⚡ MACRO ▾</button>
         <div class="macro-dropdown-menu" id="mdrop-menu-5">
@@ -1440,7 +1521,7 @@
 </div><!-- /NATIONAL -->
 
 <!-- ══ LIGNE 3 : PUB SAT + PUB DAB+ + PUB Hz ══ -->
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+<div class="diff-grid-3">
 
 <!-- PUB SAT -->
 <div class="card is-pub-card">
@@ -1461,11 +1542,8 @@
       <span class="dot-live"></span><span class="onair-title" style="font-size:16px;letter-spacing:2px">PUB SAT</span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="button is-success is-small is-outlined" onclick="D[2].togglePlay()">▶ PLAY</button>
-      <button class="button is-danger is-small is-outlined"  onclick="D[2].stopAll()">■ STOP</button>
-      <button class="button is-dark is-small" onclick="D[2].prevTrack()">|◀</button>
-      <button class="button is-dark is-small" onclick="D[2].nextTrack()">▶|</button>
-      <button class="button is-auto is-small" id="auto-btn-2" onclick="D[2].toggleAuto()">AUTO</button>
+      <button class="button is-success is-small is-outlined" onclick="D[2].togglePlay()" id="play-btn-2">▶ PLAY</button>
+      <button class="button is-danger is-small is-outlined" onclick="D[2].stopAll()">■</button>
       <div class="macro-dropdown-wrap">
         <button class="macro-dropdown-btn" id="mdrop-btn-2" onclick="toggleMacroMenu(2)">⚡ MACRO ▾</button>
         <div class="macro-dropdown-menu" id="mdrop-menu-2">
@@ -1527,11 +1605,8 @@
       <span class="dot-live"></span><span class="onair-title" style="font-size:16px;letter-spacing:2px">PUB DAB+</span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="button is-success is-small is-outlined" onclick="D[3].togglePlay()">▶ PLAY</button>
-      <button class="button is-danger is-small is-outlined"  onclick="D[3].stopAll()">■ STOP</button>
-      <button class="button is-dark is-small" onclick="D[3].prevTrack()">|◀</button>
-      <button class="button is-dark is-small" onclick="D[3].nextTrack()">▶|</button>
-      <button class="button is-auto is-small" id="auto-btn-3" onclick="D[3].toggleAuto()">AUTO</button>
+      <button class="button is-success is-small is-outlined" onclick="D[3].togglePlay()" id="play-btn-3">▶ PLAY</button>
+      <button class="button is-danger is-small is-outlined" onclick="D[3].stopAll()">■</button>
       <div class="macro-dropdown-wrap">
         <button class="macro-dropdown-btn" id="mdrop-btn-3" onclick="toggleMacroMenu(3)">⚡ MACRO ▾</button>
         <div class="macro-dropdown-menu" id="mdrop-menu-3">
@@ -1593,11 +1668,8 @@
       <span class="dot-live"></span><span class="onair-title" style="font-size:16px;letter-spacing:2px">PUB Hz</span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="button is-success is-small is-outlined" onclick="D[4].togglePlay()">▶ PLAY</button>
-      <button class="button is-danger is-small is-outlined"  onclick="D[4].stopAll()">■ STOP</button>
-      <button class="button is-dark is-small" onclick="D[4].prevTrack()">|◀</button>
-      <button class="button is-dark is-small" onclick="D[4].nextTrack()">▶|</button>
-      <button class="button is-auto is-small" id="auto-btn-4" onclick="D[4].toggleAuto()">AUTO</button>
+      <button class="button is-success is-small is-outlined" onclick="D[4].togglePlay()" id="play-btn-4">▶ PLAY</button>
+      <button class="button is-danger is-small is-outlined" onclick="D[4].stopAll()">■</button>
       <div class="macro-dropdown-wrap">
         <button class="macro-dropdown-btn" id="mdrop-btn-4" onclick="toggleMacroMenu(4)">⚡ MACRO ▾</button>
         <div class="macro-dropdown-menu" id="mdrop-menu-4">
@@ -2880,6 +2952,31 @@ class Diffuser{
 }
 
 const D=CONFIGS.map((cfg,i)=>new Diffuser(cfg,i));
+
+// ── Pré-charger les macros par défaut dans les diffuseurs PUB ──
+(function preloadMacros(){
+  // NATIONAL (D[5]) → macro START LOC en première position
+  const macroLoc = {
+    file:null, title:'START LOC', color:'#00608a',
+    inCue:0, outCue:null, isMacro:true, macroKey:'loc'
+  };
+  D[5].tracks.push(macroLoc);
+  D[5].durs.push(0);
+  D[5].audios.push(null);
+  D[5]._updateFdzCount();
+  D[5].render();
+
+  // PUB SAT (D[2]) → macro RACCRO en première position
+  const macroRaccro = {
+    file:null, title:'RACCRO', color:'#006a30',
+    inCue:0, outCue:null, isMacro:true, macroKey:'raccro'
+  };
+  D[2].tracks.push(macroRaccro);
+  D[2].durs.push(0);
+  D[2].audios.push(null);
+  D[2]._updateFdzCount();
+  D[2].render();
+})();
 
 // Supprimer une piste d'un diffuseur
 function diffRemoveTrack(diffIdx, trackIdx){
