@@ -1176,6 +1176,71 @@
     content:'';position:absolute;top:0;bottom:0;left:-8px;right:-8px;
     /* zone de clic élargie */
   }
+
+  /* ── Point INTRO (surlignement jaune) ── */
+  .row-intro{
+    background:linear-gradient(90deg,#1a1400 0%,#0e0c00 100%) !important;
+    border-left:4px solid #f5c400 !important;
+    border-top:1px solid #5a4a00 !important;
+    border-bottom:1px solid #5a4a00 !important;
+  }
+  .row-intro::before{
+    background:linear-gradient(90deg,rgba(150,120,0,.7) 0%,rgba(60,50,0,.4) 100%) !important;
+  }
+  .intro-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    background:#1a1200;border:1px solid #f5c400;border-radius:3px;
+    font-family:var(--mono);font-size:8px;color:#f5c400;letter-spacing:2px;
+    padding:1px 6px;margin-left:6px;
+  }
+  .intro-countdown{
+    font-family:var(--mono);font-size:22px;font-weight:700;
+    color:#f5c400;letter-spacing:2px;
+    text-shadow:0 0 12px rgba(245,196,0,.5);
+  }
+  /* ── Décompte total grossi ── */
+  .row-active-tc{
+    font-family:var(--mono) !important;
+    font-size:26px !important;
+    color:#ff4040 !important;
+    letter-spacing:2px !important;
+    font-weight:700 !important;
+    position:relative;z-index:3;
+  }
+  /* ── Macro inline sur piste ── */
+  .track-macro-btn{
+    display:inline-flex;align-items:center;gap:3px;
+    background:transparent;border:1px solid #3a4a00;
+    color:#8a9a00;border-radius:2px;
+    font-family:var(--mono);font-size:8px;letter-spacing:1px;
+    padding:1px 5px;cursor:pointer;transition:all .12s;
+    white-space:nowrap;
+  }
+  .track-macro-btn:hover{border-color:#f5c400;color:#f5c400;background:#0e0c00;}
+  .track-macro-btn.fired{border-color:#f5c400;color:#f5c400;background:#1a1200;}
+  .track-macro-wrap{position:relative;display:inline-block;}
+  .track-macro-menu{
+    display:none;position:absolute;top:100%;left:0;z-index:100;
+    background:#080e1c;border:1px solid #2a3a50;border-radius:4px;
+    min-width:160px;box-shadow:0 4px 16px rgba(0,0,0,.6);
+  }
+  .track-macro-menu.open{display:block;}
+  .track-macro-item{
+    padding:6px 10px;font-family:var(--mono);font-size:9px;color:#7a98b8;
+    cursor:pointer;transition:background .1s;letter-spacing:1px;
+    border-bottom:1px solid #0d1828;
+  }
+  .track-macro-item:last-child{border-bottom:none;}
+  .track-macro-item:hover{background:#0d1828;color:#f5c400;}
+  /* ── Point INTRO dans l'éditeur ── */
+  .intro-line{
+    position:absolute;top:0;bottom:0;width:2px;background:#f5c400;z-index:7;
+    transform:translateX(-50%);pointer-events:none;
+  }
+  .intro-line::before{
+    content:'INTRO';position:absolute;top:4px;left:4px;
+    font-family:var(--mono);font-size:8px;color:#f5c400;font-weight:700;letter-spacing:1px;
+  }
 </style>
 </head>
 <body>
@@ -1201,6 +1266,7 @@
       <div id="wv-modal-post" style="position:absolute;top:0;bottom:0;right:0;background:rgba(0,0,0,.55);pointer-events:none"></div>
       <!-- playhead -->
       <div id="wv-modal-ph" style="display:none;position:absolute;top:0;bottom:0;width:2px;background:#f5c400;pointer-events:none;z-index:5"></div>
+      <div id="wv-modal-intro-line" class="intro-line" style="display:none;left:0"></div>
       <!-- Lignes IN/OUT draggables -->
       <div id="wv-modal-in"  class="wvm-cue-line" style="left:0;background:#00e060" data-role="in"></div>
       <div id="wv-modal-out" class="wvm-cue-line" style="left:100%;background:#ff2020" data-role="out"></div>
@@ -1279,6 +1345,16 @@
             oninput="wvModalSetIn()" onkeydown="if(event.key==='Enter')wvModalSetIn()">
           <span style="font-family:var(--mono);font-size:8px;color:var(--txt-mute)">sec</span>
           <button onclick="wvModalSetInNow()" style="background:transparent;border:1px solid #00e060;color:#00e060;font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:2px;cursor:pointer">MARK</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:.4rem">
+          <div style="width:8px;height:8px;border-radius:50%;background:#f5c400;flex-shrink:0"></div>
+          <span style="font-family:var(--mono);font-size:9px;color:#f5c400;width:22px">INTRO</span>
+          <input id="wv-modal-intro-input" type="number" step="0.001" min="0" placeholder="0.000"
+            style="background:#080e1c;border:1px solid #3a3000;color:#f5c400;font-family:var(--mono);font-size:11px;padding:2px 6px;width:90px;border-radius:2px;outline:none"
+            oninput="wvModalSetIntro()" onkeydown="if(event.key==='Enter')wvModalSetIntro()">
+          <span style="font-family:var(--mono);font-size:8px;color:var(--txt-mute)">sec</span>
+          <button onclick="wvModalSetIntroNow()" style="background:transparent;border:1px solid #f5c400;color:#f5c400;font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:2px;cursor:pointer">MARK</button>
+          <button onclick="wvModalClearIntro()" style="background:transparent;border:1px solid #3a4050;color:#5a7090;font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:2px;cursor:pointer">✕</button>
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           <div style="width:8px;height:8px;border-radius:50%;background:#ff2020;flex-shrink:0"></div>
@@ -2608,6 +2684,10 @@ class Diffuser{
   _inOf(i){return Math.max(0,this.tracks[i]?.inCue||0);}
   _outOf(i){const t=this.tracks[i]; if(!t)return 0; return t.outCue!==null?t.outCue:this.durs[i]||0;}
   _playDur(i){return Math.max(0,this._outOf(i)-this._inOf(i));}
+  _introOf(i){
+    const t=this.tracks[i]; if(!t) return null;
+    return (t.introCue!==undefined&&t.introCue!==null)?t.introCue:null;
+  }
 
   render(){
     const now=new Date();let cur=new Date(now);
@@ -2675,8 +2755,11 @@ class Diffuser{
           <td class="cell-title" style="max-width:none;flex:1;padding-left:8px!important">
             ${delBtn}
             <div>
-              <div class="row-active-title">${t.title}</div>
-              <div class="row-active-cues">IN ${fmtMs(this._inOf(i))} &nbsp;·&nbsp; OUT ${fmtMs(this._outOf(i))}</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <div class="row-active-title">${t.title}</div>
+                ${this._introOf(i)!==null?'<span class="intro-badge">⚡ INTRO</span>':''}
+              </div>
+              <div class="row-active-cues">IN ${fmtMs(this._inOf(i))} &nbsp;·&nbsp;${this._introOf(i)!==null?' INTRO '+fmtMs(this._introOf(i))+' ·&nbsp;':''} OUT ${fmtMs(this._outOf(i))}</div>
             </div>
           </td>
           <td class="cell-wv" style="width:50px;padding:4px 6px!important;text-align:center">
@@ -2684,8 +2767,13 @@ class Diffuser{
           </td>
           <!-- Durée -->
           <td class="cell-dur"><span class="row-active-dur">${fmtFull(this.durs[i]||0)}</span></td>
-          <!-- Décompte en rouge -->
-          <td class="cell-cd"><span class="row-active-tc" id="${this.ids.body}-cd-${i}">${fmtFull(rem)}</span></td>
+          <!-- Décompte : intro jaune ou normal rouge -->
+          <td class="cell-cd">
+            ${this._introOf(i)!==null?
+              `<span class="intro-countdown" id="${this.ids.body}-intro-cd-${i}">${fmtFull(Math.max(0,(this._introOf(i)||0)-pos))}</span>
+               <div style="font-family:var(--mono);font-size:8px;color:#7a6a00;letter-spacing:1px;margin-top:2px">jusqu'au sujet</div>` : ''}
+            <span class="row-active-tc" id="${this.ids.body}-cd-${i}">${fmtFull(rem)}</span>
+          </td>
           <!-- Barre couleur -->
           <td class="cell-bar"><span class="color-bar" style="background:${t.color};height:96px"></span></td>`;
         tbody.appendChild(tr);
@@ -2704,7 +2792,19 @@ class Diffuser{
         tr.innerHTML=`
           <td class="cell-num">${i+1}</td>
           <td class="cell-time"><span>${hhmm}</span><span class="cell-sub">${sub}</span></td>
-          <td class="cell-title" style="display:flex;align-items:center;gap:4px">${delBtn}<span class="cell-simple" title="${t.title}">${t.title}</span></td>
+          <td class="cell-title" style="display:flex;align-items:center;gap:4px">
+            ${delBtn}
+            <span class="cell-simple" title="${t.title}">${t.title}</span>
+            ${this._introOf(i)!==null?'<span class="intro-badge" style="font-size:7px">INTRO</span>':''}
+            <div class="track-macro-wrap">
+              <button class="track-macro-btn" onclick="event.stopPropagation();toggleTrackMacroMenu('${wvId}-mmenu')" title="Macro à déclencher">⚡</button>
+              <div class="track-macro-menu" id="${wvId}-mmenu">
+                ${Object.entries(MACROS).map(([k,m])=>`<div class="track-macro-item" onclick="event.stopPropagation();setTrackMacro('${wvId}',${this.idx},${i},'${k}');toggleTrackMacroMenu('${wvId}-mmenu')">⚡ ${m.label}</div>`).join('')}
+                <div class="track-macro-item" style="color:#5a7090" onclick="event.stopPropagation();setTrackMacro('${wvId}',${this.idx},${i},null);toggleTrackMacroMenu('${wvId}-mmenu')">✕ Aucune</div>
+              </div>
+            </div>
+            ${t.onPlayMacro?`<span style="font-family:var(--mono);font-size:7px;color:var(--yellow);letter-spacing:1px;border:1px solid #3a3000;border-radius:2px;padding:1px 4px">→${MACROS[t.onPlayMacro]?.label||t.onPlayMacro}</span>`:''}
+          </td>
           <td class="cell-wv" style="width:50px;text-align:center">
             <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" title="Éditer IN/OUT" style="position:static;opacity:1">✎</button>
           </td>
@@ -2877,6 +2977,20 @@ class Diffuser{
       ph.style.display='block'; ph.style.left=(pos/dur*100).toFixed(2)+'%';
     }
 
+    // ── Décompte INTRO ──
+    const introSec=this._introOf(i);
+    const introCdEl=document.getElementById(`${this.ids.body}-intro-cd-${i}`);
+    if(introCdEl&&introSec!==null){
+      const introRem=Math.max(0,introSec-pos);
+      introCdEl.textContent=fmtFull(introRem);
+    }
+    // Classe jaune si en phase intro (avant le point INTRO)
+    const ar2=document.querySelector(`#${this.ids.body} tr.row-active`);
+    if(ar2&&introSec!==null){
+      const inPhase=pos<introSec;
+      ar2.classList.toggle('row-intro', inPhase);
+    }
+
     // ── Zoom waveform de fond (bg) sur les 20 dernières secondes ──
     const bgCv=document.getElementById(`wv-${this.idx}-${i}-bg`);
     if(bgCv && trackFile && WV_DATA_CACHE[trackFile]){
@@ -2994,7 +3108,12 @@ class Diffuser{
       removeTrack(token);
     };
 
-    audio.play().catch(e=>{
+    audio.play().then(()=>{
+      // Déclencher la macro onPlayMacro au démarrage du son
+      if(t.onPlayMacro && typeof fireMacroTrack==='function'){
+        fireMacroTrack(t.onPlayMacro, this.idx);
+      }
+    }).catch(e=>{
       audio.onended = null;
       if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
       console.warn('play() error:', e);
@@ -4373,8 +4492,13 @@ function wvModalApply(){
   const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
   const inVal=parseFloat(document.getElementById('wv-modal-in-input').value)||0;
   const outVal=parseFloat(document.getElementById('wv-modal-out-input').value)||_wvModal.dur;
+  const introInput=document.getElementById('wv-modal-intro-input');
   t.inCue=Math.max(0,Math.min(inVal,outVal-0.01));
   t.outCue=Math.min(_wvModal.dur,Math.max(outVal,t.inCue+0.01));
+  if(introInput&&introInput.value!==''){
+    const iv=parseFloat(introInput.value);
+    t.introCue=isFinite(iv)?Math.max(t.inCue,Math.min(iv,t.outCue)):null;
+  }
   d.render();
   wvModalClose();
 }
@@ -4423,8 +4547,13 @@ function _wvModalUpdateHandles(){
   // Inputs
   const inInput=document.getElementById('wv-modal-in-input');
   const outInput=document.getElementById('wv-modal-out-input');
+  const introInput=document.getElementById('wv-modal-intro-input');
   if(inInput && document.activeElement!==inInput) inInput.value=(t.inCue||0).toFixed(3);
   if(outInput && document.activeElement!==outInput) outInput.value=(t.outCue||dur).toFixed(3);
+  if(introInput && document.activeElement!==introInput){
+    introInput.value=t.introCue!==null&&t.introCue!==undefined?t.introCue.toFixed(3):'';
+  }
+  _wvModalUpdateIntroLine();
 }
 
 // ── Overview : région zoomée + IN/OUT + playhead ──
@@ -4617,6 +4746,47 @@ function wvModalSetInNow(){
 function wvModalSetOutNow(){
   if(_wvModal.audio) wvModalSetOutFromRatio(_wvModal.audio.currentTime/_wvModal.dur);
 }
+function wvModalSetIntro(){
+  const v=parseFloat(document.getElementById('wv-modal-intro-input').value);
+  if(!isFinite(v)) return;
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+  t.introCue=Math.max(t.inCue||0,Math.min(v,t.outCue||_wvModal.dur));
+  _wvModalUpdateIntroLine();
+  _wvModalUpdateTC();
+}
+function wvModalSetIntroNow(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+  if(!_wvModal.audio) return;
+  t.introCue=_wvModal.audio.currentTime;
+  const input=document.getElementById('wv-modal-intro-input');
+  if(input) input.value=t.introCue.toFixed(3);
+  _wvModalUpdateIntroLine();
+  _wvModalUpdateTC();
+}
+function wvModalClearIntro(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+  t.introCue=null;
+  const input=document.getElementById('wv-modal-intro-input');
+  if(input) input.value='';
+  _wvModalUpdateIntroLine();
+}
+function _wvModalUpdateIntroLine(){
+  const d=D[_wvModal.diffIdx]; if(!d) return;
+  const t=d.tracks[_wvModal.trackIdx]; if(!t) return;
+  const line=document.getElementById('wv-modal-intro-line');
+  if(!line) return;
+  if(t.introCue!==null&&t.introCue!==undefined){
+    const vs=_wvModal.viewStart, ve=_wvModal.viewEnd, range=ve-vs||0.001;
+    const r=((t.introCue/_wvModal.dur)-vs)/range;
+    line.style.display='block';
+    line.style.left=(Math.max(0,Math.min(1,r))*100).toFixed(2)+'%';
+  } else {
+    line.style.display='none';
+  }
+}
 
 // ── Nudge (frame-accurate) ──
 function wvModalNudge(deltaSec){
@@ -4676,6 +4846,27 @@ function _wvModalAutoZoom(){
 
 
 
+
+
+// ── Macros inline sur les pistes ──
+function toggleTrackMacroMenu(menuId){
+  // Fermer tous les autres menus ouverts
+  document.querySelectorAll('.track-macro-menu.open').forEach(m=>{
+    if(m.id!==menuId) m.classList.remove('open');
+  });
+  const menu=document.getElementById(menuId);
+  if(menu) menu.classList.toggle('open');
+}
+// Fermer les menus au clic extérieur
+document.addEventListener('click',()=>{
+  document.querySelectorAll('.track-macro-menu.open').forEach(m=>m.classList.remove('open'));
+});
+function setTrackMacro(wvId, diffIdx, trackIdx, macroKey){
+  const d=D[diffIdx]; if(!d) return;
+  const t=d.tracks[trackIdx]; if(!t) return;
+  t.onPlayMacro=macroKey||null;
+  d.render();
+}
 
 // ══════════════════════════════════════════════════════
 // ONGLETS
