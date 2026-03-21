@@ -3511,15 +3511,21 @@ function _attachExtStream(stream){
 // ══════════════════════════════════════════════════════════════
 function diff2InitPeer(){
   if(_peerJS && !_peerJS.destroyed) return;
-  try{
-    _peerJS = new Peer(PEER_ID_RC, {
-      host: 'peerjs.nikoprdn.workers.dev',  // sera overridé par le serveur public
-      debug: 0
-    });
-  }catch(e){
-    // Fallback : serveur PeerJS public
-    _peerJS = new Peer(PEER_ID_RC, { debug: 0 });
-  }
+  _peerJS = new Peer(PEER_ID_RC, {
+    host:   '0.peerjs.com',
+    port:   443,
+    path:   '/',
+    secure: true,
+    debug:  0,
+    config: {
+      iceServers:[
+        {urls:'stun:stun.l.google.com:19302'},
+        {urls:'stun:stun1.l.google.com:19302'},
+        {urls:'stun:stun2.l.google.com:19302'},
+        {urls:'stun:global.stun.twilio.com:3478'},
+      ]
+    }
+  });
 
   _peerJS.on('open', id=>{
     console.log('[PeerJS] RC connecté, ID:', id);
@@ -3528,14 +3534,17 @@ function diff2InitPeer(){
   });
 
   _peerJS.on('error', err=>{
-    console.warn('[PeerJS] RC error:', err.type, err.message);
-    // Réessayer si ID déjà pris (une autre instance RC)
-    if(err.type==='unavailable-id'){
-      setTimeout(()=>{
-        if(_peerJS) _peerJS.destroy();
-        _peerJS = new Peer(PEER_ID_RC+'-'+Date.now().toString(36), {debug:0});
-      }, 2000);
+    console.warn('[PeerJS] RC error:', err.type, err.message||'');
+    if(err.type==='unavailable-id'||err.type==='network'||err.type==='server-error'||err.type==='socket-error'){
+      setTimeout(()=>{ if(_peerJS){_peerJS.destroy();_peerJS=null;} diff2InitPeer(); }, 4000);
+    } else if(err.type==='peer-unavailable'){
+      // Diff2 pas encore connecté — réessayer
+      setTimeout(_peerConnectToD2, 5000);
     }
+  });
+  _peerJS.on('disconnected', ()=>{
+    console.log('[PeerJS RC] Déconnecté du serveur — reconnexion…');
+    setTimeout(()=>{ if(_peerJS&&!_peerJS.destroyed) _peerJS.reconnect(); }, 2000);
   });
 
   _peerJS.on('connection', conn=>{
