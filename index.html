@@ -2759,16 +2759,25 @@ class Diffuser{
     // ── MACRO ──
     if(t.isMacro){
       if(typeof fireMacroTrack==='function') fireMacroTrack(t.macroKey, this.idx);
-      this.tracks.splice(i,1);
-      this.durs.splice(i,1);
-      this.audios.splice(i,1);
-      this.ci=0;
-      this._updateFdzCount();
-      if(this.playing){
-        if(this.tracks.length) this._startTrack(0);
-        else this.playing=false;
+      if(t.pinned){
+        // Macro épinglée : exécuter et garder en place (ne pas supprimer)
+        // Passer à la piste suivante s'il y en a une avant la pinnée
+        this.ci=0;
+        this._updateFdzCount();
+        this.playing=false; // stopper — la macro pinnée est seule ou en fin
+        this.render();
+      } else {
+        this.tracks.splice(i,1);
+        this.durs.splice(i,1);
+        this.audios.splice(i,1);
+        this.ci=0;
+        this._updateFdzCount();
+        if(this.playing){
+          if(this.tracks.length) this._startTrack(0);
+          else this.playing=false;
+        }
+        this.render();
       }
-      this.render();
       return;
     }
 
@@ -2836,16 +2845,21 @@ class Diffuser{
     // La piste suivante est à l'index 1 (la 0 est encore en train de jouer)
     const next = this.tracks[1];
     if(!next) return;
-    // Si la prochaine piste est une macro : l'exécuter et sauter à la suivante
+    // Si la prochaine piste est une macro : l'exécuter
     if(next.isMacro){
       if(typeof fireMacroTrack==='function') fireMacroTrack(next.macroKey, this.idx);
-      this.tracks.splice(1,1);
-      this.durs.splice(1,1);
-      this.audios.splice(1,1);
-      this._updateFdzCount();
-      this.render();
-      // Reprendre la chaîne sur la nouvelle position 1
-      if(this.tracks.length > 1) this._startNextAfterChain(currentIdx, token);
+      if(!next.pinned){
+        // Macro normale : supprimer et continuer la chaîne
+        this.tracks.splice(1,1);
+        this.durs.splice(1,1);
+        this.audios.splice(1,1);
+        this._updateFdzCount();
+        this.render();
+        if(this.tracks.length > 1) this._startNextAfterChain(currentIdx, token);
+      } else {
+        // Macro pinnée : exécuter et s'arrêter (elle reste en place)
+        this.render();
+      }
       return;
     }
     const nextAudio = this.audios[1];
@@ -3038,10 +3052,13 @@ function wireVU(audioEl,idL,idR){
   const sp=ctx.createChannelSplitter(2),mg=ctx.createChannelMerger(2);
   const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
   aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-  // monGn = gain de monitoring (hauts-parleurs) — indépendant de la mesure VU
+  // monGn local — connecté via MON_GAINS[sat] pour respecter le sélecteur d'écoute
   const monGn=ctx.createGain();monGn.gain.value=1;
   src.connect(gn);gn.connect(sp);sp.connect(aL,0);sp.connect(aR,1);
-  aL.connect(mg,0,0);aR.connect(mg,0,1);mg.connect(monGn);monGn.connect(ctx.destination);
+  aL.connect(mg,0,0);aR.connect(mg,0,1);
+  // Connecter via le MON_GAINS sat si disponible, sinon directement
+  const satMn=MON_GAINS['sat'];
+  if(satMn) mg.connect(satMn); else { mg.connect(monGn); monGn.connect(ctx.destination); }
   buildBars(idL);buildBars(idR);
   return{aL,aR,gn,monGn};
 }
@@ -3167,80 +3184,89 @@ function routeSrcToDepart(srcKey, dep, audioEl){
 let vuSat=null, vuDab=null, vuHz=null, vuNat=null;
 let vuNatSat=null, vuNatDab=null, vuNatHz=null;
 
-// ── DIFF 1 — source unique → VU sticky + 3 départs ──
+// ── DIFF 1 — masterGn fixe, chaque Audio element y est branché au premier play ──
+let _masterGn0=null; // masterGn de DIFF1 — fixe pour toute la session
+const _wired0=new WeakSet(); // éléments audio déjà branchés
 const _t0_orig=D[0].togglePlay.bind(D[0]);
 D[0].togglePlay=function(){
   const el=D[0].audios[D[0].ci]; if(!el){getCtx().resume();return _t0_orig();}
   getCtx().resume();
-  if(!SRCS.d0){
-    const ctx=getCtx();
-    // Source unique
-    const src=ctx.createMediaElementSource(el);
-    SRCS.d0=src;
-    // Splitter stéréo pour mesurer L/R
+  const ctx=getCtx();
+  if(!_masterGn0){
+    // Créer le masterGn une seule fois + analyseurs VU + départs
+    _masterGn0=ctx.createGain(); _masterGn0.gain.value=1;
     const sp=ctx.createChannelSplitter(2);
     const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
     aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-    // Gain master → splitter → analyseurs VU
-    const masterGn=ctx.createGain(); masterGn.gain.value=1;
-    src.connect(masterGn);
-    masterGn.connect(sp);
-    sp.connect(aL,0); sp.connect(aR,1);
-    vu1={aL,aR,gn:masterGn};
+    _masterGn0.connect(sp);
+    sp.connect(aL,0);sp.connect(aR,1);
+    vu1={aL,aR,gn:_masterGn0};
     buildBars('vu1-L');buildBars('vu1-R');
-    // Depuis le même gain master → 3 départs (SAT, DAB+, Hz)
     ['sat','dab','hz'].forEach(dep=>{
-      const rkey='d0_'+dep;
-      if(ROUTE_DONE.has(rkey)) return;
+      const rkey='d0_'+dep; if(ROUTE_DONE.has(rkey))return;
       const mn=ensureMonGn(dep);
-      const gnDep=ctx.createGain(); gnDep.gain.value=0.7;
-      // Analyser par départ pour le VU mix
+      const gnDep=ctx.createGain();gnDep.gain.value=0.7;
+      const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
       const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
       dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
-      const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
-      masterGn.connect(gnDep); gnDep.connect(sp2);
-      sp2.connect(dAL,0); sp2.connect(dAR,1);
-      dAL.connect(mg2,0,0); dAR.connect(mg2,0,1);
+      _masterGn0.connect(gnDep);gnDep.connect(sp2);
+      sp2.connect(dAL,0);sp2.connect(dAR,1);
+      dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);
       mg2.connect(mn);
       ROUTE_DONE.add(rkey);
     });
+  }
+  // Brancher cet élément audio sur masterGn si pas encore fait
+  if(!_wired0.has(el)){
+    try{
+      const src=ctx.createMediaElementSource(el);
+      src.connect(_masterGn0);
+      SRCS.d0=src;
+      _wired0.add(el);
+    }catch(e){console.warn('DIFF1 src:',e);}
   }
   wireStrip('d0',el);
   _t0_orig();
 };
 
 // ── DIFF 2 — même architecture ──
+let _masterGn1=null;
+const _wired1=new WeakSet();
 const _t1_orig=D[1].togglePlay.bind(D[1]);
 D[1].togglePlay=function(){
   const el=D[1].audios[D[1].ci]; if(!el){getCtx().resume();return _t1_orig();}
   getCtx().resume();
-  if(!SRCS.d1){
-    const ctx=getCtx();
-    const src=ctx.createMediaElementSource(el);
-    SRCS.d1=src;
+  const ctx=getCtx();
+  if(!_masterGn1){
+    _masterGn1=ctx.createGain();_masterGn1.gain.value=1;
     const sp=ctx.createChannelSplitter(2);
     const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
     aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-    const masterGn=ctx.createGain(); masterGn.gain.value=1;
-    src.connect(masterGn);
-    masterGn.connect(sp);
-    sp.connect(aL,0); sp.connect(aR,1);
-    vuD2={aL,aR,gn:masterGn};
+    _masterGn1.connect(sp);
+    sp.connect(aL,0);sp.connect(aR,1);
+    vuD2={aL,aR,gn:_masterGn1};
     buildBars('vu-d2-L');buildBars('vu-d2-R');
     ['sat','dab','hz'].forEach(dep=>{
-      const rkey='d1_'+dep;
-      if(ROUTE_DONE.has(rkey)) return;
+      const rkey='d1_'+dep; if(ROUTE_DONE.has(rkey))return;
       const mn=ensureMonGn(dep);
-      const gnDep=ctx.createGain(); gnDep.gain.value=0.7;
+      const gnDep=ctx.createGain();gnDep.gain.value=0.7;
+      const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
       const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
       dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
-      const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
-      masterGn.connect(gnDep); gnDep.connect(sp2);
-      sp2.connect(dAL,0); sp2.connect(dAR,1);
-      dAL.connect(mg2,0,0); dAR.connect(mg2,0,1);
+      _masterGn1.connect(gnDep);gnDep.connect(sp2);
+      sp2.connect(dAL,0);sp2.connect(dAR,1);
+      dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);
       mg2.connect(mn);
       ROUTE_DONE.add(rkey);
     });
+  }
+  if(!_wired1.has(el)){
+    try{
+      const src=ctx.createMediaElementSource(el);
+      src.connect(_masterGn1);
+      SRCS.d1=src;
+      _wired1.add(el);
+    }catch(e){console.warn('DIFF2 src:',e);}
   }
   wireStrip('d1',el);
   _t1_orig();
@@ -3395,26 +3421,27 @@ function getBipCtx(){
 }
 
 // Émet un bip double (1kHz 80ms + 100ms silence + 1kHz 80ms)
+// Bip d'alerte silence : 1 seul bip de 1s (sans répétition automatique)
 function playBip(){
   try{
     const ctx=getBipCtx();
     const vol=ctx.createGain();
     vol.gain.value=_bipVolume;
     vol.connect(ctx.destination);
-    [[0,0.08],[0.18,0.08]].forEach(([start,dur])=>{
-      const osc=ctx.createOscillator();
-      osc.type='sine';
-      osc.frequency.value=1000;
-      const env=ctx.createGain();
-      env.gain.setValueAtTime(0,ctx.currentTime+start);
-      env.gain.linearRampToValueAtTime(1,ctx.currentTime+start+0.005);
-      env.gain.setValueAtTime(1,ctx.currentTime+start+dur-0.005);
-      env.gain.linearRampToValueAtTime(0,ctx.currentTime+start+dur);
-      osc.connect(env);
-      env.connect(vol);
-      osc.start(ctx.currentTime+start);
-      osc.stop(ctx.currentTime+start+dur);
-    });
+    const osc=ctx.createOscillator();
+    osc.type='sine';
+    osc.frequency.value=880; // La bémol — ton d'alerte broadcast
+    const env=ctx.createGain();
+    const t=ctx.currentTime;
+    // Enveloppe : attaque 10ms, tenu 0.9s, release 100ms
+    env.gain.setValueAtTime(0,t);
+    env.gain.linearRampToValueAtTime(1,t+0.01);
+    env.gain.setValueAtTime(1,t+0.9);
+    env.gain.linearRampToValueAtTime(0,t+1.0);
+    osc.connect(env);
+    env.connect(vol);
+    osc.start(t);
+    osc.stop(t+1.0);
   }catch(e){console.warn('Bip error:',e);}
 }
 
@@ -3464,8 +3491,7 @@ function checkSilence(key,db){
       // Journal
       addJournalLine('absence', key, timeStr);
       // Bip immédiat + répétition toutes les 8s
-      playBip();
-      s.bipTimer=setInterval(playBip,8000);
+      playBip(); // bip unique à l'apparition du silence
       // Mail d'alerte début
       sendSilenceEmail(key,'start',timeStr);
     }
@@ -3552,7 +3578,20 @@ document.addEventListener('click',function initBipOnce(){
   document.removeEventListener('click',initBipOnce);
 },{once:true});
 
-setInterval(()=>{document.getElementById('global-clock').textContent=nowClock();D.forEach(d=>d.tick());rdvTick();},80);
+// Boucle principale via requestAnimationFrame (fluide 60fps) + horloge à 1s
+let _lastClockSec=-1;
+(function mainLoop(){
+  requestAnimationFrame(mainLoop);
+  D.forEach(d=>d.tick());
+  // Horloge + RDV tick à 1s seulement (pas besoin de 60fps)
+  const now=new Date();
+  const sec=now.getSeconds();
+  if(sec!==_lastClockSec){
+    _lastClockSec=sec;
+    document.getElementById('global-clock').textContent=nowClock();
+    rdvTick();
+  }
+})();
 
 // ══════════════════════════════════════
 // ONGLETS
