@@ -2244,18 +2244,20 @@ function handleFiles(files,idx){
   const arr=Array.from(files).filter(f=>f.type.startsWith('audio/'));
   if(!arr.length)return;
   arr.sort((a,b)=>a.name.localeCompare(b.name));
+  const d=D[idx];
+  const insertAt=d._insertionIndex(); // avant les pistes pinnées
   const existing=CONFIGS[idx].tracks;
   const newTracks=arr.map((f,i)=>({
     file:URL.createObjectURL(f),
     title:f.name.replace(/\.[^/.]+$/,''),
-    color:COLORS[(existing.length+i)%COLORS.length],
-    inCue:0, outCue:null  // null = fin naturelle
+    color:COLORS[(insertAt+i)%COLORS.length],
+    inCue:0, outCue:null
   }));
-  // AJOUT sans effacer les existants
-  CONFIGS[idx].tracks=[...existing,...newTracks];
-  const total=CONFIGS[idx].tracks.length;
+  // Mettre à jour CONFIGS.tracks (reflet de d.tracks)
+  CONFIGS[idx].tracks=[...existing,...newTracks]; // sera resynchronisé par addTracks→render
+  const total=d.tracks.length+newTracks.length;
   document.getElementById(CONFIGS[idx].fdzCount).textContent=total+' fichier'+(total>1?'s':'');
-  D[idx].addTracks(newTracks);
+  d.addTracks(newTracks);
 }
 function handleDrop(ev,idx){ev.preventDefault();document.getElementById('fdz'+(idx+1)).classList.remove('drag-over');handleFiles(ev.dataTransfer.files,idx);}
 
@@ -2390,27 +2392,38 @@ class Diffuser{
   }
 
   addTracks(newTracks){
-    const offset=this.tracks.length;
-    this.tracks.push(...newTracks);
-    this.durs.push(...newTracks.map(()=>0));
-    // Créer un Audio() par nouvelle piste — PAS de listener 'ended' ici,
-    // c'est _startTrack qui pose audio.onended avec le token de session
-    newTracks.forEach((_,i)=>{
-      const idx=offset+i;
-      const a=new Audio();
-      a.src=this.tracks[idx].file;
-      a.addEventListener('loadedmetadata',()=>{
-        this.durs[idx]=a.duration||0;
-        if(this.tracks[idx].outCue===null||this.tracks[idx].outCue===undefined)
-          this.tracks[idx].outCue=a.duration;
+    // Trouver l'index d'insertion : avant toute piste pinned en fin de liste
+    const insertAt = this._insertionIndex();
+    // Insérer à la bonne position
+    this.tracks.splice(insertAt, 0, ...newTracks);
+    this.durs.splice(insertAt,   0, ...newTracks.map(()=>0));
+    this.audios.splice(insertAt, 0, ...newTracks.map(()=>null));
+
+    newTracks.forEach((_, ni)=>{
+      const idx = insertAt + ni;
+      const a = new Audio();
+      a.src = this.tracks[idx].file;
+      a.addEventListener('loadedmetadata', ()=>{
+        // Retrouver l'index courant de cette piste (peut avoir bougé)
+        const ci = this.tracks.indexOf(this.tracks[idx]);
+        const realIdx = ci !== -1 ? ci : idx;
+        this.durs[realIdx] = a.duration || 0;
+        if(this.tracks[realIdx] && (this.tracks[realIdx].outCue === null || this.tracks[realIdx].outCue === undefined))
+          this.tracks[realIdx].outCue = a.duration;
         this.render();
-        const cv=document.getElementById(`wv-${this.idx}-${idx}`);
-        if(cv){cv.width=800;cv.height=80;drawWaveform(cv,this.tracks[idx].file);}
+        const cv = document.getElementById(`wv-${this.idx}-${realIdx}`);
+        if(cv){ cv.width=800; cv.height=80; drawWaveform(cv, this.tracks[realIdx].file); }
       });
-      // !! PAS de addEventListener('ended') — géré par audio.onended + token dans _startTrack
-      this.audios[idx]=a;
+      this.audios[idx] = a;
     });
     this.render();
+  }
+
+  // Retourne l'index avant lequel insérer (avant les pistes pinned en fin de liste)
+  _insertionIndex(){
+    let i = this.tracks.length;
+    while(i > 0 && this.tracks[i-1]?.pinned) i--;
+    return i;
   }
 
   _onTrackEnded(i){
@@ -3899,9 +3912,11 @@ function insertMacroInDiff(diffIdx,macroKey,btn){
   const m=MACROS[macroKey];if(!m)return;
   const d=D[diffIdx];if(!d)return;
   const macroTrack={file:null,title:m.label,color:'#6a5a00',inCue:0,outCue:null,isMacro:true,macroKey:macroKey};
-  d.tracks.push(macroTrack);
-  d.durs.push(0);
-  d.audios.push(null);
+  // Insérer avant toute piste pinned en fin de liste
+  const insertAt=d._insertionIndex();
+  d.tracks.splice(insertAt, 0, macroTrack);
+  d.durs.splice(insertAt,   0, 0);
+  d.audios.splice(insertAt, 0, null);
   const n=d.tracks.length;
   const fdzEl=document.getElementById(CONFIGS[diffIdx].fdzCount);
   if(fdzEl) fdzEl.textContent=n+' fichier'+(n>1?'s':'');
