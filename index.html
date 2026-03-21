@@ -1475,8 +1475,6 @@
       <span class="onair-title" style="font-size:16px;letter-spacing:4px;color:#6a7280">NATIONAL</span><span id="onair-track-5" class="onair-track-name" style="font-size:13px;color:#8a9098"></span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="button is-success is-small is-outlined" onclick="D[5].togglePlay()" id="play-btn-5">▶ PLAY</button>
-      <button class="button is-danger is-small is-outlined" onclick="D[5].stopAll()">■</button>
       <div class="macro-dropdown-wrap">
         <button class="macro-dropdown-btn" id="mdrop-btn-5" onclick="toggleMacroMenu(5)">⚡ MACRO ▾</button>
         <div class="macro-dropdown-menu" id="mdrop-menu-5">
@@ -1542,8 +1540,6 @@
       <span class="dot-live"></span><span class="onair-title" style="font-size:16px;letter-spacing:2px">PUB SAT</span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="button is-success is-small is-outlined" onclick="D[2].togglePlay()" id="play-btn-2">▶ PLAY</button>
-      <button class="button is-danger is-small is-outlined" onclick="D[2].stopAll()">■</button>
       <div class="macro-dropdown-wrap">
         <button class="macro-dropdown-btn" id="mdrop-btn-2" onclick="toggleMacroMenu(2)">⚡ MACRO ▾</button>
         <div class="macro-dropdown-menu" id="mdrop-menu-2">
@@ -1605,8 +1601,6 @@
       <span class="dot-live"></span><span class="onair-title" style="font-size:16px;letter-spacing:2px">PUB DAB+</span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="button is-success is-small is-outlined" onclick="D[3].togglePlay()" id="play-btn-3">▶ PLAY</button>
-      <button class="button is-danger is-small is-outlined" onclick="D[3].stopAll()">■</button>
       <div class="macro-dropdown-wrap">
         <button class="macro-dropdown-btn" id="mdrop-btn-3" onclick="toggleMacroMenu(3)">⚡ MACRO ▾</button>
         <div class="macro-dropdown-menu" id="mdrop-menu-3">
@@ -1668,8 +1662,6 @@
       <span class="dot-live"></span><span class="onair-title" style="font-size:16px;letter-spacing:2px">PUB Hz</span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="button is-success is-small is-outlined" onclick="D[4].togglePlay()" id="play-btn-4">▶ PLAY</button>
-      <button class="button is-danger is-small is-outlined" onclick="D[4].stopAll()">■</button>
       <div class="macro-dropdown-wrap">
         <button class="macro-dropdown-btn" id="mdrop-btn-4" onclick="toggleMacroMenu(4)">⚡ MACRO ▾</button>
         <div class="macro-dropdown-menu" id="mdrop-menu-4">
@@ -2454,7 +2446,7 @@ class Diffuser{
       const inPct=(this._inOf(i)/dur*100).toFixed(1);
       // Clamp OUT à 98% max pour qu'elle soit toujours visible
       const outPct=Math.min(98,(this._outOf(i)/dur*100)).toFixed(1);
-      const delBtn=`<button onclick="event.stopPropagation();diffRemoveTrack(${this.idx},${i})" style="background:transparent;border:none;color:#3a4050;cursor:pointer;font-size:11px;padding:0 4px;line-height:1;transition:color .1s" onmouseover="this.style.color='#e03020'" onmouseout="this.style.color='#3a4050'" title="Supprimer">✕</button>`;
+      const delBtn=t.pinned?'':`<button onclick="event.stopPropagation();diffRemoveTrack(${this.idx},${i})" style="background:transparent;border:none;color:#3a4050;cursor:pointer;font-size:11px;padding:0 4px;line-height:1;transition:color .1s" onmouseover="this.style.color='#e03020'" onmouseout="this.style.color='#3a4050'" title="Supprimer">✕</button>`;
 
       // ── Piste MACRO : affichage spécial ──
       if(t.isMacro){
@@ -2958,7 +2950,7 @@ const D=CONFIGS.map((cfg,i)=>new Diffuser(cfg,i));
   // NATIONAL (D[5]) → macro START LOC en première position
   const macroLoc = {
     file:null, title:'START LOC', color:'#00608a',
-    inCue:0, outCue:null, isMacro:true, macroKey:'loc'
+    inCue:0, outCue:null, isMacro:true, macroKey:'loc', pinned:true
   };
   D[5].tracks.push(macroLoc);
   D[5].durs.push(0);
@@ -2969,7 +2961,7 @@ const D=CONFIGS.map((cfg,i)=>new Diffuser(cfg,i));
   // PUB SAT (D[2]) → macro RACCRO en première position
   const macroRaccro = {
     file:null, title:'RACCRO', color:'#006a30',
-    inCue:0, outCue:null, isMacro:true, macroKey:'raccro'
+    inCue:0, outCue:null, isMacro:true, macroKey:'raccro', pinned:true
   };
   D[2].tracks.push(macroRaccro);
   D[2].durs.push(0);
@@ -2982,6 +2974,8 @@ const D=CONFIGS.map((cfg,i)=>new Diffuser(cfg,i));
 function diffRemoveTrack(diffIdx, trackIdx){
   const d=D[diffIdx];
   if(!d||!d.tracks.length) return;
+  // Ne pas supprimer les macros épinglées
+  if(d.tracks[trackIdx]?.pinned) return;
   // Si la piste est en cours, stopper d'abord
   if(d.ci===trackIdx && d.playing){ d.stopAll(); }
   // Libérer l'URL objet
