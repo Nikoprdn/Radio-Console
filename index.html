@@ -2823,10 +2823,17 @@ class Diffuser{
     bindOne(outH, 'out');
   }
 
-  // tick() = mise à jour UI — décompte jusqu'au point d'enchaînement (OUT)
+  // tick() = mise à jour UI — suit la piste active (this.ci)
   tick(){
     if(!this.playing || !this.tracks.length) return;
-    const i=0;
+    // Trouver la piste active : this.ci en priorité, sinon la première qui joue
+    let i = this.ci;
+    if(!this.audios[i] || this.audios[i].paused){
+      // Chercher une piste en cours de lecture
+      const playingIdx = this.audios.findIndex(a=>a&&!a.paused);
+      if(playingIdx < 0) return;
+      i = playingIdx;
+    }
     const audio=this.audios[i];
     if(!audio || audio.paused) return;
 
@@ -2845,17 +2852,14 @@ class Diffuser{
     if(cv && trackFile && WV_DATA_CACHE[trackFile]){
       const data = WV_DATA_CACHE[trackFile];
       if(rem <= ZOOM_WIN && rem > 0){
-        // Zone : 5s de contexte avant pos → jusqu'au OUT
         const startR = Math.max(0, (pos - 5) / dur);
         const endR   = Math.min(1, (outCue + 0.5) / dur);
-        // Redessiner seulement si la fenêtre a bougé de >0.3%
         const newKey = (startR*1000|0) + '_' + (endR*1000|0);
         if(cv._zoomKey !== newKey){
           cv._zoomKey = newKey;
           cv._zoomed  = true;
           drawWaveformFromData(cv, data, startR, endR);
         }
-        // Playhead relatif à la fenêtre zoomée
         if(ph){
           const range = endR - startR || 0.001;
           const relPct = Math.max(0, Math.min(100, ((pos/dur) - startR) / range * 100));
@@ -2863,7 +2867,6 @@ class Diffuser{
           ph.style.left = relPct.toFixed(2) + '%';
         }
       } else {
-        // Hors zoom : vue complète
         if(cv._zoomed){
           cv._zoomed  = false;
           cv._zoomKey = null;
@@ -3427,56 +3430,139 @@ D[1].togglePlay=function(){
   _t1_orig();
 };
 
-// PUB SAT
+// ── PUB SAT — masterGn fixe → SAT uniquement ──
+let _masterGnSat=null; const _wiredSat=new WeakSet();
 const _t2_orig=D[2].togglePlay.bind(D[2]);
 D[2].togglePlay=function(){
   const el=D[2].audios[D[2].ci]; if(!el){getCtx().resume();return _t2_orig();}
   getCtx().resume();
-  if(!SRCS.sat){
-    const r=routeSrcToDepart('sat','sat',el);
-    if(r) vuSat=r;
+  const ctx=getCtx();
+  if(!_masterGnSat){
+    _masterGnSat=ctx.createGain();_masterGnSat.gain.value=1;
+    const sp=ctx.createChannelSplitter(2);
+    const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
+    aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
+    _masterGnSat.connect(sp);sp.connect(aL,0);sp.connect(aR,1);
+    // Route vers SAT uniquement
+    const mn=ensureMonGn('sat');
+    const gnDep=ctx.createGain();gnDep.gain.value=0.7;
+    const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
+    const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
+    dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
+    _masterGnSat.connect(gnDep);gnDep.connect(sp2);
+    sp2.connect(dAL,0);sp2.connect(dAR,1);
+    dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);mg2.connect(mn);
+    vuSat={aL:dAL,aR:dAR,gn:gnDep};
+    ROUTE_DONE.add('sat_sat');
+    buildBarsGray('vu-sat-sm-L');buildBarsGray('vu-sat-sm-R');
   }
-  wireStrip('sat',el);
-  _t2_orig();
+  if(!_wiredSat.has(el)){
+    try{const src=ctx.createMediaElementSource(el);src.connect(_masterGnSat);SRCS.sat=src;_wiredSat.add(el);}
+    catch(e){console.warn('SAT src:',e);}
+  }
+  wireStrip('sat',el);_t2_orig();
 };
 
-// PUB DAB+
+// ── PUB DAB+ — masterGn fixe → DAB+ uniquement ──
+let _masterGnDab=null; const _wiredDab=new WeakSet();
 const _t3_orig=D[3].togglePlay.bind(D[3]);
 D[3].togglePlay=function(){
   const el=D[3].audios[D[3].ci]; if(!el){getCtx().resume();return _t3_orig();}
   getCtx().resume();
-  if(!SRCS.dab){
-    const r=routeSrcToDepart('dab','dab',el);
-    if(r) vuDab=r;
+  const ctx=getCtx();
+  if(!_masterGnDab){
+    _masterGnDab=ctx.createGain();_masterGnDab.gain.value=1;
+    const mn=ensureMonGn('dab');
+    const gnDep=ctx.createGain();gnDep.gain.value=0.7;
+    const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
+    const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
+    dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
+    _masterGnDab.connect(gnDep);gnDep.connect(sp2);
+    sp2.connect(dAL,0);sp2.connect(dAR,1);
+    dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);mg2.connect(mn);
+    vuDab={aL:dAL,aR:dAR,gn:gnDep};
+    ROUTE_DONE.add('dab_dab');
+    buildBarsGray('vu-dab-sm-L');buildBarsGray('vu-dab-sm-R');
   }
-  wireStrip('dab',el);
-  _t3_orig();
+  if(!_wiredDab.has(el)){
+    try{const src=ctx.createMediaElementSource(el);src.connect(_masterGnDab);SRCS.dab=src;_wiredDab.add(el);}
+    catch(e){console.warn('DAB src:',e);}
+  }
+  wireStrip('dab',el);_t3_orig();
 };
 
-// PUB Hz
+// ── PUB Hz — masterGn fixe → Hz uniquement ──
+let _masterGnHz=null; const _wiredHz=new WeakSet();
 const _t4_orig=D[4].togglePlay.bind(D[4]);
 D[4].togglePlay=function(){
   const el=D[4].audios[D[4].ci]; if(!el){getCtx().resume();return _t4_orig();}
   getCtx().resume();
-  if(!SRCS.hz){
-    const r=routeSrcToDepart('hz','hz',el);
-    if(r) vuHz=r;
+  const ctx=getCtx();
+  if(!_masterGnHz){
+    _masterGnHz=ctx.createGain();_masterGnHz.gain.value=1;
+    const mn=ensureMonGn('hz');
+    const gnDep=ctx.createGain();gnDep.gain.value=0.7;
+    const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
+    const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
+    dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
+    _masterGnHz.connect(gnDep);gnDep.connect(sp2);
+    sp2.connect(dAL,0);sp2.connect(dAR,1);
+    dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);mg2.connect(mn);
+    vuHz={aL:dAL,aR:dAR,gn:gnDep};
+    ROUTE_DONE.add('hz_hz');
+    buildBarsGray('vu-hz-sm-L');buildBarsGray('vu-hz-sm-R');
   }
-  wireStrip('hz',el);
-  _t4_orig();
+  if(!_wiredHz.has(el)){
+    try{const src=ctx.createMediaElementSource(el);src.connect(_masterGnHz);SRCS.hz=src;_wiredHz.add(el);}
+    catch(e){console.warn('Hz src:',e);}
+  }
+  wireStrip('hz',el);_t4_orig();
 };
 
-// NATIONAL
+// NATIONAL — masterGn fixe + chaque audio branché au premier play (comme DIFF1/2)
+let _masterGnNat=null;
+const _wiredNat=new WeakSet();
 const _t5_orig=D[5].togglePlay.bind(D[5]);
 D[5].togglePlay=function(){
   const el=D[5].audios[D[5].ci]; if(!el){getCtx().resume();return _t5_orig();}
   getCtx().resume();
-  if(!SRCS.nat){
-    const r1=routeSrcToDepart('nat','sat',el);
-    const r2=routeSrcToDepart('nat','dab',el);
-    const r3=routeSrcToDepart('nat','hz',el);
-    vuNatSat=r1; vuNatDab=r2; vuNatHz=r3;
-    vuNat=r1;
+  const ctx=getCtx();
+  if(!_masterGnNat){
+    _masterGnNat=ctx.createGain(); _masterGnNat.gain.value=1;
+    // Analyseurs VU pour la bande sticky NAT
+    const sp=ctx.createChannelSplitter(2);
+    const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
+    aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
+    _masterGnNat.connect(sp);
+    sp.connect(aL,0);sp.connect(aR,1);
+    vuNat={aL,aR,gn:_masterGnNat};
+    buildBars('vu-nat-L');buildBars('vu-nat-R');
+    // Router vers les 3 départs SAT/DAB/Hz
+    ['sat','dab','hz'].forEach((dep,di)=>{
+      const rkey='nat_'+dep; if(ROUTE_DONE.has(rkey))return;
+      const mn=ensureMonGn(dep);
+      const gnDep=ctx.createGain();gnDep.gain.value=0.7;
+      const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
+      const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
+      dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
+      _masterGnNat.connect(gnDep);gnDep.connect(sp2);
+      sp2.connect(dAL,0);sp2.connect(dAR,1);
+      dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);
+      mg2.connect(mn);
+      if(dep==='sat'){vuNatSat={aL:dAL,aR:dAR,gn:gnDep};}
+      if(dep==='dab'){vuNatDab={aL:dAL,aR:dAR,gn:gnDep};}
+      if(dep==='hz') {vuNatHz ={aL:dAL,aR:dAR,gn:gnDep};}
+      ROUTE_DONE.add(rkey);
+    });
+  }
+  // Brancher cet élément audio sur masterGnNat si pas encore fait
+  if(!_wiredNat.has(el)){
+    try{
+      const src=ctx.createMediaElementSource(el);
+      src.connect(_masterGnNat);
+      SRCS.nat=src;
+      _wiredNat.add(el);
+    }catch(e){console.warn('NAT src:',e);}
   }
   wireStrip('nat',el);
   _t5_orig();
@@ -3486,8 +3572,7 @@ D[5].togglePlay=function(){
 
 // Barres VU départs (grands)
 ['sat','dab','hz','nat'].forEach(id=>{buildBars('vu-'+id+'-L');buildBars('vu-'+id+'-R');});
-// Barres VU PUB compacts (SAT/DAB+/Hz) — couleur grise comme les diffuseurs PUB
-['sat-sm','dab-sm','hz-sm'].forEach(id=>{buildBarsGray('vu-'+id+'-L');buildBarsGray('vu-'+id+'-R');});
+// Barres VU PUB compacts initialisées au premier play (voir wiring PUB SAT/DAB+/Hz)
 
 // ── Mix flux de diffusion ──
 function paintMix(id, sources){
@@ -4775,27 +4860,34 @@ async function pigeStart(){
     if(!mn) continue; // départ pas encore actif, on skip
 
     const st=pigeState[dep];
-    st.dest=ctx.createMediaStreamDestination();
-    mn.connect(st.dest);
 
+    // Nœud de capture INDÉPENDANT du gain d'écoute — signal toujours plein
+    st.captureGn=ctx.createGain(); st.captureGn.gain.value=1;
+    mn.connect(st.captureGn);
+
+    st.dest=ctx.createMediaStreamDestination();
+    st.captureGn.connect(st.dest);
+
+    // Analyseur pour la waveform live (aussi sur le signal plein)
     st.analyser=ctx.createAnalyser();
     st.analyser.fftSize=2048;
-    mn.connect(st.analyser);
+    st.captureGn.connect(st.analyser);
 
     st.chunks=[];
-    st.mediaRecorder=new MediaRecorder(st.dest.stream,{mimeType:'audio/webm;codecs=opus'});
+    const mimeType=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ?'audio/webm;codecs=opus':'audio/webm';
+    st.mediaRecorder=new MediaRecorder(st.dest.stream,{mimeType});
     const capturedDep=dep;
     st.mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) st.chunks.push(e.data); };
     st.mediaRecorder.onstop=()=>{
-      mn.disconnect(st.dest);
-      mn.disconnect(st.analyser);
+      mn.disconnect(st.captureGn);
+      st.captureGn=null;
       st.analyser=null;
       pigeSaveRecord(capturedDep, st.chunks.slice(), Date.now()-pigeStartTime);
     };
     st.mediaRecorder.start(100);
     anyOk=true;
 
-    // Activer le dot
     const dot=document.getElementById('pige-dot-'+dep);
     if(dot) dot.classList.add('active');
   }
@@ -4826,13 +4918,14 @@ function pigeStop(){
   PIGE_DEPS.forEach(dep=>{
     const st=pigeState[dep];
     if(st.mediaRecorder && st.mediaRecorder.state!=='inactive') st.mediaRecorder.stop();
+    else if(st.captureGn){ try{MON_GAINS[dep]&&MON_GAINS[dep].disconnect(st.captureGn);}catch(e){} st.captureGn=null; }
     if(st.animFrame){cancelAnimationFrame(st.animFrame);st.animFrame=null;}
     const dot=document.getElementById('pige-dot-'+dep);
     if(dot) dot.classList.remove('active');
-    // Effacer canvas
     const cv=document.getElementById('pige-live-'+dep);
     if(cv){const c=cv.getContext('2d');c.clearRect(0,0,cv.width,cv.height);}
-    document.getElementById('pige-level-'+dep) && (document.getElementById('pige-level-'+dep).textContent='—∞ dB');
+    const lvl=document.getElementById('pige-level-'+dep);
+    if(lvl) lvl.textContent='—∞ dB';
   });
 
   const btn=document.getElementById('pige-rec-btn');
@@ -4959,9 +5052,20 @@ function pigePause(id){ const r=pigeRecords.find(r=>r.id===id);if(r?.audio) r.au
 function pigeSeekBack(id){ const r=pigeRecords.find(r=>r.id===id);if(r?.audio) r.audio.currentTime=Math.max(0,r.audio.currentTime-10); }
 function pigeSeekBegin(id){ const r=pigeRecords.find(r=>r.id===id);if(r?.audio) r.audio.currentTime=0; }
 function pigeSeekClick(e,id){
-  const r=pigeRecords.find(r=>r.id===id);if(!r?.audio)return;
+  const r=pigeRecords.find(r=>r.id===id);
+  if(!r) return;
+  // Créer l'audio si besoin (seek sans play préalable)
+  if(!r.audio){ r.audio=new Audio(r.url); r.audio.onended=()=>pigeRenderList(); }
   const rect=e.currentTarget.getBoundingClientRect();
-  r.audio.currentTime=(e.clientX-rect.left)/rect.width*(r.audio.duration||r.dur);
+  const pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+  // Attendre que la durée soit connue
+  const seek=()=>{
+    const dur=r.audio.duration||r.dur||1;
+    r.audio.currentTime=pct*dur;
+    pigeTrackPlayhead(id);
+  };
+  if(r.audio.readyState>=1) seek();
+  else r.audio.addEventListener('loadedmetadata',seek,{once:true});
 }
 function pigeDelete(id){
   const r=pigeRecords.find(r=>r.id===id);if(!r)return;
