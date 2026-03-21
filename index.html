@@ -89,7 +89,7 @@
     content:'';position:absolute;inset:0;
     background:linear-gradient(90deg,rgba(180,10,10,.85) 0%,rgba(80,5,5,.5) 100%);
     z-index:0;transform-origin:left;transform:scaleX(var(--prog,0));
-    transition:transform 0.08s linear;
+    transition:transform 0.05s linear;
   }
   /* Waveform fond : canvas positionné en absolu z-index:1 */
   .row-active-wv-bg{
@@ -2503,42 +2503,45 @@ function drawWaveformFromData(canvas, data, startRatio=0, endRatio=1){
 }
 
 // ── Waveform fond de la ligne active ──
-function drawWaveformBg(canvas, data){
-  const W=canvas.width, H=canvas.height;
+function drawWaveformBg(canvas, data, startRatio=0, endRatio=1){
+  const W=canvas.width||1200, H=canvas.height||96;
   const c=canvas.getContext('2d');
   c.clearRect(0,0,W,H);
 
-  const step=Math.max(1,Math.floor(data.length/W));
+  const s=Math.floor(startRatio*data.length);
+  const e=Math.floor(endRatio*data.length)||data.length;
+  const step=Math.max(1,(e-s)/W);
 
-  // Zone remplie cyan transparente
-  c.fillStyle='rgba(0,190,230,0.12)';
+  // Zone remplie blanc transparent (fond rouge de la row-active)
+  c.fillStyle='rgba(255,255,255,0.08)';
   c.beginPath(); c.moveTo(0,H/2);
   for(let x=0;x<W;x++){
     let mx=0;
-    for(let j=0;j<step;j++){const v=Math.abs(data[x*step+j]||0);if(v>mx)mx=v;}
+    const base=s+Math.floor(x*step);
+    for(let j=0;j<Math.ceil(step);j++){const v=Math.abs(data[base+j]||0);if(v>mx)mx=v;}
     c.lineTo(x, H/2-mx*(H/2)*.9);
   }
   for(let x=W-1;x>=0;x--){
     let mx=0;
-    for(let j=0;j<step;j++){const v=Math.abs(data[x*step+j]||0);if(v>mx)mx=v;}
+    const base=s+Math.floor(x*step);
+    for(let j=0;j<Math.ceil(step);j++){const v=Math.abs(data[base+j]||0);if(v>mx)mx=v;}
     c.lineTo(x, H/2+mx*(H/2)*.9);
   }
   c.closePath(); c.fill();
 
-  // Traits — blanc cassé pour contraster sur fond rouge
-  c.strokeStyle='rgba(255,255,255,0.5)';
+  // Traits — blanc pour contraster sur fond rouge
+  c.strokeStyle='rgba(255,255,255,0.45)';
   c.lineWidth=1;
   for(let x=0;x<W;x++){
     let mn=0,mx=0;
-    for(let j=0;j<step;j++){
-      const v=data[x*step+j]||0;
+    const base=s+Math.floor(x*step);
+    for(let j=0;j<Math.ceil(step);j++){
+      const v=data[base+j]||0;
       if(v<mn)mn=v; if(v>mx)mx=v;
     }
     const y1=Math.round((1+mn)/2*H);
     const y2=Math.round((1+mx)/2*H);
-    if(y2>y1){
-      c.beginPath(); c.moveTo(x+.5,y1); c.lineTo(x+.5,y2); c.stroke();
-    }
+    if(y2>y1){ c.beginPath(); c.moveTo(x+.5,y1); c.lineTo(x+.5,y2); c.stroke(); }
   }
 }
 
@@ -2676,23 +2679,8 @@ class Diffuser{
               <div class="row-active-cues">IN ${fmtMs(this._inOf(i))} &nbsp;·&nbsp; OUT ${fmtMs(this._outOf(i))}</div>
             </div>
           </td>
-          <!-- Waveform interactive (mini, à droite) -->
-          <td class="cell-wv" style="width:220px;padding:4px 6px!important">
-            <div class="wv-outer" style="padding:0">
-              <div class="wv-wrap" id="${wvId}-wrap" style="height:80px">
-                <canvas class="wv-canvas" id="${wvId}" width="800" height="80"></canvas>
-                <div class="wv-pre"  id="${wvId}-pre"  style="width:${inPct}%"></div>
-                <div class="wv-post" id="${wvId}-post" style="left:${outPct}%"></div>
-                <div class="wv-playhead" id="${wvId}-ph"></div>
-                <div class="wv-handle wv-handle-in"  id="${wvId}-in"  data-label="IN"  style="left:${inPct}%"></div>
-                <div class="wv-handle wv-handle-out" id="${wvId}-out" data-label="OUT" style="left:${outPct}%"></div>
-                <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" title="Éditer IN/OUT">✎</button>
-              </div>
-              <div class="wv-labels">
-                <span class="wv-label in-lbl"  id="${wvId}-inlbl">IN ${fmtMs(this._inOf(i))}</span>
-                <span class="wv-label out-lbl" id="${wvId}-outlbl">OUT ${fmtMs(this._outOf(i))}</span>
-              </div>
-            </div>
+          <td class="cell-wv" style="width:50px;padding:4px 6px!important;text-align:center">
+            <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" title="Éditer IN/OUT" style="position:static;opacity:1">✎</button>
           </td>
           <!-- Durée -->
           <td class="cell-dur"><span class="row-active-dur">${fmtFull(this.durs[i]||0)}</span></td>
@@ -2701,10 +2689,6 @@ class Diffuser{
           <!-- Barre couleur -->
           <td class="cell-bar"><span class="color-bar" style="background:${t.color};height:96px"></span></td>`;
         tbody.appendChild(tr);
-        this._bindHandles(wvId,i);
-        // Waveform mini (interactive)
-        const cv=document.getElementById(wvId);
-        if(cv&&this.durs[i]>0){cv.width=800;cv.height=80;drawWaveform(cv,t.file);}
         // Waveform fond (grande, pleine ligne)
         const bgCv=document.getElementById(wvId+'-bg');
         if(bgCv&&this.durs[i]>0){
@@ -2721,30 +2705,14 @@ class Diffuser{
           <td class="cell-num">${i+1}</td>
           <td class="cell-time"><span>${hhmm}</span><span class="cell-sub">${sub}</span></td>
           <td class="cell-title" style="display:flex;align-items:center;gap:4px">${delBtn}<span class="cell-simple" title="${t.title}">${t.title}</span></td>
-          <td class="cell-wv">
-            <div class="wv-outer">
-              <div class="wv-wrap" id="${wvId}-wrap">
-                <canvas class="wv-canvas" id="${wvId}" width="800" height="80"></canvas>
-                <div class="wv-pre"      id="${wvId}-pre"  style="width:${inPct}%"></div>
-                <div class="wv-post"     id="${wvId}-post" style="left:${outPct}%"></div>
-                <div class="wv-playhead" id="${wvId}-ph"></div>
-                <div class="wv-handle wv-handle-in"  id="${wvId}-in"  data-label="IN"  style="left:${inPct}%"></div>
-                <div class="wv-handle wv-handle-out" id="${wvId}-out" data-label="OUT" style="left:${outPct}%"></div>
-                <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" title="Éditer IN/OUT">✎</button>
-              </div>
-              <div class="wv-labels">
-                <span class="wv-label in-lbl"  id="${wvId}-inlbl">IN ${fmtMs(this._inOf(i))}</span>
-                <span class="wv-label out-lbl" id="${wvId}-outlbl">OUT ${fmtMs(this._outOf(i))}</span>
-              </div>
-            </div>
+          <td class="cell-wv" style="width:50px;text-align:center">
+            <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" title="Éditer IN/OUT" style="position:static;opacity:1">✎</button>
           </td>
           <td class="cell-dur">${fmtFull(this.durs[i]||0)}</td>
           <td class="cell-cd">${fmtFull(this._playDur(i))}</td>
           <td class="cell-bar"><span class="color-bar" style="background:${t.color}"></span></td>`;
         tbody.appendChild(tr);
-        this._bindHandles(wvId,i);
-        const cv=document.getElementById(wvId);
-        if(cv&&this.durs[i]>0){cv.width=800;cv.height=80;drawWaveform(cv,t.file);}
+        // pas de waveform mini sur la ligne normale
       }
     });
 
@@ -2907,6 +2875,26 @@ class Diffuser{
       }
     } else if(ph){
       ph.style.display='block'; ph.style.left=(pos/dur*100).toFixed(2)+'%';
+    }
+
+    // ── Zoom waveform de fond (bg) sur les 20 dernières secondes ──
+    const bgCv=document.getElementById(`wv-${this.idx}-${i}-bg`);
+    if(bgCv && trackFile && WV_DATA_CACHE[trackFile]){
+      const data=WV_DATA_CACHE[trackFile];
+      if(rem<=ZOOM_WIN && rem>0){
+        const startR=Math.max(0,(pos-5)/dur);
+        const endR=Math.min(1,(outCue+0.5)/dur);
+        const newKeyBg=(startR*500|0)+'_'+(endR*500|0);
+        if(bgCv._zoomKey!==newKeyBg){
+          bgCv._zoomKey=newKeyBg;
+          bgCv.width=bgCv.offsetWidth||1200; bgCv.height=bgCv.offsetHeight||96;
+          drawWaveformBg(bgCv, data, startR, endR);
+        }
+      } else if(bgCv._zoomKey){
+        bgCv._zoomKey=null;
+        bgCv.width=bgCv.offsetWidth||1200; bgCv.height=bgCv.offsetHeight||96;
+        drawWaveformBg(bgCv, data, 0, 1);
+      }
     }
 
     // Décompte jusqu'au point d'enchaînement
@@ -3410,12 +3398,12 @@ D[0].togglePlay=function(){
     });
   }
   // Brancher cet élément audio sur masterGn si pas encore fait
-  if(!_wired0.has(el)){
+  if(!el._srcWired0){
     try{
       const src=ctx.createMediaElementSource(el);
       src.connect(_masterGn0);
       SRCS.d0=src;
-      _wired0.add(el);
+      el._srcWired0=true;
     }catch(e){console.warn('DIFF1 src:',e);}
   }
   wireStrip('d0',el);
@@ -3424,7 +3412,7 @@ D[0].togglePlay=function(){
 
 // ── DIFF 2 — même architecture ──
 let _masterGn1=null;
-const _wired1=new WeakSet();
+// _wired1 : marqueur direct
 const _t1_orig=D[1].togglePlay.bind(D[1]);
 D[1].togglePlay=function(){
   const el=D[1].audios[D[1].ci]; if(!el){getCtx().resume();return _t1_orig();}
@@ -3453,12 +3441,12 @@ D[1].togglePlay=function(){
       ROUTE_DONE.add(rkey);
     });
   }
-  if(!_wired1.has(el)){
+  if(!el._srcWired1){
     try{
       const src=ctx.createMediaElementSource(el);
       src.connect(_masterGn1);
       SRCS.d1=src;
-      _wired1.add(el);
+      el._srcWired1=true;
     }catch(e){console.warn('DIFF2 src:',e);}
   }
   wireStrip('d1',el);
@@ -3466,7 +3454,7 @@ D[1].togglePlay=function(){
 };
 
 // ── PUB SAT — masterGn fixe → SAT uniquement ──
-let _masterGnSat=null; const _wiredSat=new WeakSet();
+let _masterGnSat=null; // _wiredSat : marqueur direct
 const _t2_orig=D[2].togglePlay.bind(D[2]);
 D[2].togglePlay=function(){
   const el=D[2].audios[D[2].ci]; if(!el){getCtx().resume();return _t2_orig();}
@@ -3491,15 +3479,15 @@ D[2].togglePlay=function(){
     ROUTE_DONE.add('sat_sat');
     buildBarsGray('vu-sat-sm-L');buildBarsGray('vu-sat-sm-R');
   }
-  if(!_wiredSat.has(el)){
-    try{const src=ctx.createMediaElementSource(el);src.connect(_masterGnSat);SRCS.sat=src;_wiredSat.add(el);}
+  if(!el._srcWiredSat){
+    try{const src=ctx.createMediaElementSource(el);src.connect(_masterGnSat);SRCS.sat=src;el._srcWiredSat=true;}
     catch(e){console.warn('SAT src:',e);}
   }
   wireStrip('sat',el);_t2_orig();
 };
 
 // ── PUB DAB+ — masterGn fixe → DAB+ uniquement ──
-let _masterGnDab=null; const _wiredDab=new WeakSet();
+let _masterGnDab=null; // _wiredDab : marqueur direct
 const _t3_orig=D[3].togglePlay.bind(D[3]);
 D[3].togglePlay=function(){
   const el=D[3].audios[D[3].ci]; if(!el){getCtx().resume();return _t3_orig();}
@@ -3519,15 +3507,15 @@ D[3].togglePlay=function(){
     ROUTE_DONE.add('dab_dab');
     buildBarsGray('vu-dab-sm-L');buildBarsGray('vu-dab-sm-R');
   }
-  if(!_wiredDab.has(el)){
-    try{const src=ctx.createMediaElementSource(el);src.connect(_masterGnDab);SRCS.dab=src;_wiredDab.add(el);}
+  if(!el._srcWiredDab){
+    try{const src=ctx.createMediaElementSource(el);src.connect(_masterGnDab);SRCS.dab=src;el._srcWiredDab=true;}
     catch(e){console.warn('DAB src:',e);}
   }
   wireStrip('dab',el);_t3_orig();
 };
 
 // ── PUB Hz — masterGn fixe → Hz uniquement ──
-let _masterGnHz=null; const _wiredHz=new WeakSet();
+let _masterGnHz=null; // _wiredHz : marqueur direct
 const _t4_orig=D[4].togglePlay.bind(D[4]);
 D[4].togglePlay=function(){
   const el=D[4].audios[D[4].ci]; if(!el){getCtx().resume();return _t4_orig();}
@@ -3556,7 +3544,7 @@ D[4].togglePlay=function(){
 
 // NATIONAL — masterGn fixe + chaque audio branché au premier play (comme DIFF1/2)
 let _masterGnNat=null;
-const _wiredNat=new WeakSet();
+// _wiredNat : marqueur direct
 const _t5_orig=D[5].togglePlay.bind(D[5]);
 D[5].togglePlay=function(){
   const el=D[5].audios[D[5].ci]; if(!el){getCtx().resume();return _t5_orig();}
@@ -3591,12 +3579,12 @@ D[5].togglePlay=function(){
     });
   }
   // Brancher cet élément audio sur masterGnNat si pas encore fait
-  if(!_wiredNat.has(el)){
+  if(!el._srcWiredNat){
     try{
       const src=ctx.createMediaElementSource(el);
       src.connect(_masterGnNat);
       SRCS.nat=src;
-      _wiredNat.add(el);
+      el._srcWiredNat=true;
     }catch(e){console.warn('NAT src:',e);}
   }
   wireStrip('nat',el);
