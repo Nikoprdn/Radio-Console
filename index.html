@@ -3532,16 +3532,95 @@ async function sigHandleMessage(msg) {
   }
 }
 
+// ── Variables WebRTC et état ─────────────────────────────────
+let _diff2Channel  = null;
+let _extPeer       = null;
+let vuExt          = null;
+
+// ── Attacher un stream audio reçu au VU-mètre EXT ────────────
+function _attachExtStream(stream){
+  try{
+    const ctx = getCtx();
+    const src = ctx.createMediaStreamSource(stream);
+    const sp  = ctx.createChannelSplitter(2);
+    const aL  = ctx.createAnalyser(); aL.fftSize=1024; aL.smoothingTimeConstant=0.8;
+    const aR  = ctx.createAnalyser(); aR.fftSize=1024; aR.smoothingTimeConstant=0.8;
+    src.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
+    vuExt = {aL, aR};
+    buildBars('vu-ext-L'); buildBars('vu-ext-R');
+    _extVuSetStatus(true);
+    console.log('[EXT VU] Stream audio attaché');
+  }catch(e){ console.warn('[EXT VU]',e); }
+}
+
+function _extVuSetStatus(online){
+  const wrap = document.getElementById('vu-wrap-ext');
+  const stEl = document.getElementById('vu-ext-status');
+  if(wrap) wrap.style.opacity = online ? '1' : '.4';
+  if(stEl){ stEl.textContent = online ? 'LIVE' : '—';
+            stEl.style.color = online ? '#9b5de5' : '#4a2a7a'; }
+  if(!online) vuExt = null;
+}
+
+// ── WebRTC natif (via BroadcastChannel, même navigateur) ─────
+async function _extHandleOffer(sdp){
+  try{
+    if(_extPeer){ _extPeer.close(); _extPeer=null; }
+    const ctx = getCtx();
+    _extPeer = new RTCPeerConnection({iceServers:[
+      {urls:'stun:stun.l.google.com:19302'},
+      {urls:'stun:stun1.l.google.com:19302'}
+    ]});
+    _extPeer.ontrack = e=>{
+      const stream = e.streams[0]||new MediaStream([e.track]);
+      _attachExtStream(stream);
+    };
+    _extPeer.onicecandidate = e=>{
+      if(e.candidate && _diff2Channel)
+        _diff2Channel.postMessage({action:'rtc-ice-rcd2', c:e.candidate.toJSON()});
+    };
+    _extPeer.onconnectionstatechange = ()=>{
+      const s=_extPeer?.connectionState||'';
+      if(s==='disconnected'||s==='failed'||s==='closed') _extVuSetStatus(false);
+    };
+    await _extPeer.setRemoteDescription({type:'offer', sdp});
+    const answer = await _extPeer.createAnswer();
+    await _extPeer.setLocalDescription(answer);
+    if(_diff2Channel)
+      _diff2Channel.postMessage({action:'rtc-answer', sdp:answer.sdp});
+  }catch(e){ console.warn('[EXT WebRTC]',e); }
+}
+
+async function _extHandleIce(c){
+  try{ if(_extPeer&&c) await _extPeer.addIceCandidate(c); }
+  catch(e){ console.warn('[EXT ICE]',e); }
+}
+
 // ── Démarrage du signaling ────────────────────────────────────
 function diff2Connect() {
   // BroadcastChannel (même navigateur)
-  diff2InitBC();
+  try{
+    _diff2Channel = new BroadcastChannel('diff2_control');
+    _diff2Channel.addEventListener('message', async e=>{
+      const m = e.data||{};
+      if(m.action==='pong'||m.action==='ready') _diff2SetStatus(true,'BC');
+      if(m.action==='rtc-offer')    await _extHandleOffer(m.sdp);
+      if(m.action==='rtc-ice-d2rc') await _extHandleIce(m.c);
+      if(m.action==='d2-ping'){
+        _diff2SetStatus(true,'BC');
+        _diff2Channel.postMessage({action:'d2-pong', source:'RC'});
+      }
+      if(m.action==='raccro-ext'){
+        if(D[0]&&!D[0].playing) D[0].togglePlay();
+      }
+    });
+  }catch(e){ console.warn('[BC] non disponible:', e); }
 
-  // Cloudflare signaling (cross-PC)
-  _sigInterval = setInterval(sigPoll, 2000);      // poll toutes les 2s
-  _hbInterval  = setInterval(sigHeartbeat, 5000); // heartbeat toutes les 5s
-  sigHeartbeat(); // immédiat
-  sigPoll();      // immédiat
+  // Cloudflare signaling (cross-PC/réseau)
+  setInterval(sigPoll, 2000);
+  setInterval(sigHeartbeat, 5000);
+  sigHeartbeat();
+  sigPoll();
 
   console.log('[Sig] Cloudflare signaling démarré');
 }
@@ -3553,9 +3632,15 @@ function diff2Connect() {
 function _onReady(){
   preloadMacros();
   D.forEach(d=>d.render());
-  mainLoop();                // démarrer la boucle RAF après init complète
+  mainLoop();
   if(typeof plInit==='function') plInit();
   if(typeof initPubAuto==='function') initPubAuto();
+  diff2Connect();  // signaling Cloudflare + BroadcastChannel
+  // Boutons écoute
+  ['mix','sat','dab','hz'].forEach(k=>{
+    const btn=document.getElementById('listen-'+k);
+    if(btn) btn.classList.toggle('active', k===listenMode);
+  });
 }
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded', _onReady);
