@@ -3283,6 +3283,9 @@ class Diffuser{
       }, macroDelay*1000);
     }
 
+    // ── Brancher l'audio sur le routage WebAudio de ce diffuseur ──
+    wireAudioToDiff(audio, this.idx);
+
     audio.play().catch(e=>{
       audio.onended = null;
       if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
@@ -3881,226 +3884,40 @@ let _masterGn0=null; // masterGn de DIFF1 — fixe pour toute la session
 const _wired0=new WeakSet(); // éléments audio déjà branchés
 const _t0_orig=D[0].togglePlay.bind(D[0]);
 D[0].togglePlay=function(){
-  const el=D[0].audios[D[0].ci]; if(!el){getCtx().resume();return _t0_orig();}
   getCtx().resume();
-  const ctx=getCtx();
-  if(!_masterGn0){
-    // Créer le masterGn une seule fois + analyseurs VU + départs
-    _masterGn0=ctx.createGain(); _masterGn0.gain.value=1;
-    const sp=ctx.createChannelSplitter(2);
-    const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
-    aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-    _masterGn0.connect(sp);
-    sp.connect(aL,0);sp.connect(aR,1);
-    vu1={aL,aR,gn:_masterGn0};
-    buildBars('vu1-L');buildBars('vu1-R');
-    ['sat','dab','hz'].forEach(dep=>{
-      const rkey='d0_'+dep; if(ROUTE_DONE.has(rkey))return;
-      const mn=ensureMonGn(dep);
-      const gnDep=ctx.createGain();gnDep.gain.value=0.7;
-      const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
-      const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
-      dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
-      _masterGn0.connect(gnDep);gnDep.connect(sp2);
-      sp2.connect(dAL,0);sp2.connect(dAR,1);
-      dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);
-      mg2.connect(mn);
-      ROUTE_DONE.add(rkey);
-    });
-  }
-  // Brancher cet élément audio sur masterGn si pas encore fait
-  if(!el._srcWired0){
-    try{
-      const src=ctx.createMediaElementSource(el);
-      src.connect(_masterGn0);
-      SRCS.d0=src;
-      el._srcWired0=true;
-    }catch(e){console.warn('DIFF1 src:',e);}
-  }
-  wireStrip('d0',el);
   _t0_orig();
 };
 
-// ── DIFF 2 — même architecture ──
-let _masterGn1=null;
-// _wired1 : marqueur direct
 const _t1_orig=D[1].togglePlay.bind(D[1]);
 D[1].togglePlay=function(){
-  const el=D[1].audios[D[1].ci]; if(!el){getCtx().resume();return _t1_orig();}
   getCtx().resume();
-  const ctx=getCtx();
-  if(!_masterGn1){
-    _masterGn1=ctx.createGain();_masterGn1.gain.value=1;
-    const sp=ctx.createChannelSplitter(2);
-    const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
-    aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-    _masterGn1.connect(sp);
-    sp.connect(aL,0);sp.connect(aR,1);
-    vuD2={aL,aR,gn:_masterGn1};
-    buildBars('vu-d2-L');buildBars('vu-d2-R');
-    ['sat','dab','hz'].forEach(dep=>{
-      const rkey='d1_'+dep; if(ROUTE_DONE.has(rkey))return;
-      const mn=ensureMonGn(dep);
-      const gnDep=ctx.createGain();gnDep.gain.value=0.7;
-      const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
-      const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
-      dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
-      _masterGn1.connect(gnDep);gnDep.connect(sp2);
-      sp2.connect(dAL,0);sp2.connect(dAR,1);
-      dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);
-      mg2.connect(mn);
-      ROUTE_DONE.add(rkey);
-    });
-  }
-  if(!el._srcWired1){
-    try{
-      const src=ctx.createMediaElementSource(el);
-      src.connect(_masterGn1);
-      SRCS.d1=src;
-      el._srcWired1=true;
-    }catch(e){console.warn('DIFF2 src:',e);}
-  }
-  wireStrip('d1',el);
   _t1_orig();
 };
 
-// ── PUB SAT — masterGn fixe → SAT uniquement ──
-let _masterGnSat=null; // _wiredSat : marqueur direct
 const _t2_orig=D[2].togglePlay.bind(D[2]);
 D[2].togglePlay=function(){
-  const el=D[2].audios[D[2].ci]; if(!el){getCtx().resume();return _t2_orig();}
   getCtx().resume();
-  const ctx=getCtx();
-  if(!_masterGnSat){
-    _masterGnSat=ctx.createGain();_masterGnSat.gain.value=1;
-    const sp=ctx.createChannelSplitter(2);
-    const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
-    aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-    _masterGnSat.connect(sp);sp.connect(aL,0);sp.connect(aR,1);
-    // Route vers SAT uniquement
-    const mn=ensureMonGn('sat');
-    const gnDep=ctx.createGain();gnDep.gain.value=0.7;
-    const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
-    const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
-    dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
-    _masterGnSat.connect(gnDep);gnDep.connect(sp2);
-    sp2.connect(dAL,0);sp2.connect(dAR,1);
-    dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);mg2.connect(mn);
-    vuSat={aL:dAL,aR:dAR,gn:gnDep};
-    ROUTE_DONE.add('sat_sat');
-    buildBarsGray('vu-sat-sm-L');buildBarsGray('vu-sat-sm-R');
-  }
-  if(!el._srcWiredSat){
-    try{const src=ctx.createMediaElementSource(el);src.connect(_masterGnSat);SRCS.sat=src;el._srcWiredSat=true;}
-    catch(e){console.warn('SAT src:',e);}
-  }
-  wireStrip('sat',el);_t2_orig();
+  _t2_orig();
 };
 
-// ── PUB DAB+ — masterGn fixe → DAB+ uniquement ──
-let _masterGnDab=null; // _wiredDab : marqueur direct
 const _t3_orig=D[3].togglePlay.bind(D[3]);
 D[3].togglePlay=function(){
-  const el=D[3].audios[D[3].ci]; if(!el){getCtx().resume();return _t3_orig();}
   getCtx().resume();
-  const ctx=getCtx();
-  if(!_masterGnDab){
-    _masterGnDab=ctx.createGain();_masterGnDab.gain.value=1;
-    const mn=ensureMonGn('dab');
-    const gnDep=ctx.createGain();gnDep.gain.value=0.7;
-    const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
-    const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
-    dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
-    _masterGnDab.connect(gnDep);gnDep.connect(sp2);
-    sp2.connect(dAL,0);sp2.connect(dAR,1);
-    dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);mg2.connect(mn);
-    vuDab={aL:dAL,aR:dAR,gn:gnDep};
-    ROUTE_DONE.add('dab_dab');
-    buildBarsGray('vu-dab-sm-L');buildBarsGray('vu-dab-sm-R');
-  }
-  if(!el._srcWiredDab){
-    try{const src=ctx.createMediaElementSource(el);src.connect(_masterGnDab);SRCS.dab=src;el._srcWiredDab=true;}
-    catch(e){console.warn('DAB src:',e);}
-  }
-  wireStrip('dab',el);_t3_orig();
+  _t3_orig();
 };
 
-// ── PUB Hz — masterGn fixe → Hz uniquement ──
-let _masterGnHz=null; // _wiredHz : marqueur direct
 const _t4_orig=D[4].togglePlay.bind(D[4]);
 D[4].togglePlay=function(){
-  const el=D[4].audios[D[4].ci]; if(!el){getCtx().resume();return _t4_orig();}
   getCtx().resume();
-  const ctx=getCtx();
-  if(!_masterGnHz){
-    _masterGnHz=ctx.createGain();_masterGnHz.gain.value=1;
-    const mn=ensureMonGn('hz');
-    const gnDep=ctx.createGain();gnDep.gain.value=0.7;
-    const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
-    const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
-    dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
-    _masterGnHz.connect(gnDep);gnDep.connect(sp2);
-    sp2.connect(dAL,0);sp2.connect(dAR,1);
-    dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);mg2.connect(mn);
-    vuHz={aL:dAL,aR:dAR,gn:gnDep};
-    ROUTE_DONE.add('hz_hz');
-    buildBarsGray('vu-hz-sm-L');buildBarsGray('vu-hz-sm-R');
-  }
-  if(!_wiredHz.has(el)){
-    try{const src=ctx.createMediaElementSource(el);src.connect(_masterGnHz);SRCS.hz=src;_wiredHz.add(el);}
-    catch(e){console.warn('Hz src:',e);}
-  }
-  wireStrip('hz',el);_t4_orig();
+  _t4_orig();
 };
 
-// NATIONAL — masterGn fixe + chaque audio branché au premier play (comme DIFF1/2)
-let _masterGnNat=null;
-// _wiredNat : marqueur direct
 const _t5_orig=D[5].togglePlay.bind(D[5]);
 D[5].togglePlay=function(){
-  const el=D[5].audios[D[5].ci]; if(!el){getCtx().resume();return _t5_orig();}
   getCtx().resume();
-  const ctx=getCtx();
-  if(!_masterGnNat){
-    _masterGnNat=ctx.createGain(); _masterGnNat.gain.value=1;
-    // Analyseurs VU pour la bande sticky NAT
-    const sp=ctx.createChannelSplitter(2);
-    const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
-    aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-    _masterGnNat.connect(sp);
-    sp.connect(aL,0);sp.connect(aR,1);
-    vuNat={aL,aR,gn:_masterGnNat};
-    buildBars('vu-nat-L');buildBars('vu-nat-R');
-    // Router vers les 3 départs SAT/DAB/Hz
-    ['sat','dab','hz'].forEach((dep,di)=>{
-      const rkey='nat_'+dep; if(ROUTE_DONE.has(rkey))return;
-      const mn=ensureMonGn(dep);
-      const gnDep=ctx.createGain();gnDep.gain.value=0.7;
-      const sp2=ctx.createChannelSplitter(2),mg2=ctx.createChannelMerger(2);
-      const dAL=ctx.createAnalyser(),dAR=ctx.createAnalyser();
-      dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
-      _masterGnNat.connect(gnDep);gnDep.connect(sp2);
-      sp2.connect(dAL,0);sp2.connect(dAR,1);
-      dAL.connect(mg2,0,0);dAR.connect(mg2,0,1);
-      mg2.connect(mn);
-      if(dep==='sat'){vuNatSat={aL:dAL,aR:dAR,gn:gnDep};}
-      if(dep==='dab'){vuNatDab={aL:dAL,aR:dAR,gn:gnDep};}
-      if(dep==='hz') {vuNatHz ={aL:dAL,aR:dAR,gn:gnDep};}
-      ROUTE_DONE.add(rkey);
-    });
-  }
-  // Brancher cet élément audio sur masterGnNat si pas encore fait
-  if(!el._srcWiredNat){
-    try{
-      const src=ctx.createMediaElementSource(el);
-      src.connect(_masterGnNat);
-      SRCS.nat=src;
-      el._srcWiredNat=true;
-    }catch(e){console.warn('NAT src:',e);}
-  }
-  wireStrip('nat',el);
   _t5_orig();
 };
+
 
 // ── Initialiser les barres SAT/DAB+/Hz ──
 
@@ -4291,6 +4108,90 @@ function checkSilence(key,db){
 }
 
 // ── Boucle VU principale ──
+// ══════════════════════════════════════════════════════════════
+// wireAudioToDiff — branche un élément audio sur le graphe
+// WebAudio du diffuseur correspondant.
+// Appelé depuis _startTrack à chaque lancement de piste.
+// Idempotent : si déjà branché, ne fait rien.
+// ══════════════════════════════════════════════════════════════
+function wireAudioToDiff(el, diffIdx){
+  if(!el) return;
+  const ctx = getCtx();
+
+  // Clé de marquage unique par diffuseur
+  const wiredKey = '_srcWired'+diffIdx;
+  if(el[wiredKey]) return; // déjà branché
+
+  // Récupérer le masterGain du diffuseur (créé au 1er togglePlay)
+  const masterGns = [_masterGn0, _masterGn1, null, null, null, _masterGnNat, null];
+  // Pour les PUBs (D[2..4]) et le TEST (D[6]), pas de masterGn global → brancher direct
+  let masterGn = (diffIdx < masterGns.length) ? masterGns[diffIdx] : null;
+
+  // Si le masterGn n'est pas encore créé (premier son avant PLAY pressé),
+  // on force l'initialisation en appelant togglePlay puis on annule
+  // → non, on crée le masterGn à la volée ici
+  if(!masterGn){
+    masterGn = ctx.createGain(); masterGn.gain.value=1;
+    const sp=ctx.createChannelSplitter(2);
+    const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
+    aL.fftSize=1024;aR.fftSize=1024;
+    aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
+    masterGn.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
+    masterGn.connect(ctx.destination);
+
+    // Stocker selon le diffuseur
+    if(diffIdx===0){ _masterGn0=masterGn; vu1={aL,aR,gn:masterGn}; buildBars('vu1-L');buildBars('vu1-R'); }
+    else if(diffIdx===1){ _masterGn1=masterGn; vuD2={aL,aR,gn:masterGn}; buildBars('vu-d2-L');buildBars('vu-d2-R'); }
+    else if(diffIdx===5){ _masterGnNat=masterGn; vuNat={aL,aR,gn:masterGn}; buildBars('vu-nat-L');buildBars('vu-nat-R'); }
+    else { masterGn.connect(ctx.destination); } // PUBs → pas de VU propre
+  }
+
+  try{
+    const src=ctx.createMediaElementSource(el);
+    src.connect(masterGn);
+    el[wiredKey]=true;
+
+    // Router aussi vers les départs (SAT/DAB/Hz) selon le diffuseur
+    const depMap={
+      0:['sat','dab','hz'],  // DIFF1 → tous les départs
+      1:['sat','dab','hz'],  // DIFF2 → tous les départs
+      5:['sat','dab','hz'],  // NATIONAL → tous les départs
+      2:['sat'],             // PUB SAT → SAT seulement
+      3:['dab'],             // PUB DAB+ → DAB+ seulement
+      4:['hz'],              // PUB Hz → Hz seulement
+    };
+    const deps=depMap[diffIdx]||[];
+    deps.forEach(dep=>{
+      const rkey=`d${diffIdx}_${dep}`;
+      if(ROUTE_DONE.has(rkey)) return;
+      const mn=ensureMonGn(dep);
+      const gnDep=ctx.createGain(); gnDep.gain.value=0.7;
+      const sp2=ctx.createChannelSplitter(2), mg2=ctx.createChannelMerger(2);
+      const dAL=ctx.createAnalyser(), dAR=ctx.createAnalyser();
+      dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
+      masterGn.connect(gnDep); gnDep.connect(sp2);
+      sp2.connect(dAL,0); sp2.connect(dAR,1);
+      dAL.connect(mg2,0,0); dAR.connect(mg2,0,1); mg2.connect(mn);
+      // Stocker les analyseurs VU des départs PUB
+      if(diffIdx===2) vuSat={aL:dAL,aR:dAR,gn:gnDep};
+      if(diffIdx===3) vuDab={aL:dAL,aR:dAR,gn:gnDep};
+      if(diffIdx===4) vuHz ={aL:dAL,aR:dAR,gn:gnDep};
+      if(diffIdx===5){
+        if(dep==='sat') vuNatSat={aL:dAL,aR:dAR,gn:gnDep};
+        if(dep==='dab') vuNatDab={aL:dAL,aR:dAR,gn:gnDep};
+        if(dep==='hz')  vuNatHz ={aL:dAL,aR:dAR,gn:gnDep};
+      }
+      ROUTE_DONE.add(rkey);
+    });
+
+    console.log(`[Wire] D[${diffIdx}] branché sur WebAudio`);
+  }catch(e){
+    el[wiredKey]=true; // marquer quand même pour éviter boucle
+    console.warn(`[Wire] D[${diffIdx}]:`, e.message);
+  }
+}
+
+
 function vuLoop(){
   requestAnimationFrame(vuLoop);
 
