@@ -662,7 +662,8 @@ class Diffuser{
     const nextIdx=this.playing?this.tracks.findIndex((tt,ii)=>!tt.isMacro&&this.audios[ii]?.paused):-1;
     this.tracks.forEach((t,i)=>{
       const audio_i=this.audios[i];
-      const isActive=this.playing && !!audio_i && !audio_i.paused && !t.isMacro;
+      // isActive = audio joue OU vient d'être lancé (play() async pas encore démarré)
+      const isActive=this.playing && !t.isMacro && !!audio_i && (!audio_i.paused || !!t._launching);
       const isMacroActive=this.playing && t.isMacro && i===this.ci;
       const isNext=i===nextIdx;
       const tr=document.createElement('tr');
@@ -863,27 +864,44 @@ class Diffuser{
 
   tick(){
     if(!this.playing)return;
-    if(!this.tracks.length)return;
-    const i=this.ci;
-    const t=this.tracks[i];if(!t)return;
-    const audio=this.audios[i];if(!audio)return;
+    // Chercher la première piste dont l'audio joue réellement
+    let activeIdx=-1;
+    for(let j=0;j<this.tracks.length;j++){
+      const a=this.audios[j];
+      if(a&&!a.paused&&!this.tracks[j].isMacro){activeIdx=j;break;}
+    }
+    if(activeIdx===-1){
+      // Aucun audio en cours → état neutre
+      this.playing=false;
+      this.render();
+      return;
+    }
+    const t=this.tracks[activeIdx];
+    const audio=this.audios[activeIdx];
     const pos=audio.currentTime;
-    const outCue=this._outOf(i);
-    const dur=this.durs[i]||1;
-    const prog=Math.max(0,Math.min(1,(pos-this._inOf(i))/(outCue-this._inOf(i)||1)));
-    const tr=document.getElementById(this.ids.body)?.querySelectorAll('tr.row-active')[0];
-    if(tr)tr.style.setProperty('--prog',prog);
-    const cdEl=document.getElementById(this.ids.body+'-cd-'+i);
-    if(cdEl)cdEl.textContent=fmtFull(Math.max(0,outCue-pos));
-    const introEl=document.getElementById(this.ids.body+'-intro-cd-'+i);
-    if(introEl){const ic=this._introOf(i)||0;introEl.textContent=fmtFull(Math.max(0,ic-pos));}
-    // Progress bar du footer
+    const inCue=this._inOf(activeIdx);
+    const outCue=this._outOf(activeIdx);
+    const fileDur=this.durs[activeIdx]||1;
+    // Progression : de inCue jusqu'à la fin du fichier (OUT est juste un repère)
+    const progFull=Math.max(0,Math.min(1,(pos-inCue)/(fileDur-inCue||1)));
+    const tr=document.getElementById(this.ids.body)?.querySelector('tr.row-active');
+    if(tr){
+      tr.style.setProperty('--prog',progFull);
+      tr.style.setProperty('--out-pct',((outCue/fileDur)*100).toFixed(1)+'%');
+    }
+    // Décompte : temps avant le point OUT
+    const cdEl=document.getElementById(this.ids.body+'-cd-'+activeIdx);
+    if(cdEl){
+      const rem=outCue-pos;
+      if(rem>0){cdEl.textContent=fmtFull(rem);cdEl.style.color='#ff4040';}
+      else{cdEl.textContent='+ '+fmtFull(-rem);cdEl.style.color='#f07800';}
+    }
+    const introEl=document.getElementById(this.ids.body+'-intro-cd-'+activeIdx);
+    if(introEl){const ic=this._introOf(activeIdx)||0;introEl.textContent=fmtFull(Math.max(0,ic-pos));}
     const pb=document.getElementById('c1-progress-fill');
-    if(pb){pb.style.width=(prog*100).toFixed(2)+'%';}
-    // Micro elapsed
+    if(pb)pb.style.width=(progFull*100).toFixed(2)+'%';
     const micros=document.getElementById(this.ids.micros);
-    if(micros)micros.textContent=fmtMs(pos-this._inOf(i));
-    // VU strip
+    if(micros)micros.textContent=fmtMs(pos-inCue);
     paintStripFromVU();
   }
 
@@ -913,56 +931,67 @@ class Diffuser{
     }
     // ── SON AUDIO ──
     const audio=this.audios[i]; if(!audio) return;
-    ++this._playToken;
+    const myToken=++this._playToken;
     audio.onended=null;
     if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
     if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-    const inCue=this._inOf(i), outCue=this._outOf(i), fileDur=this.durs[i]||0;
-    const chainDelay=Math.max(0,outCue-inCue);
+    const inCue=this._inOf(i);
+    const fileDur=this.durs[i]||0;
     audio.currentTime=inCue;
     this.ci=i;
+    let _chained=false; // garde : un seul enchaînement par piste
 
-    // Au point OUT :
-    //  1. Retirer la piste du tableau immédiatement (elle ne sera plus relancée)
-    //  2. Laisser l'audio continuer à jouer en fond (hors tableau)
-    //  3. Lancer le son suivant
-    //  4. Stopper l'audio en fond à la fin naturelle du fichier
-    this._outTimer=setTimeout(()=>{
-      if(!this.playing) return;
+    // ── Surveiller le point OUT en RAF (modifiable en live) ──
+    // On lit t.outCue à chaque frame → si l'utilisateur le modifie, le timer s'adapte
+    const _watchOut=()=>{
+      if(myToken!==this._playToken||!this.playing||audio.paused) return;
+      const currentOut=this._outOf(i); // relu à chaque frame via this.tracks[i]
+      if(audio.currentTime>=currentOut&&!_chained){
+        _chained=true;
+        _doChain();
+      } else {
+        this._outTimer=requestAnimationFrame(_watchOut);
+      }
+    };
+
+    const _doChain=()=>{
+      if(this._outTimer){cancelAnimationFrame(this._outTimer);this._outTimer=null;}
+      if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
+      if(!this.playing)return;
       // Retirer la piste du tableau
       const idx=this.tracks.indexOf(t);
       if(idx!==-1){this.tracks.splice(idx,1);this.durs.splice(idx,1);this.audios.splice(idx,1);}
-      this.ci=0; this._updateFdzCount();
+      this.ci=0;this._updateFdzCount();
       // Lancer le suivant si pas bloqué
-      if(!this._stopAfterMacro && this.tracks.length>0) this._startNextInQueue();
-      // Si plus rien à jouer : état neutre
+      if(!this._stopAfterMacro&&this.tracks.length>0) this._startNextInQueue();
       if(!this.tracks.length){this.playing=false;}
       this.render();
-      // Laisser l'audio courant finir en fond, puis le stopper
-      const remaining=Math.max(0,(fileDur-outCue))*1000;
-      if(remaining>50){
-        this._removeTimer=setTimeout(()=>{
-          audio.onended=null; if(!audio.paused) audio.pause();
-        }, remaining+200);
+      // Audio en fond : continuer jusqu'à la fin naturelle
+      const remaining=Math.max(0,(fileDur-audio.currentTime))*1000;
+      if(remaining>200){
+        this._removeTimer=setTimeout(()=>{audio.onended=null;if(!audio.paused)audio.pause();},remaining+200);
       } else {
-        audio.onended=null; if(!audio.paused) audio.pause();
+        audio.onended=null;if(!audio.paused)audio.pause();
       }
-    }, chainDelay*1000);
-
-    // Sécurité : fin naturelle avant outCue (fichier plus court que outCue)
-    audio.onended=()=>{
-      audio.onended=null;
-      if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
-      if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-      const idx=this.tracks.indexOf(t);
-      if(idx!==-1){this.tracks.splice(idx,1);this.durs.splice(idx,1);this.audios.splice(idx,1);}
-      this.ci=0; this._updateFdzCount();
-      if(!this._stopAfterMacro && this.tracks.length>0) this._startNextInQueue();
-      if(!this.tracks.length){this.playing=false;}
-      this.render();
     };
 
-    audio.play().then(()=>wireAudioToDiff(audio,this.idx)).catch(e=>{
+    // Fin naturelle avant outCue (fichier plus court)
+    audio.onended=()=>{
+      audio.onended=null;
+      if(this._outTimer){cancelAnimationFrame(this._outTimer);this._outTimer=null;}
+      if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
+      if(!_chained){_chained=true;_doChain();}
+    };
+
+    // Démarrer la surveillance
+    this._outTimer=requestAnimationFrame(_watchOut);
+
+    t._launching=true; // marqer comme "en cours de démarrage"
+    audio.play().then(()=>{
+      t._launching=false;
+      wireAudioToDiff(audio,this.idx);
+    }).catch(e=>{
+      t._launching=false;
       audio.onended=null;
       if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
       console.warn('play() error:',e);
@@ -999,7 +1028,7 @@ class Diffuser{
       this.playing=true;this.ci=0;this._chainDone.clear();this._startTrack(0);this.render();
     }else{
       this._playToken++;
-      if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
+      if(this._outTimer){cancelAnimationFrame(this._outTimer);clearTimeout(this._outTimer);this._outTimer=null;}
       if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
       this.audios.forEach(a=>{if(a){a.onended=null;if(!a.paused)a.pause();}});
       this._stopAfterMacro=false;
@@ -1009,7 +1038,7 @@ class Diffuser{
 
   stopAll(){
     this._playToken++;
-    if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
+    if(this._outTimer){cancelAnimationFrame(this._outTimer);clearTimeout(this._outTimer);this._outTimer=null;}
     if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
     this.audios.forEach(a=>{if(a){a.onended=null;if(!a.paused)a.pause();a.currentTime=0;}});
     this._stopAfterMacro=false;
