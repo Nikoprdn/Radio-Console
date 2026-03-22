@@ -585,11 +585,17 @@ function sigHandleMessage(msg){
     case 'd3-status':
       // Statut d'un diffuseur régional (D3)
       if(msg.city){
-        const cityKey=msg.city.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const cityKey=msg.city.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
         if(cityKey in _regionsStatus){
           _regionsStatus[cityKey]=!!msg.playing;
           _updateRegionsMap();
         }
+      }
+      break;
+    case 'track-list':
+      // D3 envoie la liste des pistes chargées sur Marseille → afficher dans RC
+      if(msg.tracks&&Array.isArray(msg.tracks)&&msg.tracks.length>0){
+        _loadRegionalTracks(msg.tracks, msg.city||'RÉGIONS');
       }
       break;
     case 'rc-status':
@@ -669,6 +675,43 @@ function _updateOnAirBadges(){
   const bbs=document.getElementById('badge-diffa-ext-state');
   if(bb){bb.className='onair-badge '+(_diffAExtPlaying?'on-air':'off-air');}
   if(bbs){bbs.textContent=_diffAExtPlaying?'ON AIR':'OFF AIR';}
+}
+
+// ── Chargement pistes régionales depuis D3 ──
+function _loadRegionalTracks(tracks, city){
+  if(!D[0]) return;
+  // Marquer les pistes symboliques existantes (régionales) pour ne pas dupliquer
+  D[0].tracks = D[0].tracks.filter(t=>!t._regional);
+  D[0].durs = D[0].durs.slice(0, D[0].tracks.length);
+  D[0].audios = D[0].audios.slice(0, D[0].tracks.length);
+
+  // Créer des entrées symboliques (sans audio) pour chaque piste régionale
+  const newTracks = tracks.map(t=>({
+    title: t.title || '—',
+    file: null,           // pas de fichier local
+    color: '#1565c0',     // bleu Marseille
+    inCue: 0,
+    outCue: t.dur || 0,
+    _regional: true,      // flag pour identifier les pistes régionales
+    _city: city,
+    isMirror: true        // affichage spécial
+  }));
+  const newDurs = tracks.map(t=>t.dur||0);
+  const newAudios = tracks.map(()=>null);
+
+  // Insérer après les pistes normales
+  D[0].tracks.push(...newTracks);
+  D[0].durs.push(...newDurs);
+  D[0].audios.push(...newAudios);
+  D[0]._updateFdzCount();
+  D[0].render();
+
+  // Notification visuelle
+  const badge = document.getElementById('badge-diffa-ext');
+  if(badge){
+    badge.style.borderColor='#42a5f5';
+    setTimeout(()=>badge.style.borderColor='', 1500);
+  }
 }
 
 // ── Carte de France — voyants régionaux ──
@@ -954,6 +997,22 @@ class Diffuser{
           </td>
           <td class="cell-cd" style="color:#6a5000;font-family:var(--mono);font-size:10px;text-align:right;padding-right:10px">ACTION</td>
           <td class="cell-bar"><span class="color-bar" style="background:#3a2a00"></span></td>`;
+        tbody.appendChild(tr);
+      } else if(t._regional||t.isMirror){
+        // ── PISTE RÉGIONALE (reçue depuis D3) ──
+        tr.innerHTML=`
+          <td style="width:32px;text-align:center;vertical-align:middle;padding:0">
+            <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:#1565c0">${i+1}</div>
+          </td>
+          <td colspan="4" style="padding:0 10px;vertical-align:middle">
+            ${delBtn}
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:var(--mono);font-size:7px;color:#42a5f5;background:#0a1830;border:1px solid #1565c0;border-radius:2px;padding:1px 5px;letter-spacing:2px">${t._city||'RÉGION'}</span>
+              <div style="font-family:var(--display);font-size:15px;font-weight:700;color:#b0bec5;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px" title="${t.title}">${t.title}</div>
+              <span style="font-family:var(--mono);font-size:10px;color:#37474f">${fmtFull(this.durs[i]||0)}</span>
+            </div>
+          </td>
+          <td class="cell-bar"><span style="width:4px;height:56px;display:block;background:#1565c0;border-radius:2px;opacity:.6"></span></td>`;
         tbody.appendChild(tr);
       } else {
         // ── LIGNE NORMALE — affichage grand et lisible ──
