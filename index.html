@@ -452,6 +452,7 @@ async function sigPoll(){
 }
 
 async function sigHeartbeat(){
+  const t0=performance.now();
   try{
     await fetch(`${SIG_URL}/heartbeat?role=rc`,{method:'POST'});
     const r=await fetch(`${SIG_URL}/status`);
@@ -460,10 +461,26 @@ async function sigHeartbeat(){
       const wasOnline=_sigD2Online;
       _sigD2Online=s.d2?.online||false;
       if(_sigD2Online!==wasOnline) _diffASetStatus(_sigD2Online,'Cloudflare');
+      // Afficher latence
+      const lat=Math.round(performance.now()-t0);
+      const q=document.getElementById('sig-quality');
+      if(q){
+        const color=lat<300?'#66bb6a':lat<800?'#ffa726':'#ef5350';
+        q.textContent=lat+'ms';q.style.color=color;
+      }
+      const sdot=document.getElementById('sig-dot');
+      const stxt=document.getElementById('sig-txt');
+      if(sdot)sdot.classList.add('on');
+      if(stxt)stxt.textContent='Cloudflare connecté';
     }
   }catch(e){
-    // Retry immédiat en cas d'erreur réseau (mobile 4G instable)
-    setTimeout(()=>fetch(`${SIG_URL}/heartbeat?role=rc`,{method:'POST'}).catch(()=>{}), 2000);
+    const sdot=document.getElementById('sig-dot');
+    const stxt=document.getElementById('sig-txt');
+    const q=document.getElementById('sig-quality');
+    if(sdot)sdot.classList.remove('on');
+    if(stxt)stxt.textContent='Reconnexion…';
+    if(q){q.textContent='⚠ hors ligne';q.style.color='#ef5350';}
+    setTimeout(()=>fetch(`${SIG_URL}/heartbeat?role=rc`,{method:'POST'}).catch(()=>{}),2000);
   }
 }
 
@@ -653,26 +670,40 @@ function _updateRegionsMap(){
   if(cnt)cnt.textContent=onCount?`${onCount}/8 EN DIRECT`:'8 VILLES';
 }
 
-function diff2Connect(){
-  sigHeartbeat();
-  // Heartbeat toutes les 5s (tolérance mobile)
-  setInterval(sigHeartbeat, 5000);
-  // Poll toutes les 500ms
-  setInterval(sigPoll, 500);
-  // Reprendre immédiatement après un retour en premier plan (mobile)
-  document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible'){
-      sigHeartbeat();
-      sigPoll();
-    }
-  });
-  // Reprendre après reconnexion réseau
-  window.addEventListener('online',()=>{
-    sigHeartbeat();
-    sigPoll();
-  });
-}
+// ── Reconnexion agressive — fonctionne hors LAN, sur mobile, iOS ──
+let _consecutiveErrors=0;
+const _POLL_FAST=500, _POLL_SLOW=3000;
+let _currentPollInterval=_POLL_FAST;
+let _pollIntervalId=null, _hbIntervalId=null;
 
+function _startPolling(){
+  if(_pollIntervalId) clearInterval(_pollIntervalId);
+  if(_hbIntervalId)   clearInterval(_hbIntervalId);
+  _pollIntervalId=setInterval(_safePoll,_currentPollInterval);
+  _hbIntervalId  =setInterval(_safeHeartbeat,5000);
+}
+async function _safePoll(){
+  try{
+    await sigPoll();
+    if(_consecutiveErrors>0){_consecutiveErrors=0;if(_currentPollInterval!==_POLL_FAST){_currentPollInterval=_POLL_FAST;_startPolling();}}
+  }catch(e){
+    _consecutiveErrors++;
+    if(_consecutiveErrors>=3&&_currentPollInterval!==_POLL_SLOW){_currentPollInterval=_POLL_SLOW;_startPolling();}
+  }
+}
+async function _safeHeartbeat(){
+  try{await sigHeartbeat();_consecutiveErrors=Math.max(0,_consecutiveErrors-1);}
+  catch(e){_consecutiveErrors++;}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){_consecutiveErrors=0;_currentPollInterval=_POLL_FAST;_safeHeartbeat();_safePoll();_startPolling();}
+});
+window.addEventListener('online',()=>{_consecutiveErrors=0;_safeHeartbeat();_safePoll();_startPolling();});
+window.addEventListener('offline',()=>{if(_pollIntervalId)clearInterval(_pollIntervalId);if(_hbIntervalId)clearInterval(_hbIntervalId);});
+function diff2Connect(){
+  _safeHeartbeat();
+  _startPolling();
+}
 // ═══════════════════════════════════════════════════════
 // UTILITAIRES
 // ═══════════════════════════════════════════════════════
@@ -1510,6 +1541,26 @@ function _onReady(){
 }
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',_onReady);}
 else{_onReady();}
+
+// ── Fix AudioContext iOS Safari ──
+// iOS bloque AudioContext sans geste utilisateur explicite
+let _audioUnlocked=false;
+function _unlockAudio(){
+  if(_audioUnlocked) return;
+  const ctx=typeof getCtx==='function'?getCtx():(typeof getCtxD3==='function'?getCtxD3():null);
+  if(ctx&&ctx.state==='suspended') ctx.resume().then(()=>{_audioUnlocked=true;});
+  // Créer un buffer silencieux pour forcer le déverrouilage iOS
+  if(ctx){
+    const buf=ctx.createBuffer(1,1,22050);
+    const src=ctx.createBufferSource();
+    src.buffer=buf; src.connect(ctx.destination); src.start(0);
+    _audioUnlocked=true;
+  }
+}
+document.addEventListener('touchstart',_unlockAudio,{once:true,passive:true});
+document.addEventListener('touchend',_unlockAudio,{once:true,passive:true});
+document.addEventListener('click',_unlockAudio,{once:true,passive:true});
+
 </script>
 </body>
 </html>
