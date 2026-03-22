@@ -511,19 +511,19 @@ let _diffAExtTrack='';
 
 function _updateOnAirBadges(){
   const diffAOn=D[0]&&D[0].playing;
-  // DIFF A
   const ba=document.getElementById('badge-diffa');
   const bas=document.getElementById('badge-diffa-state');
   if(ba){ba.className='onair-badge '+(diffAOn?'on-air':'off-air');}
   if(bas){bas.textContent=diffAOn?'ON AIR':'OFF AIR';}
-  // DIFF A EXT
   const bb=document.getElementById('badge-diffa-ext');
   const bbs=document.getElementById('badge-diffa-ext-state');
   if(bb){bb.className='onair-badge '+(_diffAExtPlaying?'on-air':'off-air');}
   if(bbs){bbs.textContent=_diffAExtPlaying?'ON AIR':'OFF AIR';}
 }
+
+function diff2Connect(){
+  sigHeartbeat();
   setInterval(sigHeartbeat, 10000);
-  // Poll toutes les 2s pour recevoir les messages de DIFF A externe
   setInterval(sigPoll, 500);
 }
 
@@ -620,6 +620,7 @@ class Diffuser{
     this._outTimer=null; this._removeTimer=null;
     this._tailAudio=null;   // audio en queue (après le point OUT)
     this._stopAfterMacro=false; // bloque l'enchaînement après START EXT
+    this._lastSentState=''; // pour éviter de spammer sigSend
   }
   addTracks(newTracks){
     const insertAt=this._insertionIndex();
@@ -815,9 +816,15 @@ class Diffuser{
     if(card)card.classList.toggle('diff-is-live',this.playing);
     // ── Mettre à jour les voyants ON AIR ──
     _updateOnAirBadges();
-    // ── Notifier DIFF A EXT du statut RC ──
+    // ── Notifier DIFF A EXT du statut RC (seulement si changement) ──
     const activeTitle=anyAudioPlaying?this.tracks.find((t2,j)=>!t2.isMacro&&this.audios[j]&&!this.audios[j].paused)?.title||'':'';
-    sigSend({action:'rc-status',playing:this.playing,track:activeTitle});
+    if(typeof sigSend==='function'){
+      const newState=this.playing+'|'+activeTitle;
+      if(newState!==this._lastSentState){
+        this._lastSentState=newState;
+        sigSend({action:'rc-status',playing:this.playing,track:activeTitle});
+      }
+    }
   }
 
   _bindHandles(wvId,trackIdx){
