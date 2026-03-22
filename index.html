@@ -43,6 +43,13 @@
   .diff-progress-fill{background:#cc0000!important;transition:width .08s linear;}
   .table.is-radio tbody tr.row-active{background:#1a0000!important;border-left:4px solid #ff0000!important;border-top:1px solid #880000!important;border-bottom:1px solid #880000!important;}
   .table.is-radio tbody tr.row-active::before{background:#cc0000!important;}
+  /* Marqueur OUT (point d'enchaînement) sur la ligne active */
+  .table.is-radio tbody tr.row-active::after{
+    content:'';position:absolute;top:0;bottom:0;
+    left:var(--out-pct,100%);width:3px;
+    background:#ff8800;z-index:4;pointer-events:none;
+    box-shadow:0 0 6px #ff8800;
+  }
   .onair-title{font-family:var(--display);font-size:22px;font-weight:700;color:var(--txt);letter-spacing:3px;}
   .onair-track-name{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:2px;color:var(--yellow);margin-left:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px;}
   .dot-live{display:inline-block;width:8px;height:8px;background:var(--red);border-radius:50%;animation:blink 1s step-start infinite;vertical-align:middle;margin-right:6px;}
@@ -251,9 +258,12 @@
   <div class="navbar-end">
     <div class="navbar-item" style="gap:.6rem;display:flex;align-items:center">
       <!-- Voyant DIFF A (externe) -->
-      <div style="display:flex;align-items:center;gap:6px;padding:3px 10px;border:1px solid #1e2a40;border-radius:12px;transition:all .3s;cursor:default" id="diffa-status-pill" title="Statut DIFF A externe">
-        <div id="diffa-status-dot" style="width:10px;height:10px;border-radius:50%;background:#e03020;box-shadow:0 0 8px #e03020;transition:all .3s;animation:blink-ext .8s step-start infinite"></div>
-        <span id="diffa-status-lbl" style="font-family:var(--mono);font-size:9px;color:#e03020;letter-spacing:1px;font-weight:700">DIFF A ✗</span>
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:8px 16px;border:2px solid #1e2a40;border-radius:10px;transition:all .3s;cursor:default;background:#0a1020;min-width:120px" id="diffa-status-pill" title="Statut DIFF A externe">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="diffa-status-dot" style="width:14px;height:14px;border-radius:50%;background:#e03020;box-shadow:0 0 10px #e03020;transition:all .3s;animation:blink-ext .8s step-start infinite;flex-shrink:0"></div>
+          <span style="font-family:var(--mono);font-size:8px;color:#3a5070;letter-spacing:2px;text-transform:uppercase">DIFF A EXT</span>
+        </div>
+        <span id="diffa-status-lbl" style="font-family:var(--display);font-size:16px;font-weight:700;color:#e03020;letter-spacing:2px;line-height:1">HORS LIGNE</span>
       </div>
       <div class="clock-display" id="global-clock">--:--:--</div>
     </div>
@@ -363,14 +373,15 @@ function _diffASetStatus(online, method=''){
   const pill = document.getElementById('diffa-status-pill');
   if(dot){
     dot.style.background = online ? '#00d96a' : '#e03020';
-    dot.style.boxShadow  = online ? '0 0 8px #00d96a' : '0 0 8px #e03020';
+    dot.style.boxShadow  = online ? '0 0 10px #00d96a' : '0 0 10px #e03020';
     dot.classList.toggle('connected', online);
   }
   if(lbl){
-    lbl.textContent = online ? ('DIFF A ● '+(method||'')) : 'DIFF A ✗';
+    lbl.textContent = online ? (method||'EN LIGNE') : 'HORS LIGNE';
     lbl.style.color = online ? '#00d96a' : '#e03020';
   }
   if(pill){
+    pill.style.borderColor = online ? '#00d96a' : '#e03020';
     pill.classList.toggle('connected', online);
     pill.classList.toggle('offline', !online);
   }
@@ -415,7 +426,8 @@ function sigHandleMessage(msg){
       break;
     case 'status':
       const lbl=document.getElementById('diffa-status-lbl');
-      if(lbl) lbl.textContent='DIFF A '+(msg.playing?'▶ '+(msg.track||''):'● prêt');
+      if(lbl) lbl.textContent=msg.playing?'▶ '+(msg.track||'EN DIRECT'):'EN LIGNE';
+      if(msg.playing) _diffASetStatus(true,'EN DIRECT');
       break;
     // RACCRO EXT : Diff2 demande à RC de lancer sa lecture
     case 'raccro-ext':
@@ -465,7 +477,7 @@ function diff2Connect(){
   sigHeartbeat();
   setInterval(sigHeartbeat, 10000);
   // Poll toutes les 2s pour recevoir les messages de DIFF A externe
-  setInterval(sigPoll, 2000);
+  setInterval(sigPoll, 500);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -827,12 +839,14 @@ class Diffuser{
     audio.onended=null;
     if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
     if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-    const inCue=this._inOf(i),outCue=this._outOf(i),chainDelay=Math.max(0,outCue-inCue);
+    const inCue=this._inOf(i), outCue=this._outOf(i), fileDur=this.durs[i]||0;
+    const chainDelay=Math.max(0,outCue-inCue); // délai avant enchaînement
     audio.currentTime=inCue; this.ci=i;
 
-    // Supprime la piste courante de la liste (elle ne jouera plus jamais)
+    // Supprime la piste de la liste et libère les ressources
     const _removeCurrent=()=>{
-      audio.onended=null; audio.pause();
+      audio.onended=null;
+      if(!audio.paused) audio.pause();
       const idx=this.tracks.indexOf(t);
       if(idx!==-1){
         if(t.file?.startsWith('blob:')) URL.revokeObjectURL(t.file);
@@ -841,23 +855,33 @@ class Diffuser{
       this.ci=0; this._updateFdzCount();
     };
 
-    // Au point OUT : supprimer d'abord, enchaîner ensuite
+    // ── Point OUT = point d'ENCHAÎNEMENT ──
+    // Au OUT : lancer le suivant, mais laisser le son courant continuer jusqu'à sa fin naturelle
     this._outTimer=setTimeout(()=>{
       if(token!==this._playToken||!this.playing) return;
-      _removeCurrent();
-      this.render();
-      if(this.tracks.length) this._startNextAfterChain(token);
-      // sinon le diffuseur reste armé (playing=true) en attente d'un nouveau son
-    },chainDelay*1000);
+      // Enchaîner le suivant immédiatement (le son courant continue en fond)
+      if(this.tracks.length>1) this._startNextAfterChain(token);
+      // Programmer la suppression de la piste courante quand elle finit vraiment
+      // (ou forcer à la fin du fichier si pas de onended)
+      const remaining=Math.max(0,(fileDur-outCue))*1000;
+      this._removeTimer=setTimeout(()=>{
+        if(this.tracks.indexOf(t)!==-1) _removeCurrent();
+        this.render();
+      }, remaining+500); // +500ms de marge
+    }, chainDelay*1000);
 
-    // Sécurité : si le son finit avant outCue (fichier trop court)
+    // Fin naturelle du fichier (avant ou après outCue)
     audio.onended=()=>{
       audio.onended=null;
-      if(token!==this._playToken) return;
-      if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
+      if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
+      // Si on est encore avant outCue (fichier plus court), déclencher l'enchaînement
+      const needsChain=this.tracks.indexOf(t)!==-1 && this.tracks.length>1;
+      if(this._outTimer){
+        clearTimeout(this._outTimer);this._outTimer=null;
+        if(token===this._playToken&&this.playing&&needsChain) this._startNextAfterChain(token);
+      }
       _removeCurrent();
       this.render();
-      if(this.tracks.length) this._startNextAfterChain(token);
     };
 
     audio.play().then(()=>wireAudioToDiff(audio,this.idx)).catch(e=>{
@@ -867,12 +891,11 @@ class Diffuser{
     });
   }
 
-  // Démarre toujours tracks[0] — appelé après suppression de la piste précédente
+  // Lance tracks[0] — appelé après enchaînement (la piste précédente continue en fond)
   _startNextAfterChain(token){
     if(token!==this._playToken||!this.playing) return;
-    if(!this.tracks.length) return;
-    // Lancer directement via _startTrack (gère aussi les macros)
-    this._startTrack(0);
+    if(this.tracks.length<2) return; // la piste courante est encore là, il faut au moins 2
+    this._startTrack(1); // index 1 = suivant (0 = encore en cours)
   }
 
   _updateFdzCount(){
@@ -944,18 +967,37 @@ class Diffuser{
     if(!this.playing||!this.tracks.length)return;
     const i=this.ci;const t=this.tracks[i];if(!t||t.isMacro)return;
     const audio=this.audios[i];if(!audio)return;
-    const pos=audio.currentTime,outCue=this._outOf(i);
-    const prog=Math.max(0,Math.min(1,(pos-this._inOf(i))/(outCue-this._inOf(i)||1)));
+    const pos=audio.currentTime;
+    const inCue=this._inOf(i), outCue=this._outOf(i), fileDur=this.durs[i]||1;
+    // Progression vers le point OUT (enchaînement), puis continue jusqu'à fin fichier
+    const progToOut=Math.max(0,Math.min(1,(pos-inCue)/(outCue-inCue||1)));
+    // Barre full-width : de inCue à fin du fichier
+    const progFull=Math.max(0,Math.min(1,(pos-inCue)/(fileDur-inCue||1)));
     const tr=document.getElementById(this.ids.body)?.querySelector('tr.row-active');
-    if(tr)tr.style.setProperty('--prog',prog);
+    if(tr){
+      tr.style.setProperty('--prog',progFull); // la barre suit jusqu'à la fin
+      // Indicateur OUT : petit marker sur la row
+      tr.style.setProperty('--out-pct',((outCue/fileDur)*100).toFixed(1)+'%');
+    }
+    // Décompte : temps restant avant le point OUT (enchaînement)
     const cdEl=document.getElementById(this.ids.body+'-cd-'+i);
-    if(cdEl)cdEl.textContent=fmtFull(Math.max(0,outCue-pos));
+    if(cdEl){
+      const remToOut=outCue-pos;
+      if(remToOut>0){
+        cdEl.textContent=fmtFull(remToOut);
+        cdEl.style.color='#ff4040';
+      } else {
+        // Après OUT : montrer le temps restant de la queue
+        cdEl.textContent='+ '+fmtFull(Math.abs(remToOut));
+        cdEl.style.color='#f07800';
+      }
+    }
     const introEl=document.getElementById(this.ids.body+'-intro-cd-'+i);
     if(introEl){const ic=this._introOf(i)||0;introEl.textContent=fmtFull(Math.max(0,ic-pos));}
     const pb=document.getElementById('c1-progress-fill');
-    if(pb)pb.style.width=(prog*100).toFixed(2)+'%';
+    if(pb)pb.style.width=(progFull*100).toFixed(2)+'%';
     const micros=document.getElementById(this.ids.micros);
-    if(micros)micros.textContent=fmtMs(pos-this._inOf(i));
+    if(micros)micros.textContent=fmtMs(pos-inCue);
     paintStripFromVU();
   }
 }
