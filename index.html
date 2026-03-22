@@ -3662,25 +3662,6 @@ function diff2Connect() {
 // Macro EXT : envoyer play via Cloudflare
 // (utilisé dans MACROS.ext.run)
 
-function _onReady(){
-  preloadMacros();
-  D.forEach(d=>d.render());
-  mainLoop();
-  if(typeof plInit==='function') plInit();
-  if(typeof initPubAuto==='function') initPubAuto();
-  diff2Connect();  // signaling Cloudflare + BroadcastChannel
-  // Boutons écoute
-  ['mix','sat','dab','hz'].forEach(k=>{
-    const btn=document.getElementById('listen-'+k);
-    if(btn) btn.classList.toggle('active', k===listenMode);
-  });
-}
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded', _onReady);
-} else {
-  _onReady();
-}
-
 // Supprimer une piste d'un diffuseur
 function diffRemoveTrack(diffIdx, trackIdx){
   const d=D[diffIdx];
@@ -3711,428 +3692,124 @@ function diffRemoveTrack(diffIdx, trackIdx){
 
 // ── VU Mètre ──
 const NUM_BARS=24; let sharedCtx=null;
-
+function getCtx(){
+  if(!sharedCtx) sharedCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(sharedCtx.state==='suspended') sharedCtx.resume().catch(()=>{});
+  return sharedCtx;
+}
 function rowColor(i,t){const p=i/t;return p>.85?'#e03020':p>.65?'#f5c400':'#00d96a';}
-function buildBars(id){const el=document.getElementById(id);if(!el)return;el.innerHTML='';for(let i=0;i<NUM_BARS;i++){const r=document.createElement('div');r.className='vu-row';r.style.background=rowColor(i,NUM_BARS);r.style.opacity='0.1';el.appendChild(r);}}
-function buildBarsGray(id){const el=document.getElementById(id);if(!el)return;el.innerHTML='';for(let i=0;i<NUM_BARS;i++){const r=document.createElement('div');r.className='vu-row';r.style.background='#4a5260';r.style.opacity='0.1';el.appendChild(r);}}
-function getCtx(){if(!sharedCtx)sharedCtx=new(window.AudioContext||window.webkitAudioContext)();return sharedCtx;}
-function getRMS(an){const d=new Float32Array(an.fftSize);an.getFloatTimeDomainData(d);let s=0;for(const v of d)s+=v*v;return Math.sqrt(s/d.length);}
-const TARGET_LUFS=-23;
-function applyEBU(gn,rL,rR){const r=Math.max(rL,rR);if(r<0.0001)return;gn.gain.setTargetAtTime(Math.min(4,Math.max(0.05,Math.pow(10,(TARGET_LUFS-20*Math.log10(r))/20))),getCtx().currentTime,0.5);}
-function paintBars(idL,idR,aL,aR,dbId,gn,neutralColor){
+function buildBars(id){const el=document.getElementById(id);if(!el)return;el.innerHTML='';for(let i=0;i<NUM_BARS;i++){const r=document.createElement('div');r.className='vu-row';el.appendChild(r);}}
+function buildBarsGray(id){const el=document.getElementById(id);if(!el)return;el.innerHTML='';for(let i=0;i<NUM_BARS;i++){const r=document.createElement('div');r.className='vu-row gray';el.appendChild(r);}}
+function getRMS(an){const d=new Float32Array(an.fftSize);an.getFloatTimeDomainData(d);let s=0;d.forEach(v=>s+=v*v);return Math.sqrt(s/d.length);}
+function paintBars(idL,idR,aL,aR,idDb,gn,color){
   const rL=getRMS(aL),rR=getRMS(aR);
-  if(gn)applyEBU(gn,rL,rR);
-  [{id:idL,rms:rL},{id:idR,rms:rR}].forEach(({id,rms})=>{
-    const db=rms>0?Math.max(-60,20*Math.log10(rms)):-60;
-    const act=Math.round(((db+60)/60)*NUM_BARS);
-    document.querySelectorAll(`#${id} .vu-row`).forEach((r,i)=>r.style.opacity=i<act?'1':'0.1');
+  const db=20*Math.log10(Math.max(rL,rR,1e-6));
+  const norm=Math.max(0,Math.min(1,(db+60)/60));
+  const lit=Math.round(norm*NUM_BARS);
+  [idL,idR].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.querySelectorAll('.vu-row').forEach((r,i)=>{r.style.opacity=(NUM_BARS-1-i)<lit?'1':'0.08';r.style.background=rowColor(NUM_BARS-1-i,NUM_BARS);});
   });
-  const db=Math.max(rL,rR)>0?Math.max(-60,20*Math.log10(Math.max(rL,rR))):-60;
-  const el=document.getElementById(dbId);
-  if(el){el.textContent=db>-60?db.toFixed(1):'—∞';el.style.color=db>-3?'#e03020':db>-10?'#f5c400':(neutralColor||'#00d4f0');}
-}
-function wireVU(audioEl,idL,idR){
-  const ctx=getCtx(),gn=ctx.createGain();gn.gain.value=1;
-  const src=ctx.createMediaElementSource(audioEl);
-  const sp=ctx.createChannelSplitter(2),mg=ctx.createChannelMerger(2);
-  const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
-  aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-  // monGn local — connecté via MON_GAINS[sat] pour respecter le sélecteur d'écoute
-  const monGn=ctx.createGain();monGn.gain.value=1;
-  src.connect(gn);gn.connect(sp);sp.connect(aL,0);sp.connect(aR,1);
-  aL.connect(mg,0,0);aR.connect(mg,0,1);
-  // Connecter via le MON_GAINS sat si disponible, sinon directement
-  const satMn=MON_GAINS['sat'];
-  if(satMn) mg.connect(satMn); else { mg.connect(monGn); monGn.connect(ctx.destination); }
-  buildBars(idL);buildBars(idR);
-  return{aL,aR,gn,monGn};
+  const dbEl=document.getElementById(idDb);
+  if(dbEl) dbEl.textContent=isFinite(db)?db.toFixed(1)+'dB':'—\u221e';
 }
 
-// ── Mode écoute Solo : SAT / DAB+ / Hz / MIX ──
-// monGn = gain vers les hauts-parleurs, indépendant de la mesure VU et de la détection silence
-var listenMode='sat';
-const MON_GAINS={sat:null, dab:null, hz:null}; // monGn de chaque source PUB
+// VU analyseurs
+let vu1=null,vuD2=null,vu2=null,vuNat=null;
+let vuSat=null,vuDab=null,vuHz=null;
+let vuNatSat=null,vuNatDab=null,vuNatHz=null;
 
-function registerMonGain(key, monGn){
-  MON_GAINS[key]=monGn;
-  // Appliquer le mode courant immédiatement
-  applyListenMode();
-}
-
-function setListenMode(mode){
-  listenMode=mode;
-  applyListenMode();
-  // UI boutons
-  ['mix','sat','dab','hz'].forEach(k=>{
-    const btn=document.getElementById('listen-'+k);
-    if(btn) btn.classList.toggle('active',k===mode);
-  });
-}
-
-function applyListenMode(){
-  const ctx=getCtx();
-  const now=ctx.currentTime;
-  Object.entries(MON_GAINS).forEach(([key,mn])=>{
-    if(!mn)return;
-    const target=(listenMode==='mix'||listenMode===key)?1.0:0.0;
-    mn.gain.cancelScheduledValues(now);
-    mn.gain.setTargetAtTime(target,now,0.03);
-  });
-}
-
-// Rétrocompat : registerVUGain ne fait plus rien (remplacé par registerMonGain)
-function registerVUGain(){}
-const VU_GAINS={sat:null,dab:null,hz:null};
-
-// ── Radio Monaco ──
-const rmAudio=new Audio(); rmAudio.crossOrigin='anonymous';
-let vu2=null, rmPlaying=false;
-function rmSetVolume(v){rmAudio.volume=v/100;document.getElementById('rm-vol-val').textContent=v+'%';}
-function rmToggle(){
-  if(!rmPlaying){
-    if(!vu2){getCtx().resume();rmAudio.src='https://radiomonaco.ice.infomaniak.ch/radiomonaco-128.mp3';rmAudio.volume=document.getElementById('rm-volume').value/100;vu2=wireVU(rmAudio,'vu2-L','vu2-R');}
-    getCtx().resume();
-    rmAudio.play().then(()=>{rmPlaying=true;document.getElementById('rm-play-btn').textContent='■ PAUSE';document.getElementById('rm-dot').style.opacity='1';document.getElementById('rm-status').textContent='EN DIRECT';}).catch(e=>console.warn(e));
-  }else{rmAudio.pause();rmPlaying=false;document.getElementById('rm-play-btn').textContent='▶ PLAY';document.getElementById('rm-dot').style.opacity='0';document.getElementById('rm-status').textContent='PAUSE';}
-}
-function rmStop(){rmAudio.pause();rmAudio.src='';rmPlaying=false;vu2=null;document.getElementById('rm-play-btn').textContent='▶ PLAY';document.getElementById('rm-dot').style.opacity='0';document.getElementById('rm-status').textContent='ARRÊT';}
-// ROUTAGE AUDIO — Architecture finale
-
-let vu1=null, vuD2=null; // Analyseurs VU sticky (barre du haut)
-
-// Sources MediaElement (une par diffuseur, créée au premier play)
-const SRCS={d0:null, d1:null, nat:null, sat:null, dab:null, hz:null};
-
-// MonGn par départ — sortie vers les hauts-parleurs (solo possible)
-// MON_GAINS déjà déclaré plus haut : {sat:null, dab:null, hz:null}
-
+// Départs moniteur
+const MON_GAINS={sat:null,dab:null,hz:null};
 function ensureMonGn(dep){
-  if(MON_GAINS[dep]) return MON_GAINS[dep];
-  const ctx=getCtx();
-  const mn=ctx.createGain(); mn.gain.value=1;
-  MON_GAINS[dep]=mn;
-  mn.connect(ctx.destination);
-  applyListenMode();
-  return mn;
+  if(!MON_GAINS[dep]){const ctx=getCtx();MON_GAINS[dep]=ctx.createGain();MON_GAINS[dep].gain.value=1;MON_GAINS[dep].connect(ctx.destination);}
+  return MON_GAINS[dep];
 }
 
-// ── Créer ou récupérer la MediaElementSource d'un diffuseur ──
-function ensureSrc(key, audioEl){
-  // Si déjà une vraie MediaElementSource, retourner
-  if(SRCS[key] && SRCS[key].numberOfOutputs !== undefined) return SRCS[key];
-  // Si marqué comme déjà créé par wireVU (valeur truthy non-Source), ne pas recréer
-  if(SRCS[key]) return null; // source gérée par wireVU, ne pas recréer
-  if(!audioEl) return null;
-  try{
-    const ctx=getCtx();
-    SRCS[key]=ctx.createMediaElementSource(audioEl);
-    return SRCS[key];
-  }catch(e){ return null; }
-}
-
-// ── Brancher une source sur un départ (GainNode vers monGn) ──
-// Retourne l'analyser L créé
-const ROUTE_DONE=new Set(); // 'srcKey_dep' déjà branché
-function routeSrcToDepart(srcKey, dep, audioEl){
-  const rkey=srcKey+'_'+dep;
-  if(ROUTE_DONE.has(rkey)) return null;
-  const src=ensureSrc(srcKey, audioEl);
-  if(!src) return null;
-  const ctx=getCtx();
-  const mn=ensureMonGn(dep);
-  const gn=ctx.createGain(); gn.gain.value=0.7;
-  const aL=ctx.createAnalyser(), aR=ctx.createAnalyser();
-  aL.fftSize=1024; aR.fftSize=1024; aL.smoothingTimeConstant=0.8; aR.smoothingTimeConstant=0.8;
-  const sp=ctx.createChannelSplitter(2), mg=ctx.createChannelMerger(2);
-  src.connect(gn); gn.connect(sp);
-  sp.connect(aL,0); sp.connect(aR,1);
-  aL.connect(mg,0,0); aR.connect(mg,0,1);
-  mg.connect(mn);
-  ROUTE_DONE.add(rkey);
-  return {aL, aR, gn};
-}
-
-// ── Patches togglePlay — audio routing + VU strips (fusionnés) ──
-let vuSat=null, vuDab=null, vuHz=null, vuNat=null;
-let vuNatSat=null, vuNatDab=null, vuNatHz=null;
-
-// ── DIFF 1 — masterGn fixe, chaque Audio element y est branché au premier play ──
-let _masterGn0=null; // masterGn de DIFF1 — fixe pour toute la session
-const _wired0=new WeakSet(); // éléments audio déjà branchés
-const _t0_orig=D[0].togglePlay.bind(D[0]);
-D[0].togglePlay=function(){
-  getCtx().resume();
-  _t0_orig();
-};
-
-const _t1_orig=D[1].togglePlay.bind(D[1]);
-D[1].togglePlay=function(){
-  getCtx().resume();
-  _t1_orig();
-};
-
-const _t2_orig=D[2].togglePlay.bind(D[2]);
-D[2].togglePlay=function(){
-  getCtx().resume();
-  _t2_orig();
-};
-
-const _t3_orig=D[3].togglePlay.bind(D[3]);
-D[3].togglePlay=function(){
-  getCtx().resume();
-  _t3_orig();
-};
-
-const _t4_orig=D[4].togglePlay.bind(D[4]);
-D[4].togglePlay=function(){
-  getCtx().resume();
-  _t4_orig();
-};
-
-const _t5_orig=D[5].togglePlay.bind(D[5]);
-D[5].togglePlay=function(){
-  getCtx().resume();
-  _t5_orig();
-};
-
-// ── Initialiser les barres SAT/DAB+/Hz ──
-
-// Barres VU départs (grands)
-['sat','dab','hz','nat'].forEach(id=>{buildBars('vu-'+id+'-L');buildBars('vu-'+id+'-R');});
-// Barres VU PUB compacts initialisées au premier play (voir wiring PUB SAT/DAB+/Hz)
-
-// ── Mix flux de diffusion ──
-function paintMix(id, sources){
-  const active=sources.filter(v=>v!=null);
-  if(!active.length){
-    ['L','R'].forEach(ch=>{document.querySelectorAll(`#vu-${id}-${ch} .vu-row`).forEach(r=>r.style.opacity='0.1');});
-    const el=document.getElementById(`vu-${id}-db`);
-    if(el){el.textContent='—∞';el.style.color='#00d4f0';}
-    return -60;
-  }
-  let rL=0,rR=0;
-  active.forEach(v=>{rL+=getRMS(v.aL);rR+=getRMS(v.aR);});
-  rL=Math.min(1,rL); rR=Math.min(1,rR);
-  [{id:`vu-${id}-L`,rms:rL},{id:`vu-${id}-R`,rms:rR}].forEach(({id:bid,rms})=>{
-    const db=rms>0?Math.max(-60,20*Math.log10(rms)):-60;
-    const act=Math.round(((db+60)/60)*NUM_BARS);
-    document.querySelectorAll(`#${bid} .vu-row`).forEach((r,i)=>r.style.opacity=i<act?'1':'0.1');
-  });
-  const rms=Math.max(rL,rR);
-  const db=rms>0?Math.max(-60,20*Math.log10(rms)):-60;
-  const el=document.getElementById(`vu-${id}-db`);
-  if(el){el.textContent=db>-60?db.toFixed(1):'—∞';el.style.color=db>-3?'#e03020':db>-10?'#f5c400':'#00d4f0';}
-  return db;
-}
-
-// ── Détection silence + BIP + EMAIL d'alerte ──
-// Le bip sort sur un AudioContext dédié, totalement hors de la chaîne VU/diffusion
-const SILENCE_THRESH_DB=-55, SILENCE_DELAY_MS=5000;
-
-// Noms lisibles par flux (pour le mail)
-const FLUX_NAMES={sat:'SATELLITE',dab:'DAB+',hz:'Hz FM'};
-
-const silenceState={
-  sat:{since:null,alerting:false,bipTimer:null,alertTime:null},
-  dab:{since:null,alerting:false,bipTimer:null,alertTime:null},
-  hz: {since:null,alerting:false,bipTimer:null,alertTime:null}
-};
-// CONFIGURATION EMAILJS
-const EMAILJS_CONFIG={
-  publicKey:  'VOTRE_PUBLIC_KEY',   // ← à remplacer
-  serviceId:  'VOTRE_SERVICE_ID',   // ← à remplacer
-  templateId: 'VOTRE_TEMPLATE_ID',  // ← à remplacer
-  toEmail:    'nicolas7lejeune@gmail.com'
-};
-let _emailjsReady=false;
-function initEmailJS(){
-  if(EMAILJS_CONFIG.publicKey==='VOTRE_PUBLIC_KEY') return; // pas encore configuré
-  try{
-    emailjs.init({publicKey:EMAILJS_CONFIG.publicKey});
-    _emailjsReady=true;
-  }catch(e){ console.warn('[EmailJS] Init error:',e); }
-}
-initEmailJS();
-
-function sendSilenceEmail(fluxKey, type, timeStr){
-  if(!_emailjsReady) return;
-  const params={
-    to_email:    EMAILJS_CONFIG.toEmail,
-    flux_name:   FLUX_NAMES[fluxKey]||fluxKey.toUpperCase(),
-    alert_type:  type==='start'?'ABSENCE DE MODULATION DÉTECTÉE':'RETOUR À LA NORMALE',
-    alert_time:  type==='start'?timeStr:'—',
-    return_time: type==='end'  ?timeStr:'—',
-  };
-  emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, params)
-    .then(()=>console.log(`[EmailJS] Mail envoyé → ${params.flux_name} ${params.alert_type}`))
-    .catch(e=>console.warn('[EmailJS] Erreur envoi:',e));
-}
-
-// Contexte audio indépendant uniquement pour les bips
-let _bipCtx=null;
-function getBipCtx(){
-  if(!_bipCtx||_bipCtx.state==='closed')
-    _bipCtx=new(window.AudioContext||window.webkitAudioContext)();
-  if(_bipCtx.state==='suspended') _bipCtx.resume();
-  return _bipCtx;
-}
-
-// Émet un bip double (1kHz 80ms + 100ms silence + 1kHz 80ms)
-// Bip d'alerte silence : 1 seul bip de 1s (sans répétition automatique)
-function playBip(){
-  try{
-    const ctx=getBipCtx();
-    const vol=ctx.createGain();
-    vol.gain.value=_bipVolume;
-    vol.connect(ctx.destination);
-    const osc=ctx.createOscillator();
-    osc.type='sine';
-    osc.frequency.value=880; // La bémol — ton d'alerte broadcast
-    const env=ctx.createGain();
-    const t=ctx.currentTime;
-    // Enveloppe : attaque 10ms, tenu 0.9s, release 100ms
-    env.gain.setValueAtTime(0,t);
-    env.gain.linearRampToValueAtTime(1,t+0.01);
-    env.gain.setValueAtTime(1,t+0.9);
-    env.gain.linearRampToValueAtTime(0,t+1.0);
-    osc.connect(env);
-    env.connect(vol);
-    osc.start(t);
-    osc.stop(t+1.0);
-  }catch(e){console.warn('Bip error:',e);}
-}
-
-// ── Journal de modulation ──
-const EMETTEUR_NAMES={sat:'SATELLITE',dab:'DAB+',hz:'Hz FM'};
-function addJournalLine(type, key, timeStr){
-  const journal=document.getElementById('mod-journal');
-  if(!journal) return;
-  // Supprimer le message "aucun événement"
-  const empty=document.getElementById('mod-journal-empty');
-  if(empty) empty.remove();
-  // Créer la ligne
-  const line=document.createElement('div');
-  line.className='mod-journal-line '+(type==='absence'?'absence':'reprise');
-  const name=EMETTEUR_NAMES[key]||key.toUpperCase();
-  const msg=type==='absence'
-    ? `Absence de modulation émetteur ${name} à ${timeStr}`
-    : `Reprise de modulation émetteur ${name} à ${timeStr}`;
-  line.innerHTML=`
-    <div class="mod-journal-dot"></div>
-    <span class="mod-journal-time">${timeStr}</span>
-    <span class="mod-journal-txt">${msg}</span>`;
-  journal.appendChild(line);
-  // Scroll auto vers le bas
-  journal.scrollTop=journal.scrollHeight;
-}
-
-function checkSilence(key,db){
-  const s=silenceState[key];
-  const now=Date.now();
-  const wrap =document.getElementById(`vu-wrap-${key}`);
-  const badge=document.getElementById(`sil-${key}`);
-
-  if(db<=SILENCE_THRESH_DB){
-    if(s.since===null) s.since=now;
-    if((now-s.since)>=SILENCE_DELAY_MS&&!s.alerting){
-      s.alerting=true;
-      s.alertTime=new Date();
-      const timeStr=s.alertTime.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      if(wrap) wrap.classList.add('silence-warn');
-      if(badge) badge.classList.add('active');
-      // Point rouge + bouton clignotant dans la navbar
-      const navDot=document.getElementById('sil-nav-'+key);
-      if(navDot) navDot.classList.add('active');
-      const listenBtn=document.getElementById('listen-'+key);
-      if(listenBtn) listenBtn.classList.add('silence-alarm');
-      // Journal
-      addJournalLine('absence', key, timeStr);
-      // Bip immédiat + répétition toutes les 8s
-      playBip(); // bip unique à l'apparition du silence
-      // Mail d'alerte début
-      sendSilenceEmail(key,'start',timeStr);
-    }
-  }else{
-    s.since=null;
-    if(s.alerting){
-      s.alerting=false;
-      const returnTime=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      if(s.bipTimer){clearInterval(s.bipTimer);s.bipTimer=null;}
-      if(wrap) wrap.classList.remove('silence-warn');
-      if(badge) badge.classList.remove('active');
-      // Retirer point rouge + clignotement
-      const navDot=document.getElementById('sil-nav-'+key);
-      if(navDot) navDot.classList.remove('active');
-      const listenBtn=document.getElementById('listen-'+key);
-      if(listenBtn) listenBtn.classList.remove('silence-alarm');
-      // Journal
-      addJournalLine('reprise', key, returnTime);
-      // Mail retour à la normale
-      sendSilenceEmail(key,'end',returnTime);
-    }
-  }
-}
+// masterGains
+let _masterGn0=null,_masterGn1=null,_masterGnNat=null;
+const ROUTE_DONE=new Set();
 
 function _ensureMasterGn(diffIdx){
   const ctx=getCtx();
-  const existing=[_masterGn0,_masterGn1,null,null,null,_masterGnNat,null];
-  if(diffIdx<existing.length && existing[diffIdx]) return existing[diffIdx];
-
-  const gn=ctx.createGain(); gn.gain.value=1;
+  const ex=[_masterGn0,_masterGn1,null,null,null,_masterGnNat,null];
+  if(diffIdx<ex.length&&ex[diffIdx]) return ex[diffIdx];
+  const gn=ctx.createGain();gn.gain.value=1;
   const sp=ctx.createChannelSplitter(2);
   const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
   aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-  gn.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
-  gn.connect(ctx.destination);
-
-  if(diffIdx===0){ _masterGn0=gn; vu1={aL,aR,gn}; buildBars('vu1-L');buildBars('vu1-R'); }
-  else if(diffIdx===1){ _masterGn1=gn; vuD2={aL,aR,gn}; buildBars('vu-d2-L');buildBars('vu-d2-R'); }
-  else if(diffIdx===5){ _masterGnNat=gn; vuNat={aL,aR,gn}; buildBars('vu-nat-L');buildBars('vu-nat-R'); }
-  else { /* PUBs : pas de VU global, destination directe */ }
+  gn.connect(sp);sp.connect(aL,0);sp.connect(aR,1);gn.connect(ctx.destination);
+  if(diffIdx===0){_masterGn0=gn;vu1={aL,aR,gn};buildBars('vu1-L');buildBars('vu1-R');}
+  else if(diffIdx===1){_masterGn1=gn;vuD2={aL,aR,gn};buildBars('vu-d2-L');buildBars('vu-d2-R');}
+  else if(diffIdx===5){_masterGnNat=gn;vuNat={aL,aR,gn};buildBars('vu-nat-L');buildBars('vu-nat-R');}
   return gn;
 }
 
-function wireAudioToDiff(el, diffIdx){
-  if(!el) return;
+function wireAudioToDiff(el,diffIdx){
+  if(!el)return;
   const key='_w'+diffIdx;
-  if(el[key]) return;
+  if(el[key])return;
   el[key]=true;
-
-  // Contexte — s'il est suspendu, le reprendre et continuer quand même
   const ctx=getCtx();
-  if(ctx.state!=='closed') ctx.resume().catch(()=>{});
-
   const masterGn=_ensureMasterGn(diffIdx);
-
+  if(!masterGn)return;
   try{
     const src=ctx.createMediaElementSource(el);
     src.connect(masterGn);
-
-    // Départs (SAT/DAB/Hz) — une seule fois par diffuseur
-    const deps={0:['sat','dab','hz'],1:['sat','dab','hz'],
-                2:['sat'],3:['dab'],4:['hz'],5:['sat','dab','hz']};
+    const deps={0:['sat','dab','hz'],1:['sat','dab','hz'],2:['sat'],3:['dab'],4:['hz'],5:['sat','dab','hz']};
     (deps[diffIdx]||[]).forEach(dep=>{
-      const rk=diffIdx+'_'+dep; if(ROUTE_DONE.has(rk)) return;
+      const rk=diffIdx+'_'+dep;if(ROUTE_DONE.has(rk))return;
+      ROUTE_DONE.add(rk);
       const mn=ensureMonGn(dep);
-      const gd=ctx.createGain(); gd.gain.value=0.7;
+      const gd=ctx.createGain();gd.gain.value=0.7;
       const sp=ctx.createChannelSplitter(2),mg=ctx.createChannelMerger(2);
       const al=ctx.createAnalyser(),ar=ctx.createAnalyser();
       al.fftSize=1024;ar.fftSize=1024;al.smoothingTimeConstant=0.8;ar.smoothingTimeConstant=0.8;
-      masterGn.connect(gd);gd.connect(sp);
-      sp.connect(al,0);sp.connect(ar,1);
+      masterGn.connect(gd);gd.connect(sp);sp.connect(al,0);sp.connect(ar,1);
       al.connect(mg,0,0);ar.connect(mg,0,1);mg.connect(mn);
-      if(diffIdx===2) vuSat={aL:al,aR:ar,gn:gd};
-      if(diffIdx===3) vuDab={aL:al,aR:ar,gn:gd};
-      if(diffIdx===4) vuHz ={aL:al,aR:ar,gn:gd};
+      if(diffIdx===2)vuSat={aL:al,aR:ar,gn:gd};
+      if(diffIdx===3)vuDab={aL:al,aR:ar,gn:gd};
+      if(diffIdx===4)vuHz={aL:al,aR:ar,gn:gd};
       if(diffIdx===5){
-        if(dep==='sat') vuNatSat={aL:al,aR:ar,gn:gd};
-        if(dep==='dab') vuNatDab={aL:al,aR:ar,gn:gd};
-        if(dep==='hz')  vuNatHz ={aL:al,aR:ar,gn:gd};
+        if(dep==='sat')vuNatSat={aL:al,aR:ar,gn:gd};
+        if(dep==='dab')vuNatDab={aL:al,aR:ar,gn:gd};
+        if(dep==='hz')vuNatHz={aL:al,aR:ar,gn:gd};
       }
-      ROUTE_DONE.add(rk);
     });
-  }catch(e){ console.warn('[wire D'+diffIdx+']',e.message); }
+  }catch(e){console.warn('[wire]',e.message);}
 }
+
+// togglePlay overrides
+const _t0_orig=D[0].togglePlay.bind(D[0]);D[0].togglePlay=function(){getCtx().resume();_t0_orig();};
+const _t1_orig=D[1].togglePlay.bind(D[1]);D[1].togglePlay=function(){getCtx().resume();_t1_orig();};
+const _t2_orig=D[2].togglePlay.bind(D[2]);D[2].togglePlay=function(){getCtx().resume();_t2_orig();};
+const _t3_orig=D[3].togglePlay.bind(D[3]);D[3].togglePlay=function(){getCtx().resume();_t3_orig();};
+const _t4_orig=D[4].togglePlay.bind(D[4]);D[4].togglePlay=function(){getCtx().resume();_t4_orig();};
+const _t5_orig=D[5].togglePlay.bind(D[5]);D[5].togglePlay=function(){getCtx().resume();_t5_orig();};
+
+// Init barres VU
+['vu1-L','vu1-R','vu-d2-L','vu-d2-R','vu-nat-L','vu-nat-R'].forEach(buildBars);
+['sat','dab','hz','nat'].forEach(id=>{buildBars('vu-'+id+'-L');buildBars('vu-'+id+'-R');});
+
+// paintMix départs
+function paintMix(id,sources){
+  const active=sources.filter(Boolean);
+  if(!active.length){paintMixEmpty(id);return -60;}
+  let rL=0,rR=0;
+  active.forEach(v=>{rL+=getRMS(v.aL);rR+=getRMS(v.aR);});
+  rL/=active.length;rR/=active.length;
+  const db=20*Math.log10(Math.max(rL,rR,1e-6));
+  const norm=Math.max(0,Math.min(1,(db+60)/60));
+  const lit=Math.round(norm*NUM_BARS);
+  ['L','R'].forEach(ch=>{
+    const el=document.getElementById('vu-'+id+'-'+ch);if(!el)return;
+    el.querySelectorAll('.vu-row').forEach((r,i)=>{r.style.opacity=(NUM_BARS-1-i)<lit?'1':'0.08';r.style.background=rowColor(NUM_BARS-1-i,NUM_BARS);});
+  });
+  const dbEl=document.getElementById('vu-'+id+'-db');
+  if(dbEl)dbEl.textContent=isFinite(db)?db.toFixed(1)+'dB':'\u2014\u221e';
+  return db;
+}
+
 
 function vuLoop(){
   requestAnimationFrame(vuLoop);
@@ -4212,29 +3889,8 @@ function mainLoop(){
   }
 }
 // ONGLETS
-function switchTab(name){
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  const panel=document.getElementById('tab-'+name);
-  if(panel) panel.classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(b=>{
-    const txt=b.textContent.toLowerCase();
-    const match=(name==='rdv'&&(txt.includes('rendez')||txt.includes('rdv')))||
-                (name==='diffusion'&&txt.includes('diffusion'))||
-                (name==='macros'&&txt.includes('macro'))||
-                (name==='test'&&txt.includes('test'))||
-                (name==='playlist'&&(txt.includes('playlist')||txt.includes('📋')))||
-                (name==='pige'&&(txt.includes('pige')||txt.includes('⏺')));
-    if(match) b.classList.add('active');
-  });
-  // Hooks par onglet
-  if(name==='playlist') { try{ plRender(); }catch(e){} }
-}
 
 // ── AUTO activé d'office sur les PUB + NATIONAL ──
-function initPubAuto(){
-  [2,3,4,5].forEach(i=>{ if(D[i]&&!D[i].auto) D[i].toggleAuto(); });
-}
 // initPubAuto() appelé depuis _onReady
 // RENDEZ-VOUS UNIFIÉ (un seul encart)
 
