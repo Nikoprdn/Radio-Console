@@ -30,15 +30,19 @@
   .diff-badge{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;padding:2px 10px;border-radius:4px;}
   .notification.is-onair{background:var(--s2);border:1px solid var(--border);border-top:none;border-radius:0;padding:.5rem 1rem;margin:0;display:flex;align-items:center;justify-content:space-between;transition:background .2s,border-color .2s;}
 
-  /* EN DIRECT */
-  .diff-card-header.is-live{background:linear-gradient(90deg,#2a0505 0%,#1a0808 100%)!important;border-bottom-color:#8a1010!important;}
-  .diff-card-header.is-live .diff-badge{background:#6a0000!important;color:#ff6060!important;border-color:#aa2020!important;box-shadow:0 0 8px rgba(220,30,30,.4);}
-  .diff-onair-bar.is-live{background:linear-gradient(90deg,#3a0808 0%,#250505 100%)!important;border-color:#7a1010!important;}
-  .diff-onair-bar.is-live .onair-title{color:#ff5050!important;}
-  .diff-onair-bar.is-live .dot-live{background:#ff3030!important;box-shadow:0 0 6px #ff3030,0 0 12px rgba(255,30,30,.6)!important;animation:live-pulse .8s ease-in-out infinite!important;}
-  .card.is-dark-card.diff-is-live{border-color:#7a1010!important;box-shadow:0 0 0 1px rgba(200,10,10,.25),inset 0 0 40px rgba(120,0,0,.08)!important;}
-  .card.is-dark-card.diff-is-live .card-header{background:linear-gradient(90deg,#1a0404 0%,#0e0808 100%)!important;border-bottom-color:#6a1010!important;}
-  @keyframes live-pulse{0%,100%{opacity:1;box-shadow:0 0 6px #ff3030,0 0 14px rgba(255,30,30,.5);}50%{opacity:.6;box-shadow:0 0 3px #ff3030;}}
+  /* EN DIRECT — full rouge, zéro nuance */
+  .diff-card-header.is-live{background:#1a0000!important;border-bottom-color:#cc0000!important;}
+  .diff-card-header.is-live .diff-badge{background:#cc0000!important;color:#fff!important;border-color:#ff2020!important;}
+  .diff-onair-bar.is-live{background:#1a0000!important;border-color:#cc0000!important;}
+  .diff-onair-bar.is-live .onair-title{color:#ff2020!important;}
+  .diff-onair-bar.is-live .dot-live{background:#ff0000!important;box-shadow:0 0 8px #ff0000!important;animation:live-pulse .8s ease-in-out infinite!important;}
+  .card.is-dark-card.diff-is-live{border-color:#cc0000!important;box-shadow:none!important;background:#100000!important;}
+  .card.is-dark-card.diff-is-live .card-header{background:#1a0000!important;border-bottom-color:#cc0000!important;}
+  @keyframes live-pulse{0%,100%{opacity:1;box-shadow:0 0 10px #ff0000;}50%{opacity:.5;box-shadow:0 0 4px #ff0000;}}
+  /* Barre de progression full rouge quand en lecture */
+  .diff-progress-fill{background:#cc0000!important;transition:width .08s linear;}
+  .table.is-radio tbody tr.row-active{background:#1a0000!important;border-left:4px solid #ff0000!important;border-top:1px solid #880000!important;border-bottom:1px solid #880000!important;}
+  .table.is-radio tbody tr.row-active::before{background:#cc0000!important;}
   .onair-title{font-family:var(--display);font-size:22px;font-weight:700;color:var(--txt);letter-spacing:3px;}
   .onair-track-name{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:2px;color:var(--yellow);margin-left:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px;}
   .dot-live{display:inline-block;width:8px;height:8px;background:var(--red);border-radius:50%;animation:blink 1s step-start infinite;vertical-align:middle;margin-right:6px;}
@@ -428,11 +432,18 @@ function runMacroStartExt(){
     title:'START EXT',
     color:'#4a1a8a',
     inCue:0, outCue:null,
-    action:()=>{
+    action:(diffuser)=>{
+      // 1. Envoyer play à DIFF A Externe
       sigSend({action:'play',source:'RC'});
       _flashMacroBtn('macro-start-ext');
       const dot=document.getElementById('diffa-status-dot');
       if(dot){dot.style.background='#ffffff';setTimeout(()=>_diffASetStatus(_sigD2Online,'Cloudflare'),300);}
+      // 2. Désactiver l'AUTO sur le diffuseur qui a joué la macro
+      if(diffuser && diffuser.auto){
+        diffuser.auto=false;
+        const btn=document.getElementById(diffuser.cfg.autoBtn);
+        if(btn) btn.classList.remove('active');
+      }
     }
   };
   D[0].tracks.push(macroStep);
@@ -440,8 +451,6 @@ function runMacroStartExt(){
   D[0].audios.push(null);
   D[0]._updateFdzCount();
   D[0].render();
-  // Si le diffuseur est déjà en lecture et qu'on était en attente, démarrer la macro
-  if(D[0].playing && D[0].tracks.length===1) D[0]._startTrack(0);
 }
 
 function _flashMacroBtn(id){
@@ -799,30 +808,33 @@ class Diffuser{
   }
 
   _startTrack(i){
-    const t=this.tracks[i];if(!t)return;
-    // ── Pas MACRO : exécuter et supprimer après 1.5s ──
+    const t=this.tracks[i]; if(!t) return;
+    // ── PAS MACRO : token incrémenté, exécuter, puis passer au suivant ──
     if(t.isMacro){
-      this.render(); // affiche "EN COURS D'EXÉCUTION"
-      if(typeof t.action==='function') t.action();
-      const token=this._playToken;
-      setTimeout(()=>{
-        if(token!==this._playToken||!this.playing)return;
+      const token=++this._playToken;
+      if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
+      if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
+      this.ci=i; this.render();
+      if(typeof t.action==='function') t.action(this);
+      this._outTimer=setTimeout(()=>{
+        if(token!==this._playToken||!this.playing) return;
         const idx=this.tracks.indexOf(t);
         if(idx!==-1){this.tracks.splice(idx,1);this.durs.splice(idx,1);this.audios.splice(idx,1);}
-        this.ci=0;this._updateFdzCount();
-        if(this.tracks.length) this._startTrack(0);
-        else{this.playing=false;}
+        this._updateFdzCount();
+        if(this.tracks.length){this.ci=0;this._startTrack(0);}
+        else{this.ci=0;this.playing=false;}
         this.render();
       },1500);
       return;
     }
-    const audio=this.audios[i];if(!audio)return;
+    // ── SON AUDIO ──
+    const audio=this.audios[i]; if(!audio) return;
     const token=++this._playToken;
     audio.onended=null;
     if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
     if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
     const inCue=this._inOf(i),outCue=this._outOf(i),chainDelay=Math.max(0,outCue-inCue);
-    audio.currentTime=inCue;
+    audio.currentTime=inCue; this.ci=i;
     const removeTrack=(tk)=>{
       if(tk!==this._playToken)return;
       audio.onended=null;audio.pause();
@@ -833,23 +845,28 @@ class Diffuser{
     this._outTimer=setTimeout(()=>{
       if(token!==this._playToken||!this.playing)return;
       this.ci=0;this.render();
-      if(this.tracks.length>1)this._startNextAfterChain(i,token);
-      this._removeTimer=setTimeout(()=>removeTrack(token),2000);
+      if(this.tracks.length) this._startNextAfterChain(token);
+      else this._removeTimer=setTimeout(()=>removeTrack(token),2000);
     },chainDelay*1000);
     audio.onended=()=>{audio.onended=null;if(token!==this._playToken)return;removeTrack(token);};
-    audio.play().then(()=>wireAudioToDiff(audio,this.idx)).catch(e=>{audio.onended=null;if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}console.warn('play() error:',e);});
+    audio.play().then(()=>wireAudioToDiff(audio,this.idx)).catch(e=>{
+      audio.onended=null;if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
+      console.warn('play() error:',e);
+    });
   }
 
-  _startNextAfterChain(currentIdx,token){
-    if(token!==this._playToken||!this.playing)return;
-    if(this.tracks.length<2)return;
-    const next=this.tracks[1];if(!next)return;
-    const nextAudio=this.audios[1];if(!nextAudio)return;
+  // Toujours depuis tracks[0] — après suppression de la piste précédente
+  _startNextAfterChain(token){
+    if(token!==this._playToken||!this.playing) return;
+    if(!this.tracks.length) return;
+    const next=this.tracks[0]; if(!next) return;
+    if(next.isMacro){this._startTrack(0);return;}
+    const nextAudio=this.audios[0]; if(!nextAudio) return;
     const nextToken=++this._playToken;
     nextAudio.onended=null;
     if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
     if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-    const nextIn=this._inOf(1),nextOut=this._outOf(1),nextChain=Math.max(0,nextOut-nextIn);
+    const nextIn=this._inOf(0),nextOut=this._outOf(0),nextChain=Math.max(0,nextOut-nextIn);
     nextAudio.currentTime=nextIn;
     const removeNext=(tk)=>{
       if(tk!==this._playToken)return;
@@ -861,8 +878,8 @@ class Diffuser{
     this._outTimer=setTimeout(()=>{
       if(nextToken!==this._playToken||!this.playing)return;
       this.ci=0;this.render();
-      if(this.tracks.length>1)this._startNextAfterChain(1,nextToken);
-      this._removeTimer=setTimeout(()=>removeNext(nextToken),2000);
+      if(this.tracks.length) this._startNextAfterChain(nextToken);
+      else this._removeTimer=setTimeout(()=>removeNext(nextToken),2000);
     },nextChain*1000);
     nextAudio.onended=()=>{nextAudio.onended=null;if(nextToken!==this._playToken)return;removeNext(nextToken);};
     nextAudio.play().catch(e=>console.warn('play() next error:',e));
@@ -878,6 +895,8 @@ class Diffuser{
 
   togglePlay(){
     if(!this.tracks.length)return;
+    const hasAudio=this.tracks.some(t=>!t.isMacro);
+    if(!hasAudio)return;
     if(!this.playing){
       this.playing=true;this.ci=0;this._chainDone.clear();this._startTrack(0);this.render();
     }else{
@@ -903,6 +922,52 @@ class Diffuser{
   nextTrack(){}
   prevTrack(){}
   jumpTo(i){if(this.playing){this.audios.forEach(a=>{if(a&&!a.paused)a.pause();});this.ci=i;this._chainDone.clear();this._startTrack(i);}else{this.ci=i;}this.render();}
+
+  _bindHandles(wvId,trackIdx){
+    const canvas=document.getElementById(wvId);if(!canvas)return;
+    const wrap=canvas.parentElement;
+    const inH=document.getElementById(wvId+'-in');
+    const outH=document.getElementById(wvId+'-out');
+    if(!wrap||!inH||!outH)return;
+    const xToR=(clientX)=>{const rect=wrap.getBoundingClientRect();return Math.min(1,Math.max(0,(clientX-rect.left)/rect.width));};
+    const applyIn=(sec)=>{const dur=this.durs[trackIdx]||1;const pct=(sec/dur*100).toFixed(2);inH.style.left=pct+'%';const pre=document.getElementById(wvId+'-pre');if(pre)pre.style.width=pct+'%';};
+    const applyOut=(sec)=>{const dur=this.durs[trackIdx]||1;const pct=(sec/dur*100).toFixed(2);outH.style.left=pct+'%';const post=document.getElementById(wvId+'-post');if(post)post.style.left=pct+'%';};
+    const bindOne=(handle,type)=>{
+      let active=false;
+      handle.addEventListener('mousedown',e=>{e.stopPropagation();e.preventDefault();active=true;document.body.style.userSelect='none';},{passive:false});
+      document.addEventListener('mousemove',e=>{
+        if(!active)return;const t=this.tracks[trackIdx];if(!t)return;
+        const dur=this.durs[trackIdx]||1,sec=xToR(e.clientX)*dur;
+        if(type==='in'){t.inCue=Math.max(0,Math.min(sec,(t.outCue??dur)-0.1));applyIn(t.inCue);}
+        else{t.outCue=Math.min(dur,Math.max(sec,(t.inCue||0)+0.1));applyOut(t.outCue);}
+      });
+      document.addEventListener('mouseup',()=>{
+        if(!active)return;active=false;document.body.style.userSelect='';
+        const cv=document.getElementById(wvId);const file=this.tracks[trackIdx]?.file;
+        if(cv&&file&&WV_DATA_CACHE[file])drawWaveformFromData(cv,WV_DATA_CACHE[file],0,1);
+      });
+    };
+    bindOne(inH,'in');bindOne(outH,'out');
+  }
+
+  tick(){
+    if(!this.playing||!this.tracks.length)return;
+    const i=this.ci;const t=this.tracks[i];if(!t||t.isMacro)return;
+    const audio=this.audios[i];if(!audio)return;
+    const pos=audio.currentTime,outCue=this._outOf(i);
+    const prog=Math.max(0,Math.min(1,(pos-this._inOf(i))/(outCue-this._inOf(i)||1)));
+    const tr=document.getElementById(this.ids.body)?.querySelector('tr.row-active');
+    if(tr)tr.style.setProperty('--prog',prog);
+    const cdEl=document.getElementById(this.ids.body+'-cd-'+i);
+    if(cdEl)cdEl.textContent=fmtFull(Math.max(0,outCue-pos));
+    const introEl=document.getElementById(this.ids.body+'-intro-cd-'+i);
+    if(introEl){const ic=this._introOf(i)||0;introEl.textContent=fmtFull(Math.max(0,ic-pos));}
+    const pb=document.getElementById('c1-progress-fill');
+    if(pb)pb.style.width=(prog*100).toFixed(2)+'%';
+    const micros=document.getElementById(this.ids.micros);
+    if(micros)micros.textContent=fmtMs(pos-this._inOf(i));
+    paintStripFromVU();
+  }
 }
 
 const D=CONFIGS.map((cfg,i)=>new Diffuser(cfg,i));
