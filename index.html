@@ -368,121 +368,22 @@
 </div>
 
 
-<!-- ── Carte de France avec voyants ── -->
+<!-- ── Diffusion Régionale — voyants + playlist ── -->
 <div class="card is-dark-card" style="margin-top:.75rem">
   <div style="background:var(--s2);border-bottom:1px solid var(--border);padding:.5rem 1rem;display:flex;align-items:center;justify-content:space-between">
     <span style="font-family:var(--display);font-size:13px;font-weight:700;color:var(--txt);letter-spacing:2px">DIFFUSION RÉGIONALE</span>
-    <span style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:2px">8 VILLES</span>
+    <span style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:2px" id="regions-online-count">8 VILLES</span>
   </div>
-  <div style="padding:1rem;display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap">
-    <!-- SVG Carte de France — projection Mercator, régions réelles IGN -->
-    <div style="flex-shrink:0;position:relative">
-      <svg id="france-map" width="300" height="360" viewBox="0 0 340 390" style="display:block">
-        <defs>
-          <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="4" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          <filter id="glow-soft">
-            <feGaussianBlur stdDeviation="2" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-
-        <!-- Fond océan/mer -->
-        <rect width="340" height="390" fill="#0d0f14" rx="6"/>
-
-        <!-- Régions françaises — tracés géographiques réels (projection Mercator, source IGN) -->
-        <g id="france-regions" fill="#1a1d24" stroke="#2e3640" stroke-width="0.8" stroke-linejoin="round">
-          <path id="region-hauts-de-france" class="fr-region" d="M 157.5,15.7 L 169.5,13.6 L 176.9,9.6 L 190.6,22.1 L 198.6,24.5 L 214.3,43.3 L 214.1,54.8 L 202.1,67.8 L 188.8,72.9 L 176.2,75.2 L 166.8,73.7 L 151.6,70.9 L 155.8,60.7 L 152.1,51.2 L 144.4,39.3 Z"/>
-          <path id="region-normandie" class="fr-region" d="M 88.3,106.3 L 80.3,109.0 L 78.5,106.7 L 90.5,83.8 L 95.3,67.4 L 118.1,65.4 L 130.1,50.8 L 134.0,59.1 L 144.4,63.9 L 151.6,70.9 L 166.8,73.7 L 176.2,75.2 L 161.6,88.9 L 142.7,100.9 L 125.1,111.3 L 119.0,115.5 L 106.4,130.0 L 100.1,122.4 Z"/>
-          <path id="region-ile-de-france" class="fr-region" d="M 153.8,88.1 L 166.8,73.7 L 176.2,75.2 L 188.8,72.9 L 196.6,84.2 L 196.9,100.9 L 187.9,115.1 L 177.5,122.8 L 167.3,120.1 L 156.4,117.0 L 153.8,102.4 Z"/>
-          <path id="region-grand-est" class="fr-region" d="M 196.6,84.2 L 188.8,72.9 L 202.1,67.8 L 214.1,54.8 L 227.8,61.5 L 248.6,71.3 L 252.1,71.3 L 260.2,74.9 L 274.3,87.3 L 282.8,90.4 L 284.5,94.3 L 287.1,131.1 L 286.5,146.3 L 277.8,145.2 L 268.4,153.1 L 253.0,165.4 L 241.2,162.1 L 232.1,148.9 L 224.7,147.4 L 216.9,141.0 L 207.7,128.5 L 196.9,100.9 Z"/>
-          <path id="region-bourgogne-franche-comte" class="fr-region" d="M 207.7,128.5 L 216.9,141.0 L 224.7,147.4 L 232.1,148.9 L 241.2,162.1 L 253.0,165.4 L 268.4,153.1 L 277.8,145.2 L 274.3,192.5 L 269.7,200.6 L 257.1,187.0 L 249.1,190.7 L 242.5,200.6 L 234.9,203.5 L 230.1,214.5 L 222.3,207.6 L 216.9,188.1 L 210.1,187.0 L 203.2,190.7 L 194.7,179.9 L 193.4,165.4 L 186.4,151.6 L 192.3,141.4 L 200.8,133.8 Z"/>
-          <path id="region-auvergne-rhone-alpes" class="fr-region" d="M 230.1,214.5 L 234.9,203.5 L 242.5,200.6 L 249.1,190.7 L 257.1,187.0 L 269.7,200.6 L 274.3,192.5 L 277.8,145.2 L 286.5,146.3 L 287.1,131.1 L 284.5,94.3 L 282.8,90.4 L 274.3,87.3 L 274.3,208.6 L 271.0,211.6 L 271.0,256.0 L 268.4,269.2 L 260.0,275.9 L 246.2,281.5 L 231.9,269.2 L 217.3,268.4 L 209.3,257.8 L 199.3,258.5 L 192.3,244.9 L 193.4,232.3 L 194.7,179.9 L 203.2,190.7 L 210.1,187.0 L 216.9,188.1 L 222.3,207.6 Z"/>
-          <path id="region-provence-alpes-cote-azur" class="fr-region" d="M 231.9,269.2 L 246.2,281.5 L 260.0,275.9 L 268.4,269.2 L 271.0,256.0 L 285.2,282.2 L 285.2,294.6 L 282.8,295.6 L 273.0,301.6 L 262.3,306.8 L 249.1,308.5 L 238.6,306.4 L 231.9,299.1 L 222.8,299.1 L 217.1,294.6 L 217.3,283.3 L 209.3,272.7 L 217.3,268.4 Z"/>
-          <path id="region-occitanie" class="fr-region" d="M 217.3,268.4 L 209.3,272.7 L 217.3,283.3 L 217.1,294.6 L 206.2,299.5 L 188.4,310.3 L 190.8,332.4 L 159.2,330.0 L 114.9,322.8 L 83.1,299.1 L 90.7,293.5 L 106.2,278.4 L 120.9,273.1 L 137.7,268.4 L 151.4,259.2 L 161.6,254.5 L 172.5,258.1 L 185.8,260.6 L 192.3,244.9 L 199.3,258.5 L 209.3,257.8 Z"/>
-          <path id="region-nouvelle-aquitaine" class="fr-region" d="M 83.1,299.1 L 90.7,293.5 L 106.2,278.4 L 120.9,273.1 L 137.7,268.4 L 133.8,254.5 L 136.6,222.9 L 139.0,203.9 L 142.7,174.7 L 136.4,166.9 L 126.4,159.8 L 112.5,157.6 L 109.6,147.0 L 112.5,131.9 L 125.1,111.3 L 106.4,130.0 L 100.1,122.4 L 87.2,152.3 L 74.4,162.8 L 84.6,169.5 L 77.7,184.0 L 90.5,199.5 L 96.6,200.6 L 95.5,217.4 L 97.2,230.5 L 94.8,254.5 L 90.7,293.5 Z"/>
-          <path id="region-pays-de-la-loire" class="fr-region" d="M 74.4,162.8 L 70.5,157.2 L 53.1,150.4 L 78.5,148.2 L 88.3,145.5 L 86.6,136.1 L 82.4,126.6 L 92.4,121.2 L 100.1,122.4 L 106.4,130.0 L 125.1,111.3 L 112.5,131.9 L 109.6,147.0 L 112.5,157.6 L 126.4,159.8 L 87.2,152.3 Z"/>
-          <path id="region-bretagne" class="fr-region" d="M 18.3,112.8 L 27.0,135.7 L 53.1,150.4 L 70.5,157.2 L 78.5,148.2 L 88.3,145.5 L 86.6,136.1 L 82.4,126.6 L 67.9,117.0 L 58.1,107.1 L 41.8,102.8 L 30.7,104.7 Z"/>
-          <path id="region-centre-val-de-loire" class="fr-region" d="M 125.1,111.3 L 142.7,100.9 L 161.6,88.9 L 176.2,75.2 L 177.5,122.8 L 187.9,115.1 L 196.9,100.9 L 186.4,151.6 L 193.4,165.4 L 186.4,169.9 L 172.5,162.4 L 161.6,160.2 L 145.5,151.2 L 136.4,166.9 L 142.7,174.7 L 139.0,203.9 L 136.6,222.9 L 133.8,254.5 L 126.4,159.8 L 109.6,147.0 L 112.5,131.9 Z"/>
-        </g>
-
-        <!-- Corse (décalée pour tenir dans le viewport) -->
-        <g fill="#1a1d24" stroke="#2e3640" stroke-width="0.8">
-          <path d="M 299,310 L 308,300 L 311,283 L 309,273 L 300,272 L 296,278 L 299,291 L 296,306 Z"/>
-          <text x="302" y="320" font-family="'Share Tech Mono',monospace" font-size="7" fill="#37474f" text-anchor="middle">CORSE</text>
-        </g>
-
-        <!-- Bordures côtières légères -->
-        <path d="M 18.3,112.8 L 27.0,135.7 L 53.1,150.4 L 70.5,157.2 L 74.4,162.8 L 77.7,184.0 L 90.5,199.5 L 96.6,200.6 L 95.5,217.4 L 97.2,230.5 L 94.8,254.5 L 90.7,293.5 L 83.1,299.1 L 114.9,322.8 L 159.2,330.0 L 190.8,332.4 L 206.2,299.5 L 217.1,294.6 L 231.9,299.1 L 238.6,306.4 L 249.1,308.5 L 262.3,306.8 L 273.0,301.6 L 285.2,294.6 L 285.2,282.2 L 271.0,256.0 L 274.3,208.6 L 287.1,131.1 L 284.5,94.3 L 282.8,90.4 L 274.3,87.3 L 260.2,74.9 L 252.1,71.3 L 227.8,61.5 L 214.1,54.8 L 214.3,43.3 L 198.6,24.5 L 190.6,22.1 L 176.9,9.6 L 157.5,15.7 L 144.4,39.3 L 130.1,50.8 L 118.1,65.4 L 95.3,67.4 L 90.5,83.8 L 78.5,106.7 L 18.3,112.8"
-          fill="none" stroke="#3a4455" stroke-width="1.2" stroke-linejoin="round"/>
-
-        <!-- ── VILLES — voyants ── -->
-        <!-- LILLE cx=188.6 cy=28.5 -->
-        <g id="map-lille">
-          <circle cx="188.6" cy="28.5" r="10" fill="#151719" stroke="#2e3238" stroke-width="0.8" id="map-dot-lille"/>
-          <circle cx="188.6" cy="28.5" r="4.5" fill="#37474f" id="map-inner-lille"/>
-          <text x="201" y="25" font-family="'Share Tech Mono',monospace" font-size="8" fill="#455a64" text-anchor="start" id="map-lbl-lille">LILLE</text>
-        </g>
-
-        <!-- STRASBOURG cx=290.6 cy=109.4 -->
-        <g id="map-strasbourg">
-          <circle cx="290.6" cy="109.4" r="10" fill="#151719" stroke="#2e3238" stroke-width="0.8" id="map-dot-strasbourg"/>
-          <circle cx="290.6" cy="109.4" r="4.5" fill="#37474f" id="map-inner-strasbourg"/>
-          <text x="283" y="98" font-family="'Share Tech Mono',monospace" font-size="8" fill="#455a64" text-anchor="end" id="map-lbl-strasbourg">STRAS.</text>
-        </g>
-
-        <!-- NANTES cx=88.3 cy=160.9 -->
-        <g id="map-nantes">
-          <circle cx="88.3" cy="160.9" r="10" fill="#151719" stroke="#2e3238" stroke-width="0.8" id="map-dot-nantes"/>
-          <circle cx="88.3" cy="160.9" r="4.5" fill="#37474f" id="map-inner-nantes"/>
-          <text x="101" y="158" font-family="'Share Tech Mono',monospace" font-size="8" fill="#455a64" text-anchor="start" id="map-lbl-nantes">NANTES</text>
-        </g>
-
-        <!-- LYON cx=227.1 cy=214.9 -->
-        <g id="map-lyon">
-          <circle cx="227.1" cy="214.9" r="10" fill="#151719" stroke="#2e3238" stroke-width="0.8" id="map-dot-lyon"/>
-          <circle cx="227.1" cy="214.9" r="4.5" fill="#37474f" id="map-inner-lyon"/>
-          <text x="219" y="204" font-family="'Share Tech Mono',monospace" font-size="8" fill="#455a64" text-anchor="end" id="map-lbl-lyon">LYON</text>
-        </g>
-
-        <!-- BORDEAUX cx=109.4 cy=247.7 -->
-        <g id="map-bordeaux">
-          <circle cx="109.4" cy="247.7" r="10" fill="#151719" stroke="#2e3238" stroke-width="0.8" id="map-dot-bordeaux"/>
-          <circle cx="109.4" cy="247.7" r="4.5" fill="#37474f" id="map-inner-bordeaux"/>
-          <text x="122" y="245" font-family="'Share Tech Mono',monospace" font-size="8" fill="#455a64" text-anchor="start" id="map-lbl-bordeaux">BORDEAUX</text>
-        </g>
-
-        <!-- TOULOUSE cx=153.4 cy=291.7 -->
-        <g id="map-toulouse">
-          <circle cx="153.4" cy="291.7" r="10" fill="#151719" stroke="#2e3238" stroke-width="0.8" id="map-dot-toulouse"/>
-          <circle cx="153.4" cy="291.7" r="4.5" fill="#37474f" id="map-inner-toulouse"/>
-          <text x="146" y="280" font-family="'Share Tech Mono',monospace" font-size="8" fill="#455a64" text-anchor="end" id="map-lbl-toulouse">TOULOUSE</text>
-        </g>
-
-        <!-- MARSEILLE cx=238.9 cy=302.3 -->
-        <g id="map-marseille">
-          <circle cx="238.9" cy="302.3" r="10" fill="#151719" stroke="#2e3238" stroke-width="0.8" id="map-dot-marseille"/>
-          <circle cx="238.9" cy="302.3" r="4.5" fill="#37474f" id="map-inner-marseille"/>
-          <text x="231" y="318" font-family="'Share Tech Mono',monospace" font-size="8" fill="#455a64" text-anchor="end" id="map-lbl-marseille">MARSEILLE</text>
-        </g>
-
-        <!-- NICE cx=280.2 cy=288.2 -->
-        <g id="map-nice">
-          <circle cx="280.2" cy="288.2" r="10" fill="#151719" stroke="#2e3238" stroke-width="0.8" id="map-dot-nice"/>
-          <circle cx="280.2" cy="288.2" r="4.5" fill="#37474f" id="map-inner-nice"/>
-          <text x="273" y="277" font-family="'Share Tech Mono',monospace" font-size="8" fill="#455a64" text-anchor="end" id="map-lbl-nice">NICE</text>
-        </g>
-      </svg>
+  <!-- Grille voyants ON AIR -->
+  <div style="padding:.75rem 1rem;display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="regions-voyants-grid">
+  </div>
+  <!-- Playlist régionale reçue de D3 -->
+  <div id="regions-playlist-wrap" style="border-top:1px solid var(--border);display:none">
+    <div style="padding:4px 1rem 4px;background:var(--s3);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-family:var(--mono);font-size:8px;color:#42a5f5;letter-spacing:3px">PLAYLIST MARSEILLE</span>
+      <span style="font-family:var(--mono);font-size:8px;color:var(--txt-mute)" id="regions-playlist-count">—</span>
     </div>
-    <!-- Liste des villes avec statut -->
-    <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:200px">
-      <div style="font-family:var(--mono);font-size:8px;color:var(--txt-mute);letter-spacing:3px;margin-bottom:4px">STATUT DIFFUSION</div>
-      <div id="regions-status-list">
-        <!-- généré en JS -->
-      </div>
-    </div>
+    <div id="regions-playlist-body" style="max-height:200px;overflow-y:auto"></div>
   </div>
 </div>
 
@@ -677,80 +578,79 @@ function _updateOnAirBadges(){
   if(bbs){bbs.textContent=_diffAExtPlaying?'ON AIR':'OFF AIR';}
 }
 
-// ── Chargement pistes régionales depuis D3 ──
+// ── Chargement pistes régionales depuis D3 — affichage séparé ──
 function _loadRegionalTracks(tracks, city){
-  if(!D[0]) return;
-  // Marquer les pistes symboliques existantes (régionales) pour ne pas dupliquer
-  D[0].tracks = D[0].tracks.filter(t=>!t._regional);
-  D[0].durs = D[0].durs.slice(0, D[0].tracks.length);
-  D[0].audios = D[0].audios.slice(0, D[0].tracks.length);
-
-  // Créer des entrées symboliques (sans audio) pour chaque piste régionale
-  const newTracks = tracks.map(t=>({
-    title: t.title || '—',
-    file: null,           // pas de fichier local
-    color: '#1565c0',     // bleu Marseille
-    inCue: 0,
-    outCue: t.dur || 0,
-    _regional: true,      // flag pour identifier les pistes régionales
-    _city: city,
-    isMirror: true        // affichage spécial
-  }));
-  const newDurs = tracks.map(t=>t.dur||0);
-  const newAudios = tracks.map(()=>null);
-
-  // Insérer après les pistes normales
-  D[0].tracks.push(...newTracks);
-  D[0].durs.push(...newDurs);
-  D[0].audios.push(...newAudios);
-  D[0]._updateFdzCount();
-  D[0].render();
-
-  // Notification visuelle
-  const badge = document.getElementById('badge-diffa-ext');
-  if(badge){
-    badge.style.borderColor='#42a5f5';
-    setTimeout(()=>badge.style.borderColor='', 1500);
-  }
+  const wrap=document.getElementById('regions-playlist-wrap');
+  const body=document.getElementById('regions-playlist-body');
+  const count=document.getElementById('regions-playlist-count');
+  if(!wrap||!body) return;
+  if(!tracks||!tracks.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  if(count) count.textContent=tracks.length+' piste'+(tracks.length>1?'s':'');
+  let tot=0; tracks.forEach(t=>tot+=t.dur||0);
+  body.innerHTML=tracks.map((t,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 1rem;border-bottom:1px solid #1a1c22">
+      <span style="font-family:var(--mono);font-size:9px;color:#1565c0;min-width:18px">${i+1}</span>
+      <span style="font-family:var(--display);font-size:13px;font-weight:600;color:#b0bec5;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title||'—'}</span>
+      <span style="font-family:var(--mono);font-size:9px;color:#37474f">${fmtFull(t.dur||0)}</span>
+    </div>`).join('')+`
+    <div style="padding:4px 1rem;display:flex;justify-content:flex-end">
+      <span style="font-family:var(--mono);font-size:9px;color:#37474f">TOTAL ${fmtFull(tot)}</span>
+    </div>`;
 }
 
-// ── Carte de France — voyants régionaux ──
+// ── Diffusion Régionale — voyants ──
+const _VILLES_RC=[
+  {id:'marseille',label:'MARSEILLE',color:'#1565c0'},
+  {id:'nice',     label:'NICE',     color:'#6a1b9a'},
+  {id:'strasbourg',label:'STRAS.',  color:'#1b5e20'},
+  {id:'lyon',     label:'LYON',     color:'#e65100'},
+  {id:'bordeaux', label:'BORDEAUX', color:'#880e4f'},
+  {id:'toulouse', label:'TOULOUSE', color:'#004d40'},
+  {id:'lille',    label:'LILLE',    color:'#37474f'},
+  {id:'nantes',   label:'NANTES',   color:'#4e342e'},
+];
 const _regionsStatus={
   marseille:false,nice:false,strasbourg:false,lyon:false,
   bordeaux:false,toulouse:false,lille:false,nantes:false
 };
 
-function _updateRegionsMap(){
-  Object.entries(_regionsStatus).forEach(([ville,on])=>{
-    const inner=document.getElementById(`map-inner-${ville}`);
-    const dot=document.getElementById(`map-dot-${ville}`);
-    const lbl=document.getElementById(`map-lbl-${ville}`);
-    if(inner){
-      inner.style.fill=on?'#ff0000':'#37474f';
-      if(on){inner.setAttribute('r','6');}
-      else{inner.setAttribute('r','5');}
-    }
-    if(dot){
-      dot.style.filter=on?'drop-shadow(0 0 4px #ff0000)':'none';
-      dot.setAttribute('stroke',on?'#ff0000':'#2e3238');
-      dot.style.fill=on?'#1a0000':'#151719';
-    }
-    if(lbl){lbl.setAttribute('fill',on?'#ff4040':'#455a64');}
-  });
-  _updateRegionsList();
+function _buildVoyantsGrid(){
+  const grid=document.getElementById('regions-voyants-grid');
+  if(!grid)return;
+  grid.innerHTML=_VILLES_RC.map(v=>`
+    <div id="rv-${v.id}" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border-radius:6px;border:1px solid #1e2a40;background:#0a0e18;transition:all .2s">
+      <div style="position:relative;width:22px;height:22px">
+        <div id="rv-dot-${v.id}" style="width:22px;height:22px;border-radius:50%;background:#1e2535;border:1px solid #2e3a50;transition:all .3s"></div>
+      </div>
+      <span style="font-family:var(--mono);font-size:8px;letter-spacing:1px;font-weight:700;color:#2a3a50;text-align:center;transition:all .2s" id="rv-lbl-${v.id}">${v.label}</span>
+      <span style="font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:1px;color:#1e2a40;transition:all .2s" id="rv-state-${v.id}">OFF AIR</span>
+    </div>`).join('');
 }
 
-function _updateRegionsList(){
-  const el=document.getElementById('regions-status-list');
-  if(!el)return;
-  const villes=['marseille','nice','strasbourg','lyon','bordeaux','toulouse','lille','nantes'];
-  const labels={marseille:'Marseille',nice:'Nice',strasbourg:'Strasbourg',lyon:'Lyon',bordeaux:'Bordeaux',toulouse:'Toulouse',lille:'Lille',nantes:'Nantes'};
-  el.innerHTML=villes.map(v=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:4px;background:${_regionsStatus[v]?'#1a0000':'#151719'};border:1px solid ${_regionsStatus[v]?'#cc0000':'#2e3238'}">
-      <div style="width:8px;height:8px;border-radius:50%;background:${_regionsStatus[v]?'#ff0000':'#37474f'};${_regionsStatus[v]?'box-shadow:0 0 6px #ff0000':''};flex-shrink:0"></div>
-      <span style="font-family:var(--mono);font-size:10px;letter-spacing:1px;font-weight:700;color:${_regionsStatus[v]?'#ff2020':'#37474f'};flex:1">${labels[v].toUpperCase()}</span>
-      <span style="font-family:var(--display);font-size:12px;font-weight:700;color:${_regionsStatus[v]?'#ff2020':'#37474f'}">${_regionsStatus[v]?'ON AIR':'OFF AIR'}</span>
-    </div>`).join('');
+function _updateRegionsMap(){
+  let onCount=0;
+  _VILLES_RC.forEach(v=>{
+    const on=_regionsStatus[v.id];
+    if(on) onCount++;
+    const cell=document.getElementById(`rv-${v.id}`);
+    const dot=document.getElementById(`rv-dot-${v.id}`);
+    const lbl=document.getElementById(`rv-lbl-${v.id}`);
+    const state=document.getElementById(`rv-state-${v.id}`);
+    if(cell){
+      cell.style.borderColor=on?'#cc0000':'#1e2a40';
+      cell.style.background=on?'#1a0000':'#0a0e18';
+    }
+    if(dot){
+      dot.style.background=on?'#ff0000':'#1e2535';
+      dot.style.borderColor=on?'#ff4040':'#2e3a50';
+      dot.style.boxShadow=on?'0 0 10px #ff0000,0 0 20px rgba(255,0,0,.3)':'none';
+    }
+    if(lbl){lbl.style.color=on?'#ff4040':'#2a3a50';}
+    if(state){state.textContent=on?'ON AIR':'OFF AIR';state.style.color=on?'#ff2020':'#1e2a40';}
+  });
+  const cnt=document.getElementById('regions-online-count');
+  if(cnt)cnt.textContent=onCount?`${onCount}/8 EN DIRECT`:'8 VILLES';
 }
 
 function diff2Connect(){
@@ -997,22 +897,6 @@ class Diffuser{
           </td>
           <td class="cell-cd" style="color:#6a5000;font-family:var(--mono);font-size:10px;text-align:right;padding-right:10px">ACTION</td>
           <td class="cell-bar"><span class="color-bar" style="background:#3a2a00"></span></td>`;
-        tbody.appendChild(tr);
-      } else if(t._regional||t.isMirror){
-        // ── PISTE RÉGIONALE (reçue depuis D3) ──
-        tr.innerHTML=`
-          <td style="width:32px;text-align:center;vertical-align:middle;padding:0">
-            <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:#1565c0">${i+1}</div>
-          </td>
-          <td colspan="4" style="padding:0 10px;vertical-align:middle">
-            ${delBtn}
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-family:var(--mono);font-size:7px;color:#42a5f5;background:#0a1830;border:1px solid #1565c0;border-radius:2px;padding:1px 5px;letter-spacing:2px">${t._city||'RÉGION'}</span>
-              <div style="font-family:var(--display);font-size:15px;font-weight:700;color:#b0bec5;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px" title="${t.title}">${t.title}</div>
-              <span style="font-family:var(--mono);font-size:10px;color:#37474f">${fmtFull(this.durs[i]||0)}</span>
-            </div>
-          </td>
-          <td class="cell-bar"><span style="width:4px;height:56px;display:block;background:#1565c0;border-radius:2px;opacity:.6"></span></td>`;
         tbody.appendChild(tr);
       } else {
         // ── LIGNE NORMALE — affichage grand et lisible ──
@@ -1619,7 +1503,7 @@ function _onReady(){
   D.forEach(d=>d.render());
   mainLoop();
   diff2Connect();
-  _updateRegionsMap(); // init carte
+  _buildVoyantsGrid(); _updateRegionsMap(); // init voyants
   // Toggle play avec resume AudioContext
   const _t0=D[0].togglePlay.bind(D[0]);
   D[0].togglePlay=function(){getCtx().resume();_t0();};
