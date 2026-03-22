@@ -2611,7 +2611,6 @@ const fmtFull=s=>{s=Math.round(s||0);return fmt2(Math.floor(s/3600))+':'+fmt2(Ma
 const fmtMs=s=>{s=Math.max(0,s||0);const m=Math.floor(s/60),sec=Math.floor(s%60),ms=Math.round((s%1)*10);return fmt2(m)+':'+fmt2(sec)+'.'+ms;};
 const nowClock=()=>{const d=new Date();return[d.getHours(),d.getMinutes(),d.getSeconds()].map(fmt2).join(':');};
 
-
 const rdvMaster = {
   armed:   false,
   winMin:  4,
@@ -3461,11 +3460,8 @@ function preloadMacros(){
   // NE PAS appeler render() ici
 }
 // Appeler après chargement DOM
-
-// ══════════════════════════════════════════════════════════════
 // SIGNALING via Cloudflare Worker (polling HTTP)
 // URL : https://radio-signaling.nicolas7lejeune.workers.dev
-// ══════════════════════════════════════════════════════════════
 const SIG_URL  = 'https://radio-signaling.nicolas7lejeune.workers.dev';
 const SIG_ROLE = 'rc'; // ce côté = Radio-Console
 
@@ -3494,7 +3490,6 @@ function _diff2SetStatus(online, method){
     pill.classList.toggle('offline', !online);
   }
 }
-
 
 // ── Envoyer un message vers Diff2 ────────────────────────────
 async function sigSend(msg) {
@@ -3550,7 +3545,6 @@ async function sigHandleMessage(msg) {
       break;
     case 'raccro-ext':
       if(D[0] && !D[0].playing) D[0].togglePlay();
-      console.log('[RC] RACCRO EXT reçu → DIFF1 lancé');
       break;
     case 'd2-ping':
       _diff2SetStatus(true, 'Cloudflare');
@@ -3585,7 +3579,6 @@ function _attachExtStream(stream){
     vuExt = {aL, aR};
     buildBars('vu-ext-L'); buildBars('vu-ext-R');
     _extVuSetStatus(true);
-    console.log('[EXT VU] Stream audio attaché');
   }catch(e){ console.warn('[EXT VU]',e); }
 }
 
@@ -3664,13 +3657,10 @@ function diff2Connect() {
   setInterval(sigHeartbeat, 5000);
   sigHeartbeat();
   sigPoll();
-
-  console.log('[Sig] Cloudflare signaling démarré');
 }
 
 // Macro EXT : envoyer play via Cloudflare
 // (utilisé dans MACROS.ext.run)
-
 
 function _onReady(){
   preloadMacros();
@@ -3758,8 +3748,6 @@ function wireVU(audioEl,idL,idR){
   return{aL,aR,gn,monGn};
 }
 
-
-
 // ── Mode écoute Solo : SAT / DAB+ / Hz / MIX ──
 // monGn = gain vers les hauts-parleurs, indépendant de la mesure VU et de la détection silence
 var listenMode='sat';
@@ -3808,18 +3796,7 @@ function rmToggle(){
   }else{rmAudio.pause();rmPlaying=false;document.getElementById('rm-play-btn').textContent='▶ PLAY';document.getElementById('rm-dot').style.opacity='0';document.getElementById('rm-status').textContent='PAUSE';}
 }
 function rmStop(){rmAudio.pause();rmAudio.src='';rmPlaying=false;vu2=null;document.getElementById('rm-play-btn').textContent='▶ PLAY';document.getElementById('rm-dot').style.opacity='0';document.getElementById('rm-status').textContent='ARRÊT';}
-
-// ══════════════════════════════════════════════════════════════
 // ROUTAGE AUDIO — Architecture finale
-// ──────────────────────────────────────────────────────────────
-// DIFF 1, DIFF 2, NATIONAL → les 3 départs (SAT + DAB+ + Hz)
-// PUB SAT → SAT uniquement
-// PUB DAB+ → DAB+ uniquement
-// PUB Hz → Hz uniquement
-//
-// Règle WebAudio : 1 seule MediaElementSource par AudioElement.
-// On crée la source UNE FOIS, puis on la distribue via GainNodes.
-// ══════════════════════════════════════════════════════════════
 
 let vu1=null, vuD2=null; // Analyseurs VU sticky (barre du haut)
 
@@ -3918,7 +3895,6 @@ D[5].togglePlay=function(){
   _t5_orig();
 };
 
-
 // ── Initialiser les barres SAT/DAB+/Hz ──
 
 // Barres VU départs (grands)
@@ -3961,16 +3937,7 @@ const silenceState={
   dab:{since:null,alerting:false,bipTimer:null,alertTime:null},
   hz: {since:null,alerting:false,bipTimer:null,alertTime:null}
 };
-
-// ─────────────────────────────────────────────
 // CONFIGURATION EMAILJS
-// 1. Créer un compte gratuit sur https://www.emailjs.com
-// 2. Créer un Service (Gmail, SMTP…) → copier le Service ID
-// 3. Créer un Template avec les variables :
-//      {{flux_name}}  {{alert_time}}  {{return_time}}  {{alert_type}}
-// 4. Récupérer la Public Key dans Account > API Keys
-// Remplacer les 3 valeurs ci-dessous :
-// ─────────────────────────────────────────────
 const EMAILJS_CONFIG={
   publicKey:  'VOTRE_PUBLIC_KEY',   // ← à remplacer
   serviceId:  'VOTRE_SERVICE_ID',   // ← à remplacer
@@ -3983,7 +3950,6 @@ function initEmailJS(){
   try{
     emailjs.init({publicKey:EMAILJS_CONFIG.publicKey});
     _emailjsReady=true;
-    console.log('[EmailJS] Initialisé');
   }catch(e){ console.warn('[EmailJS] Init error:',e); }
 }
 initEmailJS();
@@ -4107,97 +4073,66 @@ function checkSilence(key,db){
   }
 }
 
-// ── Boucle VU principale ──
-// ══════════════════════════════════════════════════════════════
-// wireAudioToDiff — branche un élément audio sur le graphe
-// WebAudio du diffuseur correspondant.
-// Appelé depuis _startTrack à chaque lancement de piste.
-// Idempotent : si déjà branché, ne fait rien.
-// ══════════════════════════════════════════════════════════════
+function _ensureMasterGn(diffIdx){
+  const ctx=getCtx();
+  const existing=[_masterGn0,_masterGn1,null,null,null,_masterGnNat,null];
+  if(diffIdx<existing.length && existing[diffIdx]) return existing[diffIdx];
+
+  const gn=ctx.createGain(); gn.gain.value=1;
+  const sp=ctx.createChannelSplitter(2);
+  const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
+  aL.fftSize=1024;aR.fftSize=1024;aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
+  gn.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
+  gn.connect(ctx.destination);
+
+  if(diffIdx===0){ _masterGn0=gn; vu1={aL,aR,gn}; buildBars('vu1-L');buildBars('vu1-R'); }
+  else if(diffIdx===1){ _masterGn1=gn; vuD2={aL,aR,gn}; buildBars('vu-d2-L');buildBars('vu-d2-R'); }
+  else if(diffIdx===5){ _masterGnNat=gn; vuNat={aL,aR,gn}; buildBars('vu-nat-L');buildBars('vu-nat-R'); }
+  else { /* PUBs : pas de VU global, destination directe */ }
+  return gn;
+}
+
 function wireAudioToDiff(el, diffIdx){
   if(!el) return;
+  const key='_w'+diffIdx;
+  if(el[key]) return;
+  el[key]=true;
 
-  // Clé de marquage unique par diffuseur
-  const wiredKey = '_srcWired'+diffIdx;
-  if(el[wiredKey]) return; // déjà branché
+  // Contexte — s'il est suspendu, le reprendre et continuer quand même
+  const ctx=getCtx();
+  if(ctx.state!=='closed') ctx.resume().catch(()=>{});
 
-  // getCtx() crée/retourne l'AudioContext (sharedCtx)
-  // Si l'AudioContext est suspendu, le reprendre
-  const ctx = getCtx();
-  if(!ctx) return;
-  if(ctx.state==='suspended') ctx.resume().catch(()=>{});
-  if(ctx.state==='closed') return;
-
-  // Récupérer le masterGain existant du diffuseur
-  const masterGns = [_masterGn0, _masterGn1, null, null, null, _masterGnNat, null];
-  let masterGn = (diffIdx < masterGns.length) ? masterGns[diffIdx] : null;
-
-  // Créer le masterGain si absent
-  if(!masterGn){
-    masterGn = ctx.createGain(); masterGn.gain.value=1;
-    const sp=ctx.createChannelSplitter(2);
-    const aL=ctx.createAnalyser(),aR=ctx.createAnalyser();
-    aL.fftSize=1024;aR.fftSize=1024;
-    aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
-    masterGn.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
-    // TOUJOURS connecter vers les haut-parleurs
-    masterGn.connect(ctx.destination);
-
-    if(diffIdx===0){ _masterGn0=masterGn; vu1={aL,aR,gn:masterGn}; buildBars('vu1-L');buildBars('vu1-R'); }
-    else if(diffIdx===1){ _masterGn1=masterGn; vuD2={aL,aR,gn:masterGn}; buildBars('vu-d2-L');buildBars('vu-d2-R'); }
-    else if(diffIdx===5){ _masterGnNat=masterGn; vuNat={aL,aR,gn:masterGn}; buildBars('vu-nat-L');buildBars('vu-nat-R'); }
-  }
-
-  // S'assurer que masterGn est connecté aux haut-parleurs
-  // (connexion idempotente dans WebAudio — pas de doublon de son)
-  try{ masterGn.connect(ctx.destination); }catch(e){}
+  const masterGn=_ensureMasterGn(diffIdx);
 
   try{
     const src=ctx.createMediaElementSource(el);
-    // Brancher vers masterGain (analyseurs + haut-parleurs)
     src.connect(masterGn);
-    el[wiredKey]=true;
 
-    // Router aussi vers les départs (SAT/DAB/Hz) selon le diffuseur
-    const depMap={
-      0:['sat','dab','hz'],  // DIFF1 → tous les départs
-      1:['sat','dab','hz'],  // DIFF2 → tous les départs
-      5:['sat','dab','hz'],  // NATIONAL → tous les départs
-      2:['sat'],             // PUB SAT → SAT seulement
-      3:['dab'],             // PUB DAB+ → DAB+ seulement
-      4:['hz'],              // PUB Hz → Hz seulement
-    };
-    const deps=depMap[diffIdx]||[];
-    deps.forEach(dep=>{
-      const rkey=`d${diffIdx}_${dep}`;
-      if(ROUTE_DONE.has(rkey)) return;
+    // Départs (SAT/DAB/Hz) — une seule fois par diffuseur
+    const deps={0:['sat','dab','hz'],1:['sat','dab','hz'],
+                2:['sat'],3:['dab'],4:['hz'],5:['sat','dab','hz']};
+    (deps[diffIdx]||[]).forEach(dep=>{
+      const rk=diffIdx+'_'+dep; if(ROUTE_DONE.has(rk)) return;
       const mn=ensureMonGn(dep);
-      const gnDep=ctx.createGain(); gnDep.gain.value=0.7;
-      const sp2=ctx.createChannelSplitter(2), mg2=ctx.createChannelMerger(2);
-      const dAL=ctx.createAnalyser(), dAR=ctx.createAnalyser();
-      dAL.fftSize=1024;dAR.fftSize=1024;dAL.smoothingTimeConstant=0.8;dAR.smoothingTimeConstant=0.8;
-      masterGn.connect(gnDep); gnDep.connect(sp2);
-      sp2.connect(dAL,0); sp2.connect(dAR,1);
-      dAL.connect(mg2,0,0); dAR.connect(mg2,0,1); mg2.connect(mn);
-      // Stocker les analyseurs VU des départs PUB
-      if(diffIdx===2) vuSat={aL:dAL,aR:dAR,gn:gnDep};
-      if(diffIdx===3) vuDab={aL:dAL,aR:dAR,gn:gnDep};
-      if(diffIdx===4) vuHz ={aL:dAL,aR:dAR,gn:gnDep};
+      const gd=ctx.createGain(); gd.gain.value=0.7;
+      const sp=ctx.createChannelSplitter(2),mg=ctx.createChannelMerger(2);
+      const al=ctx.createAnalyser(),ar=ctx.createAnalyser();
+      al.fftSize=1024;ar.fftSize=1024;al.smoothingTimeConstant=0.8;ar.smoothingTimeConstant=0.8;
+      masterGn.connect(gd);gd.connect(sp);
+      sp.connect(al,0);sp.connect(ar,1);
+      al.connect(mg,0,0);ar.connect(mg,0,1);mg.connect(mn);
+      if(diffIdx===2) vuSat={aL:al,aR:ar,gn:gd};
+      if(diffIdx===3) vuDab={aL:al,aR:ar,gn:gd};
+      if(diffIdx===4) vuHz ={aL:al,aR:ar,gn:gd};
       if(diffIdx===5){
-        if(dep==='sat') vuNatSat={aL:dAL,aR:dAR,gn:gnDep};
-        if(dep==='dab') vuNatDab={aL:dAL,aR:dAR,gn:gnDep};
-        if(dep==='hz')  vuNatHz ={aL:dAL,aR:dAR,gn:gnDep};
+        if(dep==='sat') vuNatSat={aL:al,aR:ar,gn:gd};
+        if(dep==='dab') vuNatDab={aL:al,aR:ar,gn:gd};
+        if(dep==='hz')  vuNatHz ={aL:al,aR:ar,gn:gd};
       }
-      ROUTE_DONE.add(rkey);
+      ROUTE_DONE.add(rk);
     });
-
-    console.log(`[Wire] D[${diffIdx}] branché sur WebAudio`);
-  }catch(e){
-    el[wiredKey]=true; // marquer quand même pour éviter boucle
-    console.warn(`[Wire] D[${diffIdx}]:`, e.message);
-  }
+  }catch(e){ console.warn('[wire D'+diffIdx+']',e.message); }
 }
-
 
 function vuLoop(){
   requestAnimationFrame(vuLoop);
@@ -4276,10 +4211,7 @@ function mainLoop(){
     if(typeof rdvTick==='function') rdvTick();
   }
 }
-
-// ══════════════════════════════════════
 // ONGLETS
-// ══════════════════════════════════════
 function switchTab(name){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -4304,10 +4236,7 @@ function initPubAuto(){
   [2,3,4,5].forEach(i=>{ if(D[i]&&!D[i].auto) D[i].toggleAuto(); });
 }
 // initPubAuto() appelé depuis _onReady
-
-// ══════════════════════════════════════
 // RENDEZ-VOUS UNIFIÉ (un seul encart)
-// ══════════════════════════════════════
 
 // Mise à jour de l'affichage de la fenêtre
 function rdvUpdateWinDisplay(){
@@ -4462,10 +4391,7 @@ function rdvTick(){
     if(armBtn){armBtn.classList.remove('armed');armBtn.textContent='⏱ ARMER';}
   }
 }
-
-// ══════════════════════════════════════
 // MACROS
-// ══════════════════════════════════════
 const MACROS={
   nat:{
     label:'START NAT',
@@ -4577,10 +4503,7 @@ function rdvCancel(idx){
   if(popup) popup.classList.remove('visible');
 }
 function rdvToggleTarget(){}
-
-// ══════════════════════════════════════
 // MENUS DÉROULANTS MACROS SUR DIFFUSEURS
-// ══════════════════════════════════════
 function toggleMacroMenu(idx){
   const menu=document.getElementById('mdrop-menu-'+idx);
   const btn=document.getElementById('mdrop-btn-'+idx);
@@ -4614,10 +4537,7 @@ document.addEventListener('click',e=>{
     document.querySelectorAll('.macro-dropdown-btn.open').forEach(b=>b.classList.remove('open'));
   }
 });
-
-// ══════════════════════════════════════
 // DRAG & DROP MACROS → PLAYLISTS
-// ══════════════════════════════════════
 let _draggingMacroKey=null;
 
 function macroDragStart(event,key){
@@ -4673,12 +4593,7 @@ function insertMacroInDiff(diffIdx,macroKey,btn){
     setTimeout(()=>{ btn.classList.remove('added'); btn.textContent=orig; },1500);
   }
 }
-
-
-
-// ══════════════════════════════════════
 // VU STRIPS LATÉRAUX SUR CHAQUE DIFFUSEUR
-// ══════════════════════════════════════
 const STRIP_NUM_BARS = 16;
 
 // Peindre un strip vertical à partir d'un analyser
@@ -4743,7 +4658,6 @@ function stripLoop(){
 }
 stripLoop();
 
-
 // ── Wiring DIFF TEST (D[6]) ──
 var vuTx=null;
 const _tx_orig=D[6].togglePlay.bind(D[6]);
@@ -4755,14 +4669,8 @@ D[6].togglePlay=function(){
   }
   getCtx().resume(); _tx_orig();
 };
-
-// ══════════════════════════════════════════════════════════════
 // MODAL ÉDITEUR WAVEFORM
-// ══════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════
 // ÉDITEUR IN/OUT — fenêtre flottante avec zoom et précision
-// ══════════════════════════════════════════════════════════════
 let _wvModal={
   diffIdx:null, trackIdx:null, dur:1,
   zoom:1,           // facteur de zoom (1 = vue complète)
@@ -5324,10 +5232,6 @@ function _wvModalAutoZoom(){
   }
 }
 
-
-
-
-
 // ── Macros inline sur les pistes ──
 function toggleTrackMacroMenu(menuId){
   // Fermer tous les autres menus ouverts
@@ -5347,10 +5251,7 @@ function setTrackMacro(wvId, diffIdx, trackIdx, macroKey){
   t.onPlayMacro=macroKey||null;
   d.render();
 }
-
-// ══════════════════════════════════════════════════════
 // ONGLETS
-// ══════════════════════════════════════════════════════
 function switchTab(name){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -5374,10 +5275,7 @@ function initPubAuto(){
   [2,3,4,5].forEach(i=>{ if(D[i]&&!D[i].auto) D[i].toggleAuto(); });
 }
 // initPubAuto() appelé depuis _onReady
-
-// ══════════════════════════════════════════════════════
 // PLAYLISTS
-// ══════════════════════════════════════════════════════
 const PL_STORAGE_KEY='radio_playlists_v1';
 const DIFF_LABELS_PL=['DIFF 1','DIFF 2','PUB SAT','PUB DAB+','PUB Hz','NATIONAL'];
 var playlists=[];
@@ -5482,10 +5380,7 @@ function plRender(){
 }
 function plInit(){ plLoad(); plCheckMissing(); plRender(); }
 // plInit() appelé depuis _onReady
-
-// ══════════════════════════════════════════════════════
 // PIGE — Enregistrement simultané des 3 départs
-// ══════════════════════════════════════════════════════
 const PIGE_DEPS=['sat','dab','hz'];
 let pigeRecording=false;
 let pigeStartTime=null, pigeTimerInterval=null;
@@ -5620,10 +5515,7 @@ function pigeTrackPlayhead(id){
   if(pg) pg.style.width=pct+'%';
   if(!r.audio.paused) requestAnimationFrame(()=>pigeTrackPlayhead(id));
 }
-
-// ══════════════════════════════════════════════════════
 // DÉMARRAGE — après DOM ready
-// ══════════════════════════════════════════════════════
 function _onReady(){
   preloadMacros();
   D.forEach(d=>d.render());
