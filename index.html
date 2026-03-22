@@ -463,6 +463,147 @@ document.addEventListener('visibilitychange',function(){if(document.visibilitySt
 window.addEventListener('online',function(){_ce=0;_sh();_sp();_startPolling();});
 window.addEventListener('offline',function(){if(_pid)clearInterval(_pid);if(_hid)clearInterval(_hid);});
 function diff2Connect(){_sh();_startPolling();}
+
+// ── Gestion des messages reçus ──
+function sigHandleMessage(msg){
+  if(!msg||!msg.action)return;
+  _diffASetStatus(true,'Cloudflare');
+  switch(msg.action){
+    case 'ready':case 'pong':case 'd2-ping':
+      sigSend({action:'d2-pong',source:'RC'});break;
+    case 'status':
+      _diffAExtPlaying=!!msg.playing;_diffAExtTrack=msg.track||'';
+      const lbl=document.getElementById('diffa-status-lbl');
+      if(lbl)lbl.textContent=_diffAExtPlaying?'▶ '+(_diffAExtTrack||'EN DIRECT'):'EN LIGNE';
+      if(_diffAExtPlaying)_diffASetStatus(true,'EN DIRECT');
+      _updateOnAirBadges();break;
+    case 'd3-status':
+      if(msg.city){
+        const cityKey=msg.city.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+        if(cityKey in _regionsStatus){_regionsStatus[cityKey]=!!msg.playing;_updateRegionsMap();}
+      }break;
+    case 'track-list':
+      if(msg.tracks&&Array.isArray(msg.tracks)&&msg.tracks.length>0)
+        _loadRegionalTracks(msg.tracks,msg.city||'RÉGIONS');
+      break;
+    case 'rc-status':break;
+    case 'raccro-ext':
+      if(D[0]&&!D[0].playing)D[0].togglePlay();
+      _flashMacroBtn('macro-start-ext');break;
+  }
+}
+
+// ── Macros ──
+function runMacroStartExt(){
+  const macroStep={isMacro:true,title:'START EXT',color:'#4a1a8a',inCue:0,outCue:null,
+    action:(diffuser)=>{
+      sigSend({action:'play',source:'RC'});
+      _flashMacroBtn('macro-start-ext');
+      const dot=document.getElementById('diffa-status-dot');
+      if(dot){dot.style.background='#ffffff';setTimeout(()=>_diffASetStatus(_sigD2Online,'Cloudflare'),300);}
+      if(diffuser&&diffuser.auto){diffuser.auto=false;const btn=document.getElementById(diffuser.cfg.autoBtn);if(btn)btn.classList.remove('active');}
+      if(diffuser)diffuser._stopAfterMacro=true;
+    }
+  };
+  D[0].tracks.push(macroStep);D[0].durs.push(0);D[0].audios.push(null);
+  D[0]._updateFdzCount();D[0].render();
+}
+
+function runMacroStartRegions(){
+  const macroStep={isMacro:true,title:'START RÉGIONS',color:'#1a3a6e',inCue:0,outCue:null,
+    action:(diffuser)=>{
+      sigSend({action:'play-all',source:'RC'});
+      _flashMacroBtn('macro-start-regions');
+      if(diffuser&&diffuser.auto){diffuser.auto=false;const btn=document.getElementById(diffuser.cfg.autoBtn);if(btn)btn.classList.remove('active');}
+      if(diffuser)diffuser._stopAfterMacro=true;
+    }
+  };
+  D[0].tracks.push(macroStep);D[0].durs.push(0);D[0].audios.push(null);
+  D[0]._updateFdzCount();D[0].render();
+}
+
+// ── Variables et fonctions signaling macro ──
+let _diffAExtPlaying=false;
+let _diffAExtTrack='';
+
+function _flashMacroBtn(id){
+  const btn=document.getElementById(id);if(!btn)return;
+  const prev=btn.style.background;
+  btn.style.background='#3a1a6b';
+  setTimeout(()=>btn.style.background=prev||'transparent',600);
+}
+
+function _updateOnAirBadges(){
+  const diffAOn=D[0]&&D[0].playing;
+  const ba=document.getElementById('badge-diffa');
+  const bas=document.getElementById('badge-diffa-state');
+  if(ba){ba.className='onair-badge '+(diffAOn?'on-air':'off-air');}
+  if(bas){bas.textContent=diffAOn?'ON AIR':'OFF AIR';}
+  const bb=document.getElementById('badge-diffa-ext');
+  const bbs=document.getElementById('badge-diffa-ext-state');
+  if(bb){bb.className='onair-badge '+(_diffAExtPlaying?'on-air':'off-air');}
+  if(bbs){bbs.textContent=_diffAExtPlaying?'ON AIR':'OFF AIR';}
+}
+
+// ── Playlist régionale reçue de D3 ──
+function _loadRegionalTracks(tracks,city){
+  const wrap=document.getElementById('regions-playlist-wrap');
+  const body=document.getElementById('regions-playlist-body');
+  const count=document.getElementById('regions-playlist-count');
+  if(!wrap||!body)return;
+  if(!tracks||!tracks.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  if(count)count.textContent=tracks.length+' piste'+(tracks.length>1?'s':'');
+  let tot=0;tracks.forEach(t=>tot+=t.dur||0);
+  body.innerHTML=tracks.map((t,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 1rem;border-bottom:1px solid #1a1c22">
+      <span style="font-family:var(--mono);font-size:9px;color:#1565c0;min-width:18px">${i+1}</span>
+      <span style="font-family:var(--display);font-size:13px;font-weight:600;color:#b0bec5;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title||'—'}</span>
+      <span style="font-family:var(--mono);font-size:9px;color:#37474f">${fmtFull(t.dur||0)}</span>
+    </div>`).join('')+`<div style="padding:4px 1rem;text-align:right"><span style="font-family:var(--mono);font-size:9px;color:#37474f">TOTAL ${fmtFull(tot)}</span></div>`;
+}
+
+// ── Voyants régionaux ──
+const _VILLES_RC=[
+  {id:'marseille',label:'MARSEILLE',color:'#1565c0'},
+  {id:'nice',     label:'NICE',     color:'#6a1b9a'},
+  {id:'strasbourg',label:'STRAS.', color:'#1b5e20'},
+  {id:'lyon',     label:'LYON',     color:'#e65100'},
+  {id:'bordeaux', label:'BORDEAUX', color:'#880e4f'},
+  {id:'toulouse', label:'TOULOUSE', color:'#004d40'},
+  {id:'lille',    label:'LILLE',    color:'#37474f'},
+  {id:'nantes',   label:'NANTES',   color:'#4e342e'},
+];
+const _regionsStatus={marseille:false,nice:false,strasbourg:false,lyon:false,bordeaux:false,toulouse:false,lille:false,nantes:false};
+
+function _buildVoyantsGrid(){
+  const grid=document.getElementById('regions-voyants-grid');
+  if(!grid)return;
+  grid.innerHTML=_VILLES_RC.map(v=>`
+    <div id="rv-${v.id}" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border-radius:6px;border:1px solid #1e2a40;background:#0a0e18;transition:all .2s">
+      <div id="rv-dot-${v.id}" style="width:22px;height:22px;border-radius:50%;background:#1e2535;border:1px solid #2e3a50;transition:all .3s"></div>
+      <span style="font-family:var(--mono);font-size:8px;letter-spacing:1px;font-weight:700;color:#2a3a50;text-align:center;transition:all .2s" id="rv-lbl-${v.id}">${v.label}</span>
+      <span style="font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:1px;color:#1e2a40;transition:all .2s" id="rv-state-${v.id}">OFF AIR</span>
+    </div>`).join('');
+}
+
+function _updateRegionsMap(){
+  let onCount=0;
+  _VILLES_RC.forEach(v=>{
+    const on=_regionsStatus[v.id];if(on)onCount++;
+    const cell=document.getElementById('rv-'+v.id);
+    const dot=document.getElementById('rv-dot-'+v.id);
+    const lbl=document.getElementById('rv-lbl-'+v.id);
+    const state=document.getElementById('rv-state-'+v.id);
+    if(cell){cell.style.borderColor=on?'#cc0000':'#1e2a40';cell.style.background=on?'#1a0000':'#0a0e18';}
+    if(dot){dot.style.background=on?'#ff0000':'#1e2535';dot.style.borderColor=on?'#ff4040':'#2e3a50';dot.style.boxShadow=on?'0 0 10px #ff0000':'none';}
+    if(lbl){lbl.style.color=on?'#ff4040':'#2a3a50';}
+    if(state){state.textContent=on?'ON AIR':'OFF AIR';state.style.color=on?'#ff2020':'#1e2a40';}
+  });
+  const cnt=document.getElementById('regions-online-count');
+  if(cnt)cnt.textContent=onCount?`${onCount}/8 EN DIRECT`:'8 VILLES';
+}
+
 // ═══════════════════════════════════════════════════════
 // UTILITAIRES
 // ═══════════════════════════════════════════════════════
