@@ -408,269 +408,61 @@ const WV_DATA_CACHE={};
 // ═══════════════════════════════════════════════════════
 // SIGNALING CLOUDFLARE — communication cross-PC avec DIFF A externe
 // ═══════════════════════════════════════════════════════
-const SIG_URL  = 'https://radio-signaling.nicolas7lejeune.workers.dev';
-const SIG_ROLE = 'rc'; // Radio Console
-
-let _sigD2Online = false;
-
-function _diffASetStatus(online, method=''){
-  const dot  = document.getElementById('diffa-status-dot');
-  const lbl  = document.getElementById('diffa-status-lbl');
-  const pill = document.getElementById('diffa-status-pill');
-  if(dot){
-    dot.style.background = online ? '#00d96a' : '#e03020';
-    dot.style.boxShadow  = online ? '0 0 10px #00d96a' : '0 0 10px #e03020';
-    dot.classList.toggle('connected', online);
-  }
-  if(lbl){
-    lbl.textContent = online ? (method||'EN LIGNE') : 'HORS LIGNE';
-    lbl.style.color = online ? '#00d96a' : '#e03020';
-  }
-  if(pill){
-    pill.style.borderColor = online ? '#00d96a' : '#e03020';
-    pill.classList.toggle('connected', online);
-    pill.classList.toggle('offline', !online);
-  }
+const SIG_URL='https://radio-signaling.nicolas7lejeune.workers.dev';
+let _sigD2Online=false;
+function _diffASetStatus(online,method){
+  method=method||'';
+  const dot=document.getElementById('diffa-status-dot');
+  const lbl=document.getElementById('diffa-status-lbl');
+  const pill=document.getElementById('diffa-status-pill');
+  if(dot){dot.style.background=online?'#00d96a':'#e03020';dot.style.boxShadow=online?'0 0 10px #00d96a':'0 0 10px #e03020';dot.classList.toggle('connected',online);}
+  if(lbl){lbl.textContent=online?(method||'EN LIGNE'):'HORS LIGNE';lbl.style.color=online?'#00d96a':'#e03020';}
+  if(pill){pill.style.borderColor=online?'#00d96a':'#e03020';pill.classList.toggle('connected',online);pill.classList.toggle('offline',!online);}
 }
-
 async function sigSend(msg){
   try{
-    // Envoyer à d2 ET d3
     await Promise.all([
-      fetch(`${SIG_URL}/send?from=rc&to=d2`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(msg)}),
-      fetch(`${SIG_URL}/send?from=rc&to=d3`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(msg)}),
+      fetch(SIG_URL+'/send?from=rc&to=d2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(msg)}),
+      fetch(SIG_URL+'/send?from=rc&to=d3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(msg)}),
     ]);
-  }catch(e){ console.warn('[Sig] send error:',e.message); }
-}
-
-async function sigPoll(){
-  try{
-    // Un seul appel — le worker agrège d2-rc + d3-rc pour le rôle "rc"
-    const r=await fetch(`${SIG_URL}/poll?role=rc`);
-    if(r.ok){const data=await r.json();for(const msg of(data.messages||[]))sigHandleMessage(msg);}
   }catch(e){}
 }
-
+async function sigPoll(){
+  const r=await fetch(SIG_URL+'/poll?role=rc');
+  if(!r.ok)throw new Error('poll');
+  const data=await r.json();
+  for(const msg of(data.messages||[]))sigHandleMessage(msg);
+}
 async function sigHeartbeat(){
   const t0=performance.now();
-  try{
-    await fetch(`${SIG_URL}/heartbeat?role=rc`,{method:'POST'});
-    const r=await fetch(`${SIG_URL}/status`);
-    if(r.ok){
-      const s=await r.json();
-      const wasOnline=_sigD2Online;
-      _sigD2Online=s.d2?.online||false;
-      if(_sigD2Online!==wasOnline) _diffASetStatus(_sigD2Online,'Cloudflare');
-      // Afficher latence
-      const lat=Math.round(performance.now()-t0);
-      const q=document.getElementById('sig-quality');
-      if(q){
-        const color=lat<300?'#66bb6a':lat<800?'#ffa726':'#ef5350';
-        q.textContent=lat+'ms';q.style.color=color;
-      }
-      const sdot=document.getElementById('sig-dot');
-      const stxt=document.getElementById('sig-txt');
-      if(sdot)sdot.classList.add('on');
-      if(stxt)stxt.textContent='Cloudflare connecté';
-    }
-  }catch(e){
-    const sdot=document.getElementById('sig-dot');
-    const stxt=document.getElementById('sig-txt');
-    const q=document.getElementById('sig-quality');
-    if(sdot)sdot.classList.remove('on');
-    if(stxt)stxt.textContent='Reconnexion…';
-    if(q){q.textContent='⚠ hors ligne';q.style.color='#ef5350';}
-    setTimeout(()=>fetch(`${SIG_URL}/heartbeat?role=rc`,{method:'POST'}).catch(()=>{}),2000);
-  }
+  await fetch(SIG_URL+'/heartbeat?role=rc',{method:'POST'});
+  const r=await fetch(SIG_URL+'/status');
+  if(!r.ok)throw new Error('status');
+  const s=await r.json();
+  const was=_sigD2Online;
+  _sigD2Online=s.d2&&s.d2.online||false;
+  if(_sigD2Online!==was)_diffASetStatus(_sigD2Online,'Cloudflare');
+  const lat=Math.round(performance.now()-t0);
+  const q=document.getElementById('sig-quality');if(q){q.textContent=lat+'ms';q.style.color=lat<300?'#66bb6a':lat<800?'#ffa726':'#ef5350';}
+  const sd=document.getElementById('sig-dot');const st=document.getElementById('sig-txt');
+  if(sd)sd.classList.add('on');if(st)st.textContent='Cloudflare '+lat+'ms';
 }
-
-function sigHandleMessage(msg){
-  if(!msg||!msg.action) return;
-  _diffASetStatus(true,'Cloudflare');
-  switch(msg.action){
-    case 'ready': case 'pong': case 'd2-ping':
-      sigSend({action:'d2-pong',source:'RC'});
-      break;
-    case 'status':
-      // Statut envoyé par diff2 (ancien format)
-      _diffAExtPlaying=!!msg.playing;
-      _diffAExtTrack=msg.track||'';
-      const lbl=document.getElementById('diffa-status-lbl');
-      if(lbl) lbl.textContent=_diffAExtPlaying?'▶ '+(_diffAExtTrack||'EN DIRECT'):'EN LIGNE';
-      if(_diffAExtPlaying) _diffASetStatus(true,'EN DIRECT');
-      _updateOnAirBadges();
-      break;
-    case 'd3-status':
-      // Statut d'un diffuseur régional (D3)
-      if(msg.city){
-        const cityKey=msg.city.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-        if(cityKey in _regionsStatus){
-          _regionsStatus[cityKey]=!!msg.playing;
-          _updateRegionsMap();
-        }
-      }
-      break;
-    case 'track-list':
-      // D3 envoie la liste des pistes chargées sur Marseille → afficher dans RC
-      if(msg.tracks&&Array.isArray(msg.tracks)&&msg.tracks.length>0){
-        _loadRegionalTracks(msg.tracks, msg.city||'RÉGIONS');
-      }
-      break;
-    case 'rc-status':
-      // diff2 ne devrait pas envoyer ce type, ignorer
-      break;
-    case 'raccro-ext':
-      if(D[0]&&!D[0].playing) D[0].togglePlay();
-      _flashMacroBtn('macro-start-ext');
-      break;
-  }
+let _ce=0,_pi=500,_pid=null,_hid=null;
+function _startPolling(){if(_pid)clearInterval(_pid);if(_hid)clearInterval(_hid);_pid=setInterval(_sp,_pi);_hid=setInterval(_sh,5000);}
+async function _sp(){
+  try{await sigPoll();if(_ce>0){_ce=0;if(_pi!==500){_pi=500;_startPolling();}}}
+  catch(e){_ce++;if(_ce>=3&&_pi!==3000){_pi=3000;_startPolling();}
+    const sd=document.getElementById('sig-dot');if(sd)sd.classList.remove('on');
+    const st=document.getElementById('sig-txt');if(st)st.textContent='Reconnexion...';}
 }
-
-// ── Macro START EXT : insère un pas dans la playlist ──
-function runMacroStartExt(){
-  const macroStep={
-    isMacro:true,
-    title:'START EXT',
-    color:'#4a1a8a',
-    inCue:0, outCue:null,
-    action:(diffuser)=>{
-      // 1. Envoyer play à DIFF A Externe
-      sigSend({action:'play',source:'RC'});
-      _flashMacroBtn('macro-start-ext');
-      const dot=document.getElementById('diffa-status-dot');
-      if(dot){dot.style.background='#ffffff';setTimeout(()=>_diffASetStatus(_sigD2Online,'Cloudflare'),300);}
-      // 2. Désactiver l'AUTO sur le diffuseur qui a joué la macro
-      if(diffuser && diffuser.auto){
-        diffuser.auto=false;
-        const btn=document.getElementById(diffuser.cfg.autoBtn);
-        if(btn) btn.classList.remove('active');
-      }
-      // 3. Bloquer l'enchaînement automatique sur le son suivant
-      if(diffuser) diffuser._stopAfterMacro=true;
-    }
-  };
-  D[0].tracks.push(macroStep);
-  D[0].durs.push(0);
-  D[0].audios.push(null);
-  D[0]._updateFdzCount();
-  D[0].render();
+async function _sh(){
+  try{await sigHeartbeat();_ce=Math.max(0,_ce-1);}
+  catch(e){_ce++;const sd=document.getElementById('sig-dot');if(sd)sd.classList.remove('on');}
 }
-
-// ── Macro START RÉGIONS : lance tous les diffuseurs régionaux ──
-function runMacroStartRegions(){
-  const macroStep={
-    isMacro:true,title:'START RÉGIONS',color:'#1a3a6e',inCue:0,outCue:null,
-    action:(diffuser)=>{
-      // Envoyer play-all à D3
-      sigSend({action:'play-all',source:'RC'});
-      _flashMacroBtn('macro-start-regions');
-      if(diffuser&&diffuser.auto){diffuser.auto=false;const btn=document.getElementById(diffuser.cfg.autoBtn);if(btn)btn.classList.remove('active');}
-      if(diffuser)diffuser._stopAfterMacro=true;
-    }
-  };
-  D[0].tracks.push(macroStep);D[0].durs.push(0);D[0].audios.push(null);
-  D[0]._updateFdzCount();D[0].render();
-}
-
-function _flashMacroBtn(id){
-  const btn=document.getElementById(id);if(!btn)return;
-  const prev=btn.style.background;
-  btn.style.background='#3a1a6b';
-  setTimeout(()=>btn.style.background=prev||'transparent',600);
-}
-
-// ── Voyants ON AIR ──
-let _diffAExtPlaying=false;
-let _diffAExtTrack='';
-
-function _updateOnAirBadges(){
-  const diffAOn=D[0]&&D[0].playing;
-  const ba=document.getElementById('badge-diffa');
-  const bas=document.getElementById('badge-diffa-state');
-  if(ba){ba.className='onair-badge '+(diffAOn?'on-air':'off-air');}
-  if(bas){bas.textContent=diffAOn?'ON AIR':'OFF AIR';}
-  const bb=document.getElementById('badge-diffa-ext');
-  const bbs=document.getElementById('badge-diffa-ext-state');
-  if(bb){bb.className='onair-badge '+(_diffAExtPlaying?'on-air':'off-air');}
-  if(bbs){bbs.textContent=_diffAExtPlaying?'ON AIR':'OFF AIR';}
-}
-
-// ── Chargement pistes régionales depuis D3 — affichage séparé ──
-function _loadRegionalTracks(tracks, city){
-  const wrap=document.getElementById('regions-playlist-wrap');
-  const body=document.getElementById('regions-playlist-body');
-  const count=document.getElementById('regions-playlist-count');
-  if(!wrap||!body) return;
-  if(!tracks||!tracks.length){wrap.style.display='none';return;}
-  wrap.style.display='block';
-  if(count) count.textContent=tracks.length+' piste'+(tracks.length>1?'s':'');
-  let tot=0; tracks.forEach(t=>tot+=t.dur||0);
-  body.innerHTML=tracks.map((t,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:5px 1rem;border-bottom:1px solid #1a1c22">
-      <span style="font-family:var(--mono);font-size:9px;color:#1565c0;min-width:18px">${i+1}</span>
-      <span style="font-family:var(--display);font-size:13px;font-weight:600;color:#b0bec5;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title||'—'}</span>
-      <span style="font-family:var(--mono);font-size:9px;color:#37474f">${fmtFull(t.dur||0)}</span>
-    </div>`).join('')+`
-    <div style="padding:4px 1rem;display:flex;justify-content:flex-end">
-      <span style="font-family:var(--mono);font-size:9px;color:#37474f">TOTAL ${fmtFull(tot)}</span>
-    </div>`;
-}
-
-// ── Diffusion Régionale — voyants ──
-const _VILLES_RC=[
-  {id:'marseille',label:'MARSEILLE',color:'#1565c0'},
-  {id:'nice',     label:'NICE',     color:'#6a1b9a'},
-  {id:'strasbourg',label:'STRAS.',  color:'#1b5e20'},
-  {id:'lyon',     label:'LYON',     color:'#e65100'},
-  {id:'bordeaux', label:'BORDEAUX', color:'#880e4f'},
-  {id:'toulouse', label:'TOULOUSE', color:'#004d40'},
-  {id:'lille',    label:'LILLE',    color:'#37474f'},
-  {id:'nantes',   label:'NANTES',   color:'#4e342e'},
-];
-const _regionsStatus={
-  marseille:false,nice:false,strasbourg:false,lyon:false,
-  bordeaux:false,toulouse:false,lille:false,nantes:false
-};
-
-function _buildVoyantsGrid(){
-  const grid=document.getElementById('regions-voyants-grid');
-  if(!grid)return;
-  grid.innerHTML=_VILLES_RC.map(v=>`
-    <div id="rv-${v.id}" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border-radius:6px;border:1px solid #1e2a40;background:#0a0e18;transition:all .2s">
-      <div style="position:relative;width:22px;height:22px">
-        <div id="rv-dot-${v.id}" style="width:22px;height:22px;border-radius:50%;background:#1e2535;border:1px solid #2e3a50;transition:all .3s"></div>
-      </div>
-      <span style="font-family:var(--mono);font-size:8px;letter-spacing:1px;font-weight:700;color:#2a3a50;text-align:center;transition:all .2s" id="rv-lbl-${v.id}">${v.label}</span>
-      <span style="font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:1px;color:#1e2a40;transition:all .2s" id="rv-state-${v.id}">OFF AIR</span>
-    </div>`).join('');
-}
-
-function _updateRegionsMap(){
-  let onCount=0;
-  _VILLES_RC.forEach(v=>{
-    const on=_regionsStatus[v.id];
-    if(on) onCount++;
-    const cell=document.getElementById(`rv-${v.id}`);
-    const dot=document.getElementById(`rv-dot-${v.id}`);
-    const lbl=document.getElementById(`rv-lbl-${v.id}`);
-    const state=document.getElementById(`rv-state-${v.id}`);
-    if(cell){
-      cell.style.borderColor=on?'#cc0000':'#1e2a40';
-      cell.style.background=on?'#1a0000':'#0a0e18';
-    }
-    if(dot){
-      dot.style.background=on?'#ff0000':'#1e2535';
-      dot.style.borderColor=on?'#ff4040':'#2e3a50';
-      dot.style.boxShadow=on?'0 0 10px #ff0000,0 0 20px rgba(255,0,0,.3)':'none';
-    }
-    if(lbl){lbl.style.color=on?'#ff4040':'#2a3a50';}
-    if(state){state.textContent=on?'ON AIR':'OFF AIR';state.style.color=on?'#ff2020':'#1e2a40';}
-  });
-  const cnt=document.getElementById('regions-online-count');
-  if(cnt)cnt.textContent=onCount?`${onCount}/8 EN DIRECT`:'8 VILLES';
-}
-
-function diff2Connect(){_safeHeartbeat();_startPolling();}
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){_ce=0;_pi=500;_sh();_sp();_startPolling();}});
+window.addEventListener('online',function(){_ce=0;_sh();_sp();_startPolling();});
+window.addEventListener('offline',function(){if(_pid)clearInterval(_pid);if(_hid)clearInterval(_hid);});
+function diff2Connect(){_sh();_startPolling();}
 // ═══════════════════════════════════════════════════════
 // UTILITAIRES
 // ═══════════════════════════════════════════════════════
@@ -1533,14 +1325,15 @@ async function _safeHeartbeat(){
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){_consecutiveErrors=0;_currentPollInterval=_POLL_FAST;_safeHeartbeat();_safePoll();_startPolling();}});
 window.addEventListener('online',()=>{_consecutiveErrors=0;_safeHeartbeat();_safePoll();_startPolling();});
 window.addEventListener('offline',()=>{if(_pollIntervalId)clearInterval(_pollIntervalId);if(_hbIntervalId)clearInterval(_hbIntervalId);});
-// ── Fix AudioContext iOS ──
-let _audioUnlocked=false;
+
+document.addEventListener('click',_unlockAudio,{once:true,passive:true});
+// iOS AudioContext unlock
+let _aul=false;
 function _unlockAudio(){
-  if(_audioUnlocked)return;_audioUnlocked=true;
-  const ctx=typeof getCtx==='function'?getCtx():(typeof getCtxD3==='function'?getCtxD3():null);
-  if(!ctx)return;
-  if(ctx.state==='suspended')ctx.resume();
-  try{const b=ctx.createBuffer(1,1,22050);const s=ctx.createBufferSource();s.buffer=b;s.connect(ctx.destination);s.start(0);}catch(e){}
+  if(_aul)return;_aul=true;
+  var ctx=typeof getCtx==='function'?getCtx():(typeof getCtxD3==='function'?getCtxD3():null);
+  if(!ctx)return;if(ctx.state==='suspended')ctx.resume();
+  try{var b=ctx.createBuffer(1,1,22050);var s=ctx.createBufferSource();s.buffer=b;s.connect(ctx.destination);s.start(0);}catch(e){}
 }
 document.addEventListener('touchstart',_unlockAudio,{once:true,passive:true});
 document.addEventListener('click',_unlockAudio,{once:true,passive:true});
