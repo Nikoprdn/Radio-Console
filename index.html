@@ -4116,20 +4116,23 @@ function checkSilence(key,db){
 // ══════════════════════════════════════════════════════════════
 function wireAudioToDiff(el, diffIdx){
   if(!el) return;
-  const ctx = getCtx();
 
   // Clé de marquage unique par diffuseur
   const wiredKey = '_srcWired'+diffIdx;
   if(el[wiredKey]) return; // déjà branché
 
-  // Récupérer le masterGain du diffuseur (créé au 1er togglePlay)
+  // getCtx() crée/retourne l'AudioContext (sharedCtx)
+  // Si l'AudioContext est suspendu, le reprendre
+  const ctx = getCtx();
+  if(!ctx) return;
+  if(ctx.state==='suspended') ctx.resume().catch(()=>{});
+  if(ctx.state==='closed') return;
+
+  // Récupérer le masterGain existant du diffuseur
   const masterGns = [_masterGn0, _masterGn1, null, null, null, _masterGnNat, null];
-  // Pour les PUBs (D[2..4]) et le TEST (D[6]), pas de masterGn global → brancher direct
   let masterGn = (diffIdx < masterGns.length) ? masterGns[diffIdx] : null;
 
-  // Si le masterGn n'est pas encore créé (premier son avant PLAY pressé),
-  // on force l'initialisation en appelant togglePlay puis on annule
-  // → non, on crée le masterGn à la volée ici
+  // Créer le masterGain si absent
   if(!masterGn){
     masterGn = ctx.createGain(); masterGn.gain.value=1;
     const sp=ctx.createChannelSplitter(2);
@@ -4137,17 +4140,21 @@ function wireAudioToDiff(el, diffIdx){
     aL.fftSize=1024;aR.fftSize=1024;
     aL.smoothingTimeConstant=0.8;aR.smoothingTimeConstant=0.8;
     masterGn.connect(sp); sp.connect(aL,0); sp.connect(aR,1);
+    // TOUJOURS connecter vers les haut-parleurs
     masterGn.connect(ctx.destination);
 
-    // Stocker selon le diffuseur
     if(diffIdx===0){ _masterGn0=masterGn; vu1={aL,aR,gn:masterGn}; buildBars('vu1-L');buildBars('vu1-R'); }
     else if(diffIdx===1){ _masterGn1=masterGn; vuD2={aL,aR,gn:masterGn}; buildBars('vu-d2-L');buildBars('vu-d2-R'); }
     else if(diffIdx===5){ _masterGnNat=masterGn; vuNat={aL,aR,gn:masterGn}; buildBars('vu-nat-L');buildBars('vu-nat-R'); }
-    else { masterGn.connect(ctx.destination); } // PUBs → pas de VU propre
   }
+
+  // S'assurer que masterGn est connecté aux haut-parleurs
+  // (connexion idempotente dans WebAudio — pas de doublon de son)
+  try{ masterGn.connect(ctx.destination); }catch(e){}
 
   try{
     const src=ctx.createMediaElementSource(el);
+    // Brancher vers masterGain (analyseurs + haut-parleurs)
     src.connect(masterGn);
     el[wiredKey]=true;
 
