@@ -150,8 +150,20 @@
   .diff-progress-wrap{position:relative;height:4px;background:#0a1020;overflow:hidden;}
   .diff-progress-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#e03020,#f5c400,#00d96a);transition:width .08s linear;}
 
-  /* Voyant EXT */
-  @keyframes blink-ext{0%,100%{opacity:1}50%{opacity:.3}}
+  /* ── Voyants ON AIR ── */
+  .onair-badge-wrap{display:flex;gap:12px;padding:8px 14px;background:#06080f;border-top:1px solid #0d1828;}
+  .onair-badge{display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:6px;border:1px solid #1e2a40;background:#0a0e18;transition:all .2s;}
+  .onair-badge.on-air{border-color:#cc0000;background:#1a0000;}
+  .onair-badge.off-air{border-color:#1e2a40;background:#0a0e18;}
+  .onair-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:all .2s;}
+  .onair-badge.on-air .onair-dot{background:#ff0000;box-shadow:0 0 8px #ff0000;animation:live-pulse .8s ease-in-out infinite;}
+  .onair-badge.off-air .onair-dot{background:#2a3a50;}
+  .onair-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;font-weight:700;}
+  .onair-badge.on-air .onair-label{color:#ff2020;}
+  .onair-badge.off-air .onair-label{color:#2a3a50;}
+  .onair-state{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:2px;transition:all .2s;}
+  .onair-badge.on-air .onair-state{color:#ff2020;}
+  .onair-badge.off-air .onair-state{color:#2a3a50;}
   #diffa-status-dot.connected{animation:none!important;}
   #diffa-status-pill.connected{border-color:#00d96a!important;background:rgba(0,217,106,.06)!important;}
   #diffa-status-pill.offline{border-color:#e03020!important;background:rgba(220,48,32,.06)!important;}
@@ -339,6 +351,19 @@
     <div class="vu-strip-bar" style="background:#f5c400"></div><div class="vu-strip-bar" style="background:#f5c400"></div><div class="vu-strip-bar" style="background:#f5c400"></div>
     <div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div>
   </div>
+  <!-- Voyants ON AIR -->
+  <div class="onair-badge-wrap">
+    <div class="onair-badge off-air" id="badge-diffa">
+      <div class="onair-dot"></div>
+      <span class="onair-label">DIFF A</span>
+      <span class="onair-state" id="badge-diffa-state">OFF AIR</span>
+    </div>
+    <div class="onair-badge off-air" id="badge-diffa-ext">
+      <div class="onair-dot"></div>
+      <span class="onair-label">DIFF A EXT</span>
+      <span class="onair-state" id="badge-diffa-ext-state">OFF AIR</span>
+    </div>
+  </div>
 </div>
 
 </div>
@@ -425,11 +450,17 @@ function sigHandleMessage(msg){
       sigSend({action:'d2-pong',source:'RC'});
       break;
     case 'status':
+      // Statut envoyé par diff2 (ancien format)
+      _diffAExtPlaying=!!msg.playing;
+      _diffAExtTrack=msg.track||'';
       const lbl=document.getElementById('diffa-status-lbl');
-      if(lbl) lbl.textContent=msg.playing?'▶ '+(msg.track||'EN DIRECT'):'EN LIGNE';
-      if(msg.playing) _diffASetStatus(true,'EN DIRECT');
+      if(lbl) lbl.textContent=_diffAExtPlaying?'▶ '+(_diffAExtTrack||'EN DIRECT'):'EN LIGNE';
+      if(_diffAExtPlaying) _diffASetStatus(true,'EN DIRECT');
+      _updateOnAirBadges();
       break;
-    // RACCRO EXT : Diff2 demande à RC de lancer sa lecture
+    case 'rc-status':
+      // diff2 ne devrait pas envoyer ce type, ignorer
+      break;
     case 'raccro-ext':
       if(D[0]&&!D[0].playing) D[0].togglePlay();
       _flashMacroBtn('macro-start-ext');
@@ -474,9 +505,23 @@ function _flashMacroBtn(id){
   setTimeout(()=>btn.style.background=prev||'transparent',600);
 }
 
-function diff2Connect(){
-  // Heartbeat toutes les 10s
-  sigHeartbeat();
+// ── Voyants ON AIR ──
+let _diffAExtPlaying=false;
+let _diffAExtTrack='';
+
+function _updateOnAirBadges(){
+  const diffAOn=D[0]&&D[0].playing;
+  // DIFF A
+  const ba=document.getElementById('badge-diffa');
+  const bas=document.getElementById('badge-diffa-state');
+  if(ba){ba.className='onair-badge '+(diffAOn?'on-air':'off-air');}
+  if(bas){bas.textContent=diffAOn?'ON AIR':'OFF AIR';}
+  // DIFF A EXT
+  const bb=document.getElementById('badge-diffa-ext');
+  const bbs=document.getElementById('badge-diffa-ext-state');
+  if(bb){bb.className='onair-badge '+(_diffAExtPlaying?'on-air':'off-air');}
+  if(bbs){bbs.textContent=_diffAExtPlaying?'ON AIR':'OFF AIR';}
+}
   setInterval(sigHeartbeat, 10000);
   // Poll toutes les 2s pour recevoir les messages de DIFF A externe
   setInterval(sigPoll, 500);
@@ -752,13 +797,13 @@ class Diffuser{
     document.getElementById(this.ids.counter).textContent=this.tracks.length?`${this.ci+1}/${this.tracks.length}`:'0/0';
     let tot=0;this.tracks.forEach((_,i)=>tot+=this._playDur(i));
     document.getElementById(this.ids.total).textContent=fmtFull(tot);
-    // État neutre si plus aucun son en cours
-    const anyPlaying=this.tracks.some((t2,j)=>!t2.isMacro && this.audios[j] && !this.audios[j].paused);
-    if(this.playing && !anyPlaying && !this.tracks.some(t2=>!t2.isMacro)) this.playing=false;
+    // ── État neutre : playing=false dès qu'aucun audio ne joue ──
+    const anyAudioPlaying=this.tracks.some((t2,j)=>!t2.isMacro&&this.audios[j]&&!this.audios[j].paused);
+    if(!anyAudioPlaying) this.playing=false;
     document.getElementById(this.ids.suffix).textContent=this.playing?'EN DIRECT':'A';
     const trackNameEl=document.getElementById('onair-track-'+this.idx);
     if(trackNameEl){
-      const activeTrack=this.playing&&this.tracks.find((t2,j)=>!t2.isMacro&&this.audios[j]&&!this.audios[j].paused);
+      const activeTrack=anyAudioPlaying&&this.tracks.find((t2,j)=>!t2.isMacro&&this.audios[j]&&!this.audios[j].paused);
       trackNameEl.textContent=activeTrack?'— '+activeTrack.title:'';
       trackNameEl.style.opacity=activeTrack?'1':'0';
     }
@@ -768,6 +813,11 @@ class Diffuser{
     if(bar)bar.classList.toggle('is-live',this.playing);
     const card=hdr?.closest('.card');
     if(card)card.classList.toggle('diff-is-live',this.playing);
+    // ── Mettre à jour les voyants ON AIR ──
+    _updateOnAirBadges();
+    // ── Notifier DIFF A EXT du statut RC ──
+    const activeTitle=anyAudioPlaying?this.tracks.find((t2,j)=>!t2.isMacro&&this.audios[j]&&!this.audios[j].paused)?.title||'':'';
+    sigSend({action:'rc-status',playing:this.playing,track:activeTitle});
   }
 
   _bindHandles(wvId,trackIdx){
