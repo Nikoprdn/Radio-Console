@@ -612,13 +612,16 @@ class Diffuser{
     const tbody=document.getElementById(this.ids.body);
     if(!tbody)return;
     tbody.innerHTML='';
+    // Piste suivante = première piste en pause (pas encore lancée)
+    const nextIdx=this.playing?this.tracks.findIndex((tt,ii)=>!tt.isMacro&&this.audios[ii]?.paused):-1;
     this.tracks.forEach((t,i)=>{
-      // isActive = cette piste EST en train de jouer (audio non pausé)
       const audio_i=this.audios[i];
       const isActive=this.playing && !!audio_i && !audio_i.paused && !t.isMacro;
       const isMacroActive=this.playing && t.isMacro && i===this.ci;
+      const isNext=i===nextIdx;
       const tr=document.createElement('tr');
-      if(isActive||isMacroActive)tr.className='row-active';else if(i===this.ci&&this.playing&&!isActive&&!isMacroActive)tr.className='row-next';
+      if(isActive||isMacroActive)tr.className='row-active';
+      else if(isNext)tr.className='row-next';
       tr.onclick=()=>this.jumpTo(i);
       const st=starts[i];
       const hhmm=fmt2(st.getHours())+':'+fmt2(st.getMinutes())+':'+fmt2(st.getSeconds());
@@ -749,9 +752,16 @@ class Diffuser{
     document.getElementById(this.ids.counter).textContent=this.tracks.length?`${this.ci+1}/${this.tracks.length}`:'0/0';
     let tot=0;this.tracks.forEach((_,i)=>tot+=this._playDur(i));
     document.getElementById(this.ids.total).textContent=fmtFull(tot);
+    // État neutre si plus aucun son en cours
+    const anyPlaying=this.tracks.some((t2,j)=>!t2.isMacro && this.audios[j] && !this.audios[j].paused);
+    if(this.playing && !anyPlaying && !this.tracks.some(t2=>!t2.isMacro)) this.playing=false;
     document.getElementById(this.ids.suffix).textContent=this.playing?'EN DIRECT':'A';
     const trackNameEl=document.getElementById('onair-track-'+this.idx);
-    if(trackNameEl){const activeTrack=this.playing&&this.tracks[this.ci];trackNameEl.textContent=activeTrack?'— '+activeTrack.title:'';trackNameEl.style.opacity=activeTrack?'1':'0';}
+    if(trackNameEl){
+      const activeTrack=this.playing&&this.tracks.find((t2,j)=>!t2.isMacro&&this.audios[j]&&!this.audios[j].paused);
+      trackNameEl.textContent=activeTrack?'— '+activeTrack.title:'';
+      trackNameEl.style.opacity=activeTrack?'1':'0';
+    }
     const hdr=document.getElementById('diff-header-'+this.idx);
     const bar=document.getElementById('diff-onair-'+this.idx);
     if(hdr)hdr.classList.toggle('is-live',this.playing);
@@ -822,75 +832,77 @@ class Diffuser{
 
   _startTrack(i){
     const t=this.tracks[i]; if(!t) return;
-    // ── PAS MACRO : token incrémenté, exécuter, puis passer au suivant ──
+    // ── MACRO : exécuter et purger immédiatement ──
     if(t.isMacro){
       const token=++this._playToken;
       if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
       if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-      this.ci=i; this.render();
+      this.ci=i; this.render(); // affiche "EN COURS"
       if(typeof t.action==='function') t.action(this);
+      // Purge après 800ms (feedback visuel), puis lance le suivant si autorisé
       this._outTimer=setTimeout(()=>{
-        if(token!==this._playToken||!this.playing) return;
+        if(token!==this._playToken) return;
         const idx=this.tracks.indexOf(t);
         if(idx!==-1){this.tracks.splice(idx,1);this.durs.splice(idx,1);this.audios.splice(idx,1);}
-        this._updateFdzCount();
-        if(this.tracks.length){this.ci=0;this._startTrack(0);}
-        else{this.ci=0;this.playing=false;}
+        this.ci=0; this._updateFdzCount();
+        if(this.playing && this.tracks.length>0 && !this._stopAfterMacro){
+          this._startNextInQueue();
+        } else if(!this.tracks.length){
+          this.playing=false;
+        }
         this.render();
-      },1500);
+      },800);
       return;
     }
     // ── SON AUDIO ──
     const audio=this.audios[i]; if(!audio) return;
-    const token=++this._playToken;
+    ++this._playToken;
     audio.onended=null;
     if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
     if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
     const inCue=this._inOf(i), outCue=this._outOf(i), fileDur=this.durs[i]||0;
     const chainDelay=Math.max(0,outCue-inCue);
-    audio.currentTime=inCue; this.ci=i;
+    audio.currentTime=inCue;
+    this.ci=i;
 
-    // ── Point OUT = ENCHAÎNEMENT ──
-    // Au OUT : lancer le suivant SANS toucher à ce token.
-    // Le son courant continue à jouer — il sera supprimé par son propre onended.
+    // Au point OUT :
+    //  1. Retirer la piste du tableau immédiatement (elle ne sera plus relancée)
+    //  2. Laisser l'audio continuer à jouer en fond (hors tableau)
+    //  3. Lancer le son suivant
+    //  4. Stopper l'audio en fond à la fin naturelle du fichier
     this._outTimer=setTimeout(()=>{
       if(!this.playing) return;
-      // Enchaîner si pas bloqué et s'il y a un suivant
-      if(!this._stopAfterMacro && this.tracks.length>1){
-        this._startNextAfterChain();
-      }
-      // Quoi qu'il arrive, supprimer la piste courante à la vraie fin du fichier
+      // Retirer la piste du tableau
+      const idx=this.tracks.indexOf(t);
+      if(idx!==-1){this.tracks.splice(idx,1);this.durs.splice(idx,1);this.audios.splice(idx,1);}
+      this.ci=0; this._updateFdzCount();
+      // Lancer le suivant si pas bloqué
+      if(!this._stopAfterMacro && this.tracks.length>0) this._startNextInQueue();
+      // Si plus rien à jouer : état neutre
+      if(!this.tracks.length){this.playing=false;}
+      this.render();
+      // Laisser l'audio courant finir en fond, puis le stopper
       const remaining=Math.max(0,(fileDur-outCue))*1000;
-      this._removeTimer=setTimeout(()=>{
-        audio.onended=null;
-        if(!audio.paused) audio.pause();
-        const idx=this.tracks.indexOf(t);
-        if(idx!==-1){
-          if(t.file?.startsWith('blob:')) URL.revokeObjectURL(t.file);
-          this.tracks.splice(idx,1); this.durs.splice(idx,1); this.audios.splice(idx,1);
-        }
-        this.ci=0; this._updateFdzCount(); this.render();
-      }, remaining+300);
+      if(remaining>50){
+        this._removeTimer=setTimeout(()=>{
+          audio.onended=null; if(!audio.paused) audio.pause();
+        }, remaining+200);
+      } else {
+        audio.onended=null; if(!audio.paused) audio.pause();
+      }
     }, chainDelay*1000);
 
-    // Fin naturelle avant outCue (fichier trop court)
+    // Sécurité : fin naturelle avant outCue (fichier plus court que outCue)
     audio.onended=()=>{
       audio.onended=null;
+      if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
       if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-      if(this._outTimer){
-        clearTimeout(this._outTimer);this._outTimer=null;
-        // Enchaîner si pas encore fait
-        if(this.playing && !this._stopAfterMacro && this.tracks.length>1){
-          this._startNextAfterChain();
-        }
-      }
-      // Supprimer la piste
       const idx=this.tracks.indexOf(t);
-      if(idx!==-1){
-        if(t.file?.startsWith('blob:')) URL.revokeObjectURL(t.file);
-        this.tracks.splice(idx,1); this.durs.splice(idx,1); this.audios.splice(idx,1);
-      }
-      this.ci=0; this._updateFdzCount(); this.render();
+      if(idx!==-1){this.tracks.splice(idx,1);this.durs.splice(idx,1);this.audios.splice(idx,1);}
+      this.ci=0; this._updateFdzCount();
+      if(!this._stopAfterMacro && this.tracks.length>0) this._startNextInQueue();
+      if(!this.tracks.length){this.playing=false;}
+      this.render();
     };
 
     audio.play().then(()=>wireAudioToDiff(audio,this.idx)).catch(e=>{
@@ -900,16 +912,17 @@ class Diffuser{
     });
   }
 
-  // Lance le premier son de la file qui N'est PAS en train de jouer
-  _startNextAfterChain(){
-    if(!this.playing) return;
-    // Trouver la première piste dont l'audio est pausé (pas encore lancée)
-    for(let j=0;j<this.tracks.length;j++){
-      const nt=this.tracks[j];
-      const na=this.audios[j];
-      if(nt.isMacro){ this._startTrack(j); return; }
-      if(na && na.paused){ this._startTrack(j); return; }
-    }
+  // Lance le premier son de la file (toujours index 0 après suppression du précédent)
+  _startNextInQueue(){
+    if(!this.playing||!this.tracks.length) return;
+    const t=this.tracks[0];
+    // Si c'est une macro, la lancer
+    if(t.isMacro){this._startTrack(0);return;}
+    // Vérifier que l'audio est bien en pause (pas encore lancé)
+    const a=this.audios[0];
+    if(!a) return;
+    if(a.paused) this._startTrack(0);
+    // Si a.paused===false : déjà en cours (ne rien faire)
   }
 
   _updateFdzCount(){
@@ -981,36 +994,37 @@ class Diffuser{
   }
 
   tick(){
-    if(!this.playing||!this.tracks.length)return;
-    const i=this.ci;const t=this.tracks[i];if(!t||t.isMacro)return;
-    const audio=this.audios[i];if(!audio)return;
+    if(!this.tracks.length){
+      // Plus de pistes : état neutre
+      if(this.playing){this.playing=false;this.render();}
+      return;
+    }
+    if(!this.playing)return;
+    // Trouver la piste qui joue actuellement
+    let activeIdx=-1;
+    for(let j=0;j<this.tracks.length;j++){
+      const a=this.audios[j];
+      if(a&&!a.paused&&!this.tracks[j].isMacro){activeIdx=j;break;}
+    }
+    if(activeIdx===-1)return;
+    const t=this.tracks[activeIdx];
+    const audio=this.audios[activeIdx];
     const pos=audio.currentTime;
-    const inCue=this._inOf(i), outCue=this._outOf(i), fileDur=this.durs[i]||1;
-    // Progression vers le point OUT (enchaînement), puis continue jusqu'à fin fichier
-    const progToOut=Math.max(0,Math.min(1,(pos-inCue)/(outCue-inCue||1)));
-    // Barre full-width : de inCue à fin du fichier
+    const inCue=this._inOf(activeIdx),outCue=this._outOf(activeIdx),fileDur=this.durs[activeIdx]||1;
     const progFull=Math.max(0,Math.min(1,(pos-inCue)/(fileDur-inCue||1)));
     const tr=document.getElementById(this.ids.body)?.querySelector('tr.row-active');
     if(tr){
-      tr.style.setProperty('--prog',progFull); // la barre suit jusqu'à la fin
-      // Indicateur OUT : petit marker sur la row
+      tr.style.setProperty('--prog',progFull);
       tr.style.setProperty('--out-pct',((outCue/fileDur)*100).toFixed(1)+'%');
     }
-    // Décompte : temps restant avant le point OUT (enchaînement)
-    const cdEl=document.getElementById(this.ids.body+'-cd-'+i);
+    const cdEl=document.getElementById(this.ids.body+'-cd-'+activeIdx);
     if(cdEl){
-      const remToOut=outCue-pos;
-      if(remToOut>0){
-        cdEl.textContent=fmtFull(remToOut);
-        cdEl.style.color='#ff4040';
-      } else {
-        // Après OUT : montrer le temps restant de la queue
-        cdEl.textContent='+ '+fmtFull(Math.abs(remToOut));
-        cdEl.style.color='#f07800';
-      }
+      const rem=outCue-pos;
+      if(rem>0){cdEl.textContent=fmtFull(rem);cdEl.style.color='#ff4040';}
+      else{cdEl.textContent='+ '+fmtFull(-rem);cdEl.style.color='#f07800';}
     }
-    const introEl=document.getElementById(this.ids.body+'-intro-cd-'+i);
-    if(introEl){const ic=this._introOf(i)||0;introEl.textContent=fmtFull(Math.max(0,ic-pos));}
+    const introEl=document.getElementById(this.ids.body+'-intro-cd-'+activeIdx);
+    if(introEl){const ic=this._introOf(activeIdx)||0;introEl.textContent=fmtFull(Math.max(0,ic-pos));}
     const pb=document.getElementById('c1-progress-fill');
     if(pb)pb.style.width=(progFull*100).toFixed(2)+'%';
     const micros=document.getElementById(this.ids.micros);
