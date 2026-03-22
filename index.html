@@ -3283,10 +3283,10 @@ class Diffuser{
       }, macroDelay*1000);
     }
 
-    // ── Brancher l'audio sur le routage WebAudio de ce diffuseur ──
-    wireAudioToDiff(audio, this.idx);
-
-    audio.play().catch(e=>{
+    // ── Brancher l'audio sur WebAudio APRÈS que play() réussit ──
+    audio.play().then(()=>{
+      wireAudioToDiff(audio, this.idx);
+    }).catch(e=>{
       audio.onended = null;
       if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
       if(this._macroTimer){ clearTimeout(this._macroTimer); this._macroTimer=null; }
