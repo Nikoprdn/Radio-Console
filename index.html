@@ -47,9 +47,11 @@
   .table.is-radio tbody tr.row-active::after{
     content:'';position:absolute;top:0;bottom:0;
     left:var(--out-pct,100%);width:3px;
-    background:#ff8800;z-index:4;pointer-events:none;
-    box-shadow:0 0 6px #ff8800;
+    background:#a855f7;z-index:4;pointer-events:none;
+    box-shadow:0 0 6px #a855f7;
   }
+  /* Marqueur INTRO (jaune) — pseudo-element sur un div séparé */
+  .row-intro-marker{position:absolute;top:0;bottom:0;width:2px;background:#f5c400;z-index:4;pointer-events:none;box-shadow:0 0 5px #f5c400;}
   .onair-title{font-family:var(--display);font-size:22px;font-weight:700;color:var(--txt);letter-spacing:3px;}
   .onair-track-name{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:2px;color:var(--yellow);margin-left:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px;}
   .dot-live{display:inline-block;width:8px;height:8px;background:var(--red);border-radius:50%;animation:blink 1s step-start infinite;vertical-align:middle;margin-right:6px;}
@@ -186,7 +188,7 @@
 <div class="wv-modal-overlay" id="wv-modal">
   <div style="background:#03050f;border:3px solid #1a3a9a;border-radius:10px;width:min(96vw,1100px);max-height:92vh;display:flex;flex-direction:column;overflow:hidden;font-family:'Share Tech Mono',monospace;box-shadow:0 0 40px rgba(0,60,255,.25)">
     <div style="display:flex;align-items:center;gap:1rem;padding:.5rem 1rem;background:#030508;border-bottom:1px solid #1e3060;flex-shrink:0">
-      <span style="font-family:var(--display);font-size:13px;color:var(--cyan);letter-spacing:3px">ÉDITEUR IN/OUT</span>
+      <span style="font-family:var(--display);font-size:13px;color:var(--cyan);letter-spacing:3px">ÉDITEUR POINTS</span>
       <span style="font-family:var(--mono);font-size:12px;color:#f5c400;flex:1" id="wv-modal-title">—</span>
       <span style="font-family:var(--mono);font-size:10px;color:var(--txt-mute)" id="wv-modal-file-dur">—</span>
       <button onclick="wvModalClose()" style="background:transparent;border:1px solid #3a1010;color:#e03020;font-size:13px;width:26px;height:26px;border-radius:3px;cursor:pointer;line-height:1">✕</button>
@@ -197,8 +199,12 @@
       <div id="wv-modal-post" style="position:absolute;top:0;bottom:0;right:0;background:rgba(0,0,0,.55);pointer-events:none"></div>
       <div id="wv-modal-ph" style="display:none;position:absolute;top:0;bottom:0;width:2px;background:#f5c400;pointer-events:none;z-index:5"></div>
       <div id="wv-modal-intro-line" class="intro-line" style="display:none;left:0"></div>
-      <div id="wv-modal-in" class="wvm-cue-line" style="left:0;background:#00e060" data-role="in"></div>
-      <div id="wv-modal-out" class="wvm-cue-line" style="left:100%;background:#ff2020" data-role="out"></div>
+      <div id="wv-modal-start" class="wvm-cue-line" style="left:0;background:#00e060;width:3px" data-role="start" title="START"></div>
+      <div id="wv-modal-end"   class="wvm-cue-line" style="left:100%;background:#ef5350;width:3px" data-role="end" title="END"></div>
+      <div id="wv-modal-intro" class="wvm-cue-line" style="left:50%;background:#f5c400;width:2px;opacity:.8" data-role="intro" title="INTRO"></div>
+      <div id="wv-modal-out"   class="wvm-cue-line" style="left:80%;background:#a855f7;width:3px" data-role="out" title="OUT"></div>
+      <!-- Compat aliases -->
+      <div id="wv-modal-in" class="wvm-cue-line" style="display:none" data-role="in"></div>
     </div>
     <div style="position:relative;background:#02030a;height:36px;flex-shrink:0;border-top:1px solid #0d1828;cursor:pointer" id="wv-modal-overview-wrap" onclick="wvModalOverviewSeek(event)">
       <canvas id="wv-modal-zoom" style="display:block;width:100%;height:36px"></canvas>
@@ -214,81 +220,31 @@
       <button onclick="wvModalZoomToOut()" style="background:transparent;border:1px solid #1e3060;color:var(--txt-mute);font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px">ZOOM OUT −20s</button>
       <button onclick="wvModalZoomFull()" style="background:transparent;border:1px solid #1e3060;color:var(--txt-mute);font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px">VUE COMPLÈTE</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(6,1fr);background:#030508;border-top:1px solid #0d1828;flex-shrink:0">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);background:#030508;border-top:1px solid #0d1828;flex-shrink:0">
       <div style="padding:.35rem .6rem;border-right:1px solid #0d1828"><div style="font-family:var(--mono);font-size:7px;color:var(--txt-mute);letter-spacing:1px">POSITION</div><div style="font-family:var(--mono);font-size:13px;color:#f5c400;letter-spacing:1px" id="wvm-tc-pos">00:00.000</div></div>
-      <div style="padding:.35rem .6rem;border-right:1px solid #0d1828"><div style="font-family:var(--mono);font-size:7px;color:var(--txt-mute);letter-spacing:1px">IN</div><div style="font-family:var(--mono);font-size:13px;color:#00e060;letter-spacing:1px" id="wvm-tc-in">00:00.000</div></div>
-      <div style="padding:.35rem .6rem;border-right:1px solid #0d1828"><div style="font-family:var(--mono);font-size:7px;color:var(--txt-mute);letter-spacing:1px">OUT</div><div style="font-family:var(--mono);font-size:13px;color:#ff3030;letter-spacing:1px" id="wvm-tc-out">00:00.000</div></div>
-      <div style="padding:.35rem .6rem;border-right:1px solid #0d1828"><div style="font-family:var(--mono);font-size:7px;color:var(--txt-mute);letter-spacing:1px">DURÉE</div><div style="font-family:var(--mono);font-size:13px;color:#ddeeff;letter-spacing:1px" id="wvm-tc-dur">00:00.000</div></div>
-      <div style="padding:.35rem .6rem;border-right:1px solid #0d1828"><div style="font-family:var(--mono);font-size:7px;color:var(--txt-mute);letter-spacing:1px">RESTANT</div><div style="font-family:var(--mono);font-size:13px;color:#f07800;letter-spacing:1px" id="wvm-tc-rem">00:00.000</div></div>
-      <div style="padding:.35rem .6rem"><div style="font-family:var(--mono);font-size:7px;color:var(--txt-mute);letter-spacing:1px">TOTAL</div><div style="font-family:var(--mono);font-size:13px;color:#5a7090;letter-spacing:1px" id="wvm-tc-total">00:00.000</div></div>
-    </div>
-    <div style="display:flex;gap:1rem;padding:.5rem .75rem;background:#030508;border-top:1px solid #0d1828;flex-shrink:0;flex-wrap:wrap;align-items:center">
-      <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
-        <div style="display:flex;align-items:center;gap:6px"><span style="font-family:var(--mono);font-size:9px;color:#00d96a">L</span><div style="flex:1;height:12px;background:#020510;border:1px solid #0a1a40;border-radius:1px;overflow:hidden"><div class="wvm-vu-bar" id="wvm-vu-L" style="height:100%;width:0%;background:linear-gradient(90deg,#00d96a 0%,#f5c400 70%,#e03020 90%);transition:width .04s linear"></div></div></div>
-        <div style="display:flex;align-items:center;gap:6px"><span style="font-family:var(--mono);font-size:9px;color:#00d96a">R</span><div style="flex:1;height:12px;background:#020510;border:1px solid #0a1a40;border-radius:1px;overflow:hidden"><div class="wvm-vu-bar" id="wvm-vu-R" style="height:100%;width:0%;background:linear-gradient(90deg,#00d96a 0%,#f5c400 70%,#e03020 90%);transition:width .04s linear"></div></div></div>
+      <div style="padding:.35rem .6rem;border-right:1px solid #0d1828">
+        <div style="font-family:var(--mono);font-size:7px;color:#66bb6a;letter-spacing:1px">▶ START</div>
+        <div style="font-family:var(--mono);font-size:13px;color:#66bb6a;letter-spacing:1px" id="wvm-tc-in">00:00.000</div>
+        <button onclick="wvModalSetIn()" style="background:transparent;border:1px solid #1a4a2a;color:#66bb6a;font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px;cursor:pointer;margin-top:2px;letter-spacing:1px">← POSER</button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:.4rem;min-width:200px">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.3rem">
-          <div style="display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--mono);font-size:7px;color:#00e060;letter-spacing:1px">IN</span><input id="wv-modal-in-input" type="number" step="0.001" min="0" style="background:#060c18;border:1px solid #1a2a40;color:#00e060;font-family:var(--mono);font-size:10px;padding:2px 4px;border-radius:2px;outline:none;width:100%" oninput="wvModalSetIn()"></div>
-          <div style="display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--mono);font-size:7px;color:#f5c400;letter-spacing:1px">INTRO</span><input id="wv-modal-intro-input" type="number" step="0.001" min="0" placeholder="—" style="background:#060c18;border:1px solid #2a2000;color:#f5c400;font-family:var(--mono);font-size:10px;padding:2px 4px;border-radius:2px;outline:none;width:100%" oninput="wvModalSetIntro()"></div>
-          <div style="display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--mono);font-size:7px;color:#ff3030;letter-spacing:1px">OUT</span><input id="wv-modal-out-input" type="number" step="0.001" min="0" style="background:#060c18;border:1px solid #2a1010;color:#ff3030;font-family:var(--mono);font-size:10px;padding:2px 4px;border-radius:2px;outline:none;width:100%" oninput="wvModalSetOut()"></div>
-        </div>
+      <div style="padding:.35rem .6rem;border-right:1px solid #0d1828">
+        <div style="font-family:var(--mono);font-size:7px;color:#f5c400;letter-spacing:1px">⚡ INTRO</div>
+        <div style="font-family:var(--mono);font-size:13px;color:#f5c400;letter-spacing:1px" id="wvm-tc-intro">—</div>
+        <button onclick="wvModalSetIntro()" style="background:transparent;border:1px solid #4a3a00;color:#f5c400;font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px;cursor:pointer;margin-top:2px;letter-spacing:1px">← POSER</button>
+        <button onclick="wvModalClearIntro()" style="background:transparent;border:1px solid #2e3238;color:#455a64;font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px;cursor:pointer;margin-top:2px;letter-spacing:1px">✕</button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:.3rem">
-        <div style="display:flex;gap:.3rem">
-          <button class="wvm-tbtn red" onclick="wvModalStop()">■</button>
-          <button class="wvm-tbtn" onclick="wvModalGoIn()">|◀</button>
-          <button class="wvm-tbtn green" id="wvm-play-btn" onclick="wvModalPlayPause()">▶</button>
-          <button class="wvm-tbtn" onclick="wvModalGoOut()">▶|</button>
-          <button class="wvm-tbtn" onclick="wvModalReset()">↺</button>
-        </div>
-        <div style="display:flex;gap:.3rem">
-          <button class="wvm-tbtn" onclick="wvModalNudge(-0.1)">◀.1</button>
-          <button class="wvm-tbtn" onclick="wvModalNudge(-0.01)">◀.01</button>
-          <button class="wvm-tbtn" onclick="wvModalNudge(+0.01)">.01▶</button>
-          <button class="wvm-tbtn" onclick="wvModalNudge(+0.1)">.1▶</button>
-        </div>
+      <div style="padding:.35rem .6rem;border-right:1px solid #0d1828">
+        <div style="font-family:var(--mono);font-size:7px;color:#a855f7;letter-spacing:1px">⊗ OUT</div>
+        <div style="font-family:var(--mono);font-size:13px;color:#a855f7;letter-spacing:1px" id="wvm-tc-out">00:00.000</div>
+        <button onclick="wvModalSetOut()" style="background:transparent;border:1px solid #3a1060;color:#a855f7;font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px;cursor:pointer;margin-top:2px;letter-spacing:1px">← POSER</button>
       </div>
-      <div style="margin-left:auto">
-        <button onclick="wvModalApply()" style="background:linear-gradient(180deg,#0a4a1a,#052810);border:1px solid #1a8a40;color:#60ff90;font-family:var(--mono);font-size:11px;padding:8px 20px;border-radius:3px;cursor:pointer;letter-spacing:1px">✓ APPLIQUER</button>
+      <div style="padding:.35rem .6rem">
+        <div style="font-family:var(--mono);font-size:7px;color:#ef5350;letter-spacing:1px">■ END</div>
+        <div style="font-family:var(--mono);font-size:13px;color:#ef5350;letter-spacing:1px" id="wvm-tc-end">00:00.000</div>
+        <button onclick="wvModalSetEnd()" style="background:transparent;border:1px solid #4a1010;color:#ef5350;font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px;cursor:pointer;margin-top:2px;letter-spacing:1px">← POSER</button>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- Navbar -->
-<nav class="navbar is-console" role="navigation">
-  <div class="navbar-brand">
-    <a class="navbar-item">
-      <svg width="22" height="22" viewBox="0 0 32 32" fill="none" style="margin-right:8px">
-        <circle cx="16" cy="16" r="14" stroke="#00d4f0" stroke-width="1.5"/>
-        <circle cx="16" cy="16" r="6" stroke="#00d4f0" stroke-width="1.5"/>
-        <circle cx="16" cy="16" r="2" fill="#00d4f0"/>
-      </svg>RADIO CONSOLE
-    </a>
-  </div>
-  <div class="navbar-end">
-    <div class="navbar-item" style="gap:.6rem;display:flex;align-items:center">
-      <!-- Voyant DIFF A (externe) -->
-      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:8px 16px;border:2px solid #1e2a40;border-radius:10px;transition:all .3s;cursor:default;background:#0a1020;min-width:120px" id="diffa-status-pill" title="Statut DIFF A externe">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div id="diffa-status-dot" style="width:14px;height:14px;border-radius:50%;background:#e03020;box-shadow:0 0 10px #e03020;transition:all .3s;animation:blink-ext .8s step-start infinite;flex-shrink:0"></div>
-          <span style="font-family:var(--mono);font-size:8px;color:#3a5070;letter-spacing:2px;text-transform:uppercase">DIFF A EXT</span>
-        </div>
-        <span id="diffa-status-lbl" style="font-family:var(--display);font-size:16px;font-weight:700;color:#e03020;letter-spacing:2px;line-height:1">HORS LIGNE</span>
-      </div>
-      <div class="clock-display" id="global-clock">--:--:--</div>
-    </div>
-  </div>
-</nav>
-
-<!-- Contenu principal — uniquement DIFF A -->
-<section class="section is-console">
-<div style="display:flex;flex-direction:column;gap:1rem">
-
-<!-- DIFF A -->
-<div class="card is-dark-card">
-  <div class="card-header diff-card-header" id="diff-header-0" style="display:flex;align-items:stretch">
+    
     <div style="display:flex;align-items:center;padding:0 1rem;border-right:1px solid #1e3060">
       <span class="tag diff-badge" style="background:#1a2a00;color:#00d4f0;border:1px solid #1e4a60">DIFF A</span>
     </div>
@@ -711,8 +667,12 @@ class Diffuser{
         const ci=this.tracks.indexOf(this.tracks[idx]);
         const realIdx=ci!==-1?ci:idx;
         this.durs[realIdx]=a.duration||0;
-        if(this.tracks[realIdx]&&(this.tracks[realIdx].outCue===null||this.tracks[realIdx].outCue===undefined))
-          this.tracks[realIdx].outCue=a.duration;
+        if(this.tracks[realIdx]){
+          if(this.tracks[realIdx].endCue===null||this.tracks[realIdx].endCue===undefined)
+            this.tracks[realIdx].endCue=a.duration;
+          if(this.tracks[realIdx].outCue===null||this.tracks[realIdx].outCue===undefined)
+            this.tracks[realIdx].outCue=a.duration;
+        }
         this.render();
         const cv=document.getElementById(`wv-${this.idx}-${realIdx}`);
         if(cv){cv.width=800;cv.height=80;drawWaveform(cv,this.tracks[realIdx].file);}
@@ -724,10 +684,14 @@ class Diffuser{
   }
   _insertionIndex(){let i=this.tracks.length;while(i>0&&this.tracks[i-1]?.pinned)i--;return i;}
   _effectiveDur(i){return this.durs[i]||0;}
-  _inOf(i){return Math.max(0,this.tracks[i]?.inCue||0);}
-  _outOf(i){const t=this.tracks[i];if(!t)return 0;return t.outCue!==null?t.outCue:this.durs[i]||0;}
-  _playDur(i){return Math.max(0,this._outOf(i)-this._inOf(i));}
-  _introOf(i){const t=this.tracks[i];if(!t)return null;return(t.introCue!==undefined&&t.introCue!==null)?t.introCue:null;}
+  // ── Accesseurs 4 points ──
+  _startOf(i){return Math.max(0,this.tracks[i]?.startCue||0);}
+  _endOf(i){const t=this.tracks[i];if(!t)return 0;return(t.endCue!=null)?t.endCue:this.durs[i]||0;}
+  _outOf(i){const t=this.tracks[i];if(!t)return 0;return(t.outCue!=null)?t.outCue:this._endOf(i);}
+  _introOf(i){const t=this.tracks[i];if(!t)return null;return(t.introCue!=null)?t.introCue:null;}
+  _playDur(i){return Math.max(0,this._endOf(i)-this._startOf(i));}
+  // Compat: _inOf = _startOf
+  _inOf(i){return this._startOf(i);}
 
   render(){
     const now=new Date();let cur=new Date(now);
@@ -772,7 +736,12 @@ class Diffuser{
                 <div class="row-active-title">${t.title}</div>
                 ${this._introOf(i)!==null?'<span class="intro-badge">⚡ INTRO</span>':''}
               </div>
-              <div class="row-active-cues">IN ${fmtMs(this._inOf(i))} &nbsp;·&nbsp;${this._introOf(i)!==null?'INTRO '+fmtMs(this._introOf(i))+' ·&nbsp;':''} OUT ${fmtMs(this._outOf(i))}</div>
+              <div class="row-active-cues" style="display:flex;gap:8px;flex-wrap:wrap">
+                  <span style="color:#66bb6a">▶ ${fmtMs(this._startOf(i))}</span>
+                  <span style="color:#ef5350">■ ${fmtMs(this._endOf(i))}</span>
+                  ${this._introOf(i)!=null?`<span style="color:#f5c400">⚡ ${fmtMs(this._introOf(i))}</span>`:''}
+                  <span style="color:#a855f7">⊗ ${fmtMs(this._outOf(i))}</span>
+                </div>
             </div>
           </td>
           <td class="cell-wv" style="width:50px;padding:4px 6px!important;text-align:center"><button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" style="position:static;opacity:1">✎</button></td>
@@ -845,7 +814,12 @@ class Diffuser{
               ${delBtn}
               <div>
                 <div style="font-family:var(--display);font-size:16px;font-weight:700;color:${isNext?'var(--green)':'var(--txt)'};letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="${t.title}">${t.title}</div>
-                <div style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);margin-top:1px;letter-spacing:1px">IN ${fmtMs(this._inOf(i))} · OUT ${fmtMs(this._outOf(i))}</div>
+                <div style="font-family:var(--mono);font-size:8px;color:var(--txt-mute);margin-top:2px;letter-spacing:1px;display:flex;gap:6px;flex-wrap:wrap">
+                  <span style="color:#66bb6a">▶ ${fmtMs(this._startOf(i))}</span>
+                  <span style="color:#ef5350">■ ${fmtMs(this._endOf(i))}</span>
+                  ${this._introOf(i)!=null?`<span style="color:#f5c400">⚡ ${fmtMs(this._introOf(i))}</span>`:''}
+                  <span style="color:#a855f7">⊗ ${fmtMs(this._outOf(i))}</span>
+                </div>
               </div>
             </div>
           </td>
@@ -859,8 +833,9 @@ class Diffuser{
               <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})">✎</button>
             </div>
           </td>
-          <td style="width:70px;text-align:right;vertical-align:middle;padding:0 10px">
-            <div style="font-family:var(--mono);font-size:13px;color:${isNext?'var(--green)':'#4a6080'};letter-spacing:1px">${fmtFull(this._playDur(i))}</div>
+          <td style="width:80px;text-align:right;vertical-align:middle;padding:0 6px">
+            <div style="font-family:var(--mono);font-size:12px;color:${isNext?'var(--green)':'#4a6080'};letter-spacing:1px">${fmtFull(this._playDur(i))}</div>
+            <button id="prev-btn-${this.idx}-${i}" onclick="event.stopPropagation();previewPlay(${this.idx},${i})" style="background:transparent;border:1px solid #2e3238;color:#455a64;font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:2px;cursor:pointer;margin-top:2px;width:100%;transition:all .15s" title="Pré-écoute">▷</button>
           </td>
           <td class="cell-bar"><span style="width:4px;height:56px;display:block;background:${t.color};border-radius:2px;opacity:.8"></span></td>`;
         tbody.appendChild(tr);
@@ -941,46 +916,79 @@ class Diffuser{
 
   tick(){
     if(!this.playing)return;
-    // Chercher la première piste dont l'audio joue réellement
     let activeIdx=-1;
     for(let j=0;j<this.tracks.length;j++){
       const a=this.audios[j];
       if(a&&!a.paused&&!this.tracks[j].isMacro){activeIdx=j;break;}
     }
-    if(activeIdx===-1){
-      // Aucun audio en cours → état neutre
-      this.playing=false;
-      this.render();
-      return;
-    }
+    if(activeIdx===-1){this.playing=false;this.render();return;}
+
     const t=this.tracks[activeIdx];
     const audio=this.audios[activeIdx];
     const pos=audio.currentTime;
-    const inCue=this._inOf(activeIdx);
+    const startCue=this._startOf(activeIdx);
+    const endCue=this._endOf(activeIdx);
     const outCue=this._outOf(activeIdx);
+    const introCue=this._introOf(activeIdx);
     const fileDur=this.durs[activeIdx]||1;
-    // Progression : de inCue jusqu'à la fin du fichier (OUT est juste un repère)
-    const progFull=Math.max(0,Math.min(1,(pos-inCue)/(fileDur-inCue||1)));
+
+    // ── Barre de progression : START → END ──
+    const progFull=Math.max(0,Math.min(1,(pos-startCue)/(endCue-startCue||1)));
     const tr=document.getElementById(this.ids.body)?.querySelector('tr.row-active');
     if(tr){
       tr.style.setProperty('--prog',progFull);
-      tr.style.setProperty('--out-pct',((outCue/fileDur)*100).toFixed(1)+'%');
+      // Positions relatives dans la barre
+      tr.style.setProperty('--out-pct',((outCue-startCue)/(endCue-startCue||1)*100).toFixed(1)+'%');
+      tr.style.setProperty('--intro-pct',introCue!=null?((introCue-startCue)/(endCue-startCue||1)*100).toFixed(1)+'%':'0%');
     }
-    // Décompte : temps avant le point OUT
+
+    // ── Décompte : INTRO d'abord, puis OUT ──
     const cdEl=document.getElementById(this.ids.body+'-cd-'+activeIdx);
     if(cdEl){
-      const rem=outCue-pos;
-      if(rem>0){cdEl.textContent=fmtFull(rem);cdEl.style.color='#ff4040';}
-      else{cdEl.textContent='+ '+fmtFull(-rem);cdEl.style.color='#f07800';}
+      const remIntro=introCue!=null?introCue-pos:null;
+      const remOut=outCue-pos;
+      if(remIntro!=null&&remIntro>0){
+        // Phase INTRO : décompte jaune jusqu'au point INTRO
+        cdEl.textContent='⚡ '+fmtFull(remIntro);
+        cdEl.style.color='#f5c400';
+        cdEl.style.fontWeight='700';
+      } else if(remOut>0){
+        // Phase normale : décompte rouge jusqu'au OUT
+        cdEl.textContent=fmtFull(remOut);
+        cdEl.style.color='#ff4040';
+        cdEl.style.fontWeight='700';
+      } else {
+        // Après OUT : queue restante en orange
+        cdEl.textContent='+ '+fmtFull(-remOut);
+        cdEl.style.color='#f07800';
+        cdEl.style.fontWeight='400';
+      }
     }
-    const introEl=document.getElementById(this.ids.body+'-intro-cd-'+activeIdx);
-    if(introEl){const ic=this._introOf(activeIdx)||0;introEl.textContent=fmtFull(Math.max(0,ic-pos));}
+
+    // ── Zoom waveform à 20s du OUT ──
+    const wvId='wv-'+this.idx+'-'+activeIdx;
+    const cv=document.getElementById(wvId);
+    const remToOut=outCue-pos;
+    if(cv&&WV_DATA_CACHE[t.file]){
+      if(remToOut>0&&remToOut<=20){
+        // Zoom : -10s/+10s autour du OUT (relatif à fileDur)
+        const zoomCenter=outCue/fileDur;
+        const zoomHalf=10/fileDur;
+        const zStart=Math.max(0,zoomCenter-zoomHalf);
+        const zEnd=Math.min(1,zoomCenter+zoomHalf);
+        if(!t._zoomed){t._zoomed=true;drawWaveformFromData(cv,WV_DATA_CACHE[t.file],zStart,zEnd);}
+      } else if(t._zoomed&&remToOut>20){
+        t._zoomed=false;drawWaveformFromData(cv,WV_DATA_CACHE[t.file],0,1);
+      }
+    }
+
     const pb=document.getElementById('c1-progress-fill');
     if(pb)pb.style.width=(progFull*100).toFixed(2)+'%';
     const micros=document.getElementById(this.ids.micros);
-    if(micros)micros.textContent=fmtMs(pos-inCue);
+    if(micros)micros.textContent=fmtMs(pos-startCue);
     paintStripFromVU();
   }
+
 
   _startTrack(i){
     const t=this.tracks[i]; if(!t) return;
@@ -1010,72 +1018,89 @@ class Diffuser{
     const audio=this.audios[i]; if(!audio) return;
     const myToken=++this._playToken;
     audio.onended=null;
-    if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
+    if(this._outTimer){cancelAnimationFrame(this._outTimer);clearTimeout(this._outTimer);this._outTimer=null;}
     if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-    const inCue=this._inOf(i);
+    const startCue=this._startOf(i);
+    const endCue=this._endOf(i);
     const fileDur=this.durs[i]||0;
-    audio.currentTime=inCue;
+    audio.currentTime=startCue;
     this.ci=i;
-    let _chained=false; // garde : un seul enchaînement par piste
+    t._zoomed=false;
+    t._launching=true;
 
-    // ── Surveiller le point OUT en RAF (modifiable en live) ──
-    // On lit t.outCue à chaque frame → si l'utilisateur le modifie, le timer s'adapte
+    let _chained=false;
+    let _ended=false;
+
+    // ── Surveille le point OUT (enchaînement) en RAF ──
     const _watchOut=()=>{
-      if(myToken!==this._playToken||!this.playing||audio.paused) return;
-      const currentOut=this._outOf(i); // relu à chaque frame via this.tracks[i]
+      if(myToken!==this._playToken||!this.playing||audio.paused)return;
+      const currentOut=this._outOf(i); // relu live → modifiable pendant lecture
       if(audio.currentTime>=currentOut&&!_chained){
         _chained=true;
-        _doChain();
+        // Lancer le suivant
+        if(!this._stopAfterMacro&&this.tracks.length>1) this._startNextInQueue();
+        // Programmer la suppression à endCue (le son continue jusqu'à END)
+        const remainToEnd=Math.max(0,(endCue-currentOut))*1000;
+        this._removeTimer=setTimeout(()=>{
+          _doRemove();
+        }, remainToEnd+100);
       } else {
         this._outTimer=requestAnimationFrame(_watchOut);
       }
     };
 
-    const _doChain=()=>{
-      if(this._outTimer){cancelAnimationFrame(this._outTimer);this._outTimer=null;}
-      if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-      if(!this.playing)return;
-      // Retirer la piste du tableau
-      const idx=this.tracks.indexOf(t);
-      if(idx!==-1){this.tracks.splice(idx,1);this.durs.splice(idx,1);this.audios.splice(idx,1);}
-      this.ci=0;this._updateFdzCount();
-      // Lancer le suivant si pas bloqué
-      if(!this._stopAfterMacro&&this.tracks.length>0) this._startNextInQueue();
-      if(!this.tracks.length){this.playing=false;}
-      this.render();
-      // Audio en fond : continuer jusqu'à la fin naturelle
-      const remaining=Math.max(0,(fileDur-audio.currentTime))*1000;
-      if(remaining>200){
-        this._removeTimer=setTimeout(()=>{audio.onended=null;if(!audio.paused)audio.pause();},remaining+200);
+    // ── Surveille le point END (arrêt de lecture) en RAF ──
+    const _watchEnd=()=>{
+      if(myToken!==this._playToken||audio.paused)return;
+      if(audio.currentTime>=endCue&&!_ended){
+        _ended=true;
+        audio.onended=null;
+        if(!audio.paused)audio.pause();
+        _doRemove();
       } else {
-        audio.onended=null;if(!audio.paused)audio.pause();
+        requestAnimationFrame(_watchEnd);
       }
     };
 
-    // Fin naturelle avant outCue (fichier plus court)
+    const _doRemove=()=>{
+      if(this._outTimer){cancelAnimationFrame(this._outTimer);this._outTimer=null;}
+      if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
+      audio.onended=null;
+      if(!audio.paused)audio.pause();
+      const idx=this.tracks.indexOf(t);
+      if(idx!==-1){
+        if(t.file?.startsWith('blob:'))URL.revokeObjectURL(t.file);
+        this.tracks.splice(idx,1);this.durs.splice(idx,1);this.audios.splice(idx,1);
+      }
+      this.ci=0;this._updateFdzCount();
+      if(!this.tracks.length)this.playing=false;
+      this.render();
+    };
+
+    // Sécurité fin naturelle du fichier avant endCue
     audio.onended=()=>{
       audio.onended=null;
       if(this._outTimer){cancelAnimationFrame(this._outTimer);this._outTimer=null;}
       if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-      if(!_chained){_chained=true;_doChain();}
+      if(!_chained&&!this._stopAfterMacro&&this.tracks.length>1)this._startNextInQueue();
+      _doRemove();
     };
 
-    // Démarrer la surveillance
+    // Démarrer
     this._outTimer=requestAnimationFrame(_watchOut);
+    requestAnimationFrame(_watchEnd);
 
-    t._launching=true; // marqer comme "en cours de démarrage"
     audio.play().then(()=>{
       t._launching=false;
       wireAudioToDiff(audio,this.idx);
     }).catch(e=>{
       t._launching=false;
       audio.onended=null;
-      if(this._outTimer){clearTimeout(this._outTimer);this._outTimer=null;}
+      if(this._outTimer){cancelAnimationFrame(this._outTimer);this._outTimer=null;}
       console.warn('play() error:',e);
     });
   }
 
-  // Lance le premier son de la file (toujours index 0 après suppression du précédent)
   _startNextInQueue(){
     if(!this.playing||!this.tracks.length) return;
     const t=this.tracks[0];
@@ -1205,7 +1230,15 @@ const DIFF_COLORS=['#1a6b3a','#1a3a6e','#5b21b6','#6b3a1a','#1a5a6b','#3a1a6b','
 function handleFiles(files,diffIdx){
   const arr=Array.from(files).filter(f=>f.type.startsWith('audio/'));
   if(!arr.length)return;
-  const newTracks=arr.map((f,i)=>({file:URL.createObjectURL(f),title:f.name.replace(/\.[^/.]+$/,''),color:DIFF_COLORS[i%DIFF_COLORS.length],inCue:0,outCue:null}));
+  const newTracks=arr.map((f,i)=>({
+    file:URL.createObjectURL(f),
+    title:f.name.replace(/\.[^/.]+$/,''),
+    color:DIFF_COLORS[i%DIFF_COLORS.length],
+    startCue:0,    // vert  — début de lecture
+    endCue:null,   // rouge — fin de lecture (=durée si null)
+    introCue:null, // jaune — point intro (décompte)
+    outCue:null,   // violet — point d'enchaînement
+  }));
   D[diffIdx].addTracks(newTracks);
 }
 function handleDrop(e,diffIdx){
@@ -1267,7 +1300,11 @@ function wvModalOpen(wvId,diffIdx,trackIdx){
   const t=d.tracks[trackIdx];if(!t||!t.file)return;
   const dur=d.durs[trackIdx]||0;if(!dur)return;
   _wvModal.diffIdx=diffIdx;_wvModal.trackIdx=trackIdx;_wvModal.dur=dur;
-  _wvModal.zoom=1;_wvModal.viewStart=0;_wvModal.viewEnd=1;_wvModal.playing=false;_wvModal.dragging=null;_wvModal.audio=d.audios[trackIdx];
+  _wvModal.zoom=1;_wvModal.viewStart=0;_wvModal.viewEnd=1;_wvModal.playing=false;_wvModal.dragging=null;
+  // Créer un audio dédié pour le modal (pré-écoute dans l'éditeur)
+  if(_wvModal.audio&&_wvModal.audio!==d.audios[trackIdx]){try{_wvModal.audio.pause();}catch(e){}}
+  _wvModal.audio=new Audio();_wvModal.audio.src=t.file;
+  _wvModal.audio.currentTime=d._startOf(trackIdx);
   document.getElementById('wv-modal-title').textContent=t.title||'—';
   document.getElementById('wv-modal-file-dur').textContent=fmtFull(dur);
   document.getElementById('wv-modal').classList.add('open');
@@ -1275,7 +1312,8 @@ function wvModalOpen(wvId,diffIdx,trackIdx){
   else drawWaveform(document.createElement('canvas'),t.file).then(()=>wvModalRedraw());
   _wvModalBindDrag();_wvModalUpdateTC();_wvModalStartRAF();
 }
-function wvModalClose(){wvModalStop();if(_wvModal.rafId){cancelAnimationFrame(_wvModal.rafId);_wvModal.rafId=null;}document.getElementById('wv-modal').classList.remove('open');}
+function wvModalClose(){
+  if(_wvModal.audio){try{_wvModal.audio.pause();}catch(e){}}_wvModal.playing=false;wvModalStop();if(_wvModal.rafId){cancelAnimationFrame(_wvModal.rafId);_wvModal.rafId=null;}document.getElementById('wv-modal').classList.remove('open');}
 function wvModalApply(){
   const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;
   const inVal=parseFloat(document.getElementById('wv-modal-in-input').value)||0;
@@ -1297,22 +1335,29 @@ function wvModalRedraw(){
   _wvModalUpdateHandles();_wvModalUpdateOverview();_wvModalUpdateTC();
 }
 function _wvModalUpdateHandles(){
-  const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;
+  const d=D[_wvModal.diffIdx];if(!d)return;
+  const t=d.tracks[_wvModal.trackIdx];if(!t)return;
   const dur=_wvModal.dur,vs=_wvModal.viewStart,ve=_wvModal.viewEnd,range=ve-vs||0.001;
-  const inR=((t.inCue||0)/dur-vs)/range,outR=((t.outCue||dur)/dur-vs)/range;
-  const inH=document.getElementById('wv-modal-in'),outH=document.getElementById('wv-modal-out');
-  const pre=document.getElementById('wv-modal-pre'),post=document.getElementById('wv-modal-post');
-  if(inH)inH.style.left=(Math.min(1,Math.max(0,inR))*100).toFixed(2)+'%';
-  if(outH)outH.style.left=(Math.min(1,Math.max(0,outR))*100).toFixed(2)+'%';
-  if(pre)pre.style.width=(Math.max(0,Math.min(100,inR*100)).toFixed(2))+'%';
-  if(post)post.style.left=(Math.max(0,Math.min(100,outR*100)).toFixed(2))+'%';
-  const inInput=document.getElementById('wv-modal-in-input'),outInput=document.getElementById('wv-modal-out-input'),introInput=document.getElementById('wv-modal-intro-input');
-  if(inInput&&document.activeElement!==inInput)inInput.value=(t.inCue||0).toFixed(3);
-  if(outInput&&document.activeElement!==outInput)outInput.value=(t.outCue||dur).toFixed(3);
-  if(introInput&&document.activeElement!==introInput)introInput.value=t.introCue!=null?t.introCue.toFixed(3):'';
-  const il=document.getElementById('wv-modal-intro-line');
-  if(il){if(t.introCue!=null){const r=((t.introCue/dur)-vs)/range;il.style.display='block';il.style.left=(Math.max(0,Math.min(1,r))*100).toFixed(2)+'%';}else il.style.display='none';}
+  const startCue=d._startOf(_wvModal.trackIdx);
+  const endCue=d._endOf(_wvModal.trackIdx);
+  const outCue=d._outOf(_wvModal.trackIdx);
+  const introCue=d._introOf(_wvModal.trackIdx);
+  // Positions relatives dans la vue zoomée
+  const toX=(s)=>(((s/dur)-vs)/range*100);
+  const startEl=document.getElementById('wv-modal-start');
+  const endEl=document.getElementById('wv-modal-end');
+  const outEl=document.getElementById('wv-modal-out');
+  const introEl=document.getElementById('wv-modal-intro');
+  const pre=document.getElementById('wv-modal-pre');
+  const post=document.getElementById('wv-modal-post');
+  if(startEl)startEl.style.left=toX(startCue).toFixed(2)+'%';
+  if(endEl)endEl.style.left=toX(endCue).toFixed(2)+'%';
+  if(outEl)outEl.style.left=toX(outCue).toFixed(2)+'%';
+  if(introEl){if(introCue!=null){introEl.style.left=toX(introCue).toFixed(2)+'%';introEl.style.display='block';}else introEl.style.display='none';}
+  if(pre)pre.style.width=Math.max(0,toX(startCue)).toFixed(2)+'%';
+  if(post){post.style.left=Math.min(100,toX(endCue)).toFixed(2)+'%';}
 }
+
 function _wvModalUpdateOverview(){
   const zr=document.getElementById('wv-modal-zoom-region');
   if(zr){zr.style.left=(_wvModal.viewStart*100).toFixed(2)+'%';zr.style.width=((_wvModal.viewEnd-_wvModal.viewStart)*100).toFixed(2)+'%';}
@@ -1323,29 +1368,42 @@ function _wvModalUpdateOverview(){
   if(outOv)outOv.style.left=((t.outCue||dur)/dur*100).toFixed(2)+'%';
 }
 function _wvModalUpdateTC(){
-  const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;
+  const d=D[_wvModal.diffIdx];if(!d)return;
+  const t=d.tracks[_wvModal.trackIdx];if(!t)return;
+  const dur=_wvModal.dur;
   const audio=_wvModal.audio,pos=audio?audio.currentTime:0;
-  const inCue=t.inCue||0,outCue=t.outCue||_wvModal.dur;
+  const startCue=d._startOf(_wvModal.trackIdx);
+  const endCue=d._endOf(_wvModal.trackIdx);
+  const outCue=d._outOf(_wvModal.trackIdx);
+  const introCue=d._introOf(_wvModal.trackIdx);
   document.getElementById('wvm-tc-pos').textContent=fmtMs3(pos);
-  document.getElementById('wvm-tc-in').textContent=fmtMs3(inCue);
+  document.getElementById('wvm-tc-in').textContent=fmtMs3(startCue);
+  const endEl=document.getElementById('wvm-tc-end');if(endEl)endEl.textContent=fmtMs3(endCue);
   document.getElementById('wvm-tc-out').textContent=fmtMs3(outCue);
-  document.getElementById('wvm-tc-dur').textContent=fmtMs3(outCue-inCue);
-  document.getElementById('wvm-tc-rem').textContent=fmtMs3(Math.max(0,outCue-pos));
-  document.getElementById('wvm-tc-total').textContent=fmtMs3(_wvModal.dur);
-  const vs=_wvModal.viewStart,ve=_wvModal.viewEnd,range=ve-vs||0.001;
-  const posR=(pos/_wvModal.dur-vs)/range;
-  const ph=document.getElementById('wv-modal-ph');
-  if(ph){const visible=posR>=0&&posR<=1;ph.style.display=visible?'block':'none';if(visible)ph.style.left=(posR*100).toFixed(2)+'%';}
-  const phOv=document.getElementById('wv-modal-ph-ov');
-  if(phOv)phOv.style.left=(pos/_wvModal.dur*100).toFixed(2)+'%';
-  if(_wvModal.audio&&!_wvModal.audio.paused&&vu0){
-    const data=new Float32Array(vu0.aL.fftSize);vu0.aL.getFloatTimeDomainData(data);
-    let s=0;for(const v of data)s+=v*v;const rms=Math.sqrt(s/data.length);
-    const barL=document.getElementById('wvm-vu-L'),barR=document.getElementById('wvm-vu-R');
-    if(barL)barL.style.width=Math.min(100,Math.max(0,(rms+1)*80)).toFixed(1)+'%';
-    if(barR)barR.style.width=Math.min(100,Math.max(0,(rms+1)*80)).toFixed(1)+'%';
-  }
+  const introEl=document.getElementById('wvm-tc-intro');
+  if(introEl)introEl.textContent=introCue!=null?fmtMs3(introCue):'—';
+  // Mettre à jour les lignes sur la waveform
+  const vs=_wvModal.viewStart,ve=_wvModal.viewEnd,vspan=ve-vs;
+  const toX=(s)=>((s/dur-vs)/vspan*100).toFixed(2)+'%';
+  const startEl=document.getElementById('wv-modal-start');
+  const outEl=document.getElementById('wv-modal-out');
+  const endEl2=document.getElementById('wv-modal-end');
+  const introLine=document.getElementById('wv-modal-intro');
+  const preEl=document.getElementById('wv-modal-pre');
+  const postEl=document.getElementById('wv-modal-post');
+  if(startEl)startEl.style.left=toX(startCue);
+  if(outEl)outEl.style.left=toX(outCue);
+  if(endEl2)endEl2.style.left=toX(endCue);
+  if(introLine){if(introCue!=null){introLine.style.left=toX(introCue);introLine.style.display='block';}else introLine.style.display='none';}
+  if(preEl)preEl.style.width=toX(startCue);
+  if(postEl){postEl.style.left=toX(endCue);}
+  // Overview
+  const inOv=document.getElementById('wv-modal-in-ov');
+  const outOv=document.getElementById('wv-modal-out-ov');
+  if(inOv)inOv.style.left=(startCue/dur*100).toFixed(2)+'%';
+  if(outOv)outOv.style.left=(outCue/dur*100).toFixed(2)+'%';
 }
+
 function _wvModalStartRAF(){
   if(_wvModal.rafId)cancelAnimationFrame(_wvModal.rafId);
   const loop=()=>{if(!document.getElementById('wv-modal').classList.contains('open'))return;_wvModalUpdateTC();_wvModal.rafId=requestAnimationFrame(loop);};
@@ -1356,25 +1414,45 @@ function _wvModalBindDrag(){
   const getPos=(clientX)=>{const rect=wrap.getBoundingClientRect();return Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));};
   wrap.addEventListener('mousedown',e=>{
     const role=e.target.dataset.role;
-    if(role==='in'||role==='out'){_wvModal.dragging=role;e.preventDefault();}
-    else{const ratio=getPos(e.clientX);const globalR=_wvModal.viewStart+ratio*(_wvModal.viewEnd-_wvModal.viewStart);const sec=globalR*_wvModal.dur;if(_wvModal.audio)_wvModal.audio.currentTime=sec;}
+    if(role==='start'||role==='end'||role==='out'||role==='intro'||role==='in'){
+      _wvModal.dragging=role;e.preventDefault();
+    } else {
+      // Clic dans la waveform → seek
+      const ratio=getPos(e.clientX);
+      const globalR=_wvModal.viewStart+ratio*(_wvModal.viewEnd-_wvModal.viewStart);
+      const sec=globalR*_wvModal.dur;
+      if(_wvModal.audio)_wvModal.audio.currentTime=sec;
+    }
   });
   document.addEventListener('mousemove',e=>{
     if(!_wvModal.dragging)return;
-    const ratio=getPos(e.clientX);const globalR=_wvModal.viewStart+ratio*(_wvModal.viewEnd-_wvModal.viewStart);
-    if(_wvModal.dragging==='in')wvModalSetInFromRatio(globalR);else wvModalSetOutFromRatio(globalR);
+    const ratio=getPos(e.clientX);
+    const globalR=_wvModal.viewStart+ratio*(_wvModal.viewEnd-_wvModal.viewStart);
+    const d=D[_wvModal.diffIdx];if(!d)return;
+    const t=d.tracks[_wvModal.trackIdx];if(!t)return;
+    const sec=globalR*_wvModal.dur;
+    switch(_wvModal.dragging){
+      case 'start': case 'in':
+        t.startCue=Math.max(0,Math.min(sec,(t.outCue||t.endCue||_wvModal.dur)-0.01));break;
+      case 'out':
+        t.outCue=Math.min(t.endCue||_wvModal.dur,Math.max(sec,(t.startCue||0)+0.01));break;
+      case 'end':
+        t.endCue=Math.min(_wvModal.dur,Math.max(sec,(t.outCue||t.startCue||0)+0.01));break;
+      case 'intro':
+        t.introCue=Math.max(t.startCue||0,Math.min(sec,t.endCue||_wvModal.dur));break;
+    }
+    _wvModalUpdateHandles();_wvModalUpdateTC();
   });
-  document.addEventListener('mouseup',()=>{_wvModal.dragging=null;});
+  document.addEventListener('mouseup',()=>{
+    if(_wvModal.dragging){_wvModal.dragging=null;if(D[_wvModal.diffIdx])D[_wvModal.diffIdx].render();}
+  });
 }
-function wvModalSetInFromRatio(r){const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;t.inCue=Math.max(0,Math.min(r*_wvModal.dur,(t.outCue||_wvModal.dur)-0.01));_wvModalUpdateHandles();_wvModalUpdateTC();}
-function wvModalSetOutFromRatio(r){const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;t.outCue=Math.min(_wvModal.dur,Math.max(r*_wvModal.dur,(t.inCue||0)+0.01));_wvModalUpdateHandles();_wvModalUpdateTC();}
-function wvModalSetIn(){const v=parseFloat(document.getElementById('wv-modal-in-input').value);if(!isFinite(v))return;wvModalSetInFromRatio(v/_wvModal.dur);}
-function wvModalSetOut(){const v=parseFloat(document.getElementById('wv-modal-out-input').value);if(!isFinite(v))return;wvModalSetOutFromRatio(v/_wvModal.dur);}
-function wvModalSetIntro(){
-  const v=parseFloat(document.getElementById('wv-modal-intro-input').value);if(!isFinite(v))return;
-  const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;
-  t.introCue=Math.max(t.inCue||0,Math.min(v,t.outCue||_wvModal.dur));_wvModalUpdateHandles();_wvModalUpdateTC();
-}
+
+function wvModalSetInFromRatio(r){const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;t.startCue=Math.max(0,Math.min(r*_wvModal.dur,(t.outCue||t.endCue||_wvModal.dur)-0.01));_wvModalUpdateHandles();_wvModalUpdateTC();}
+function wvModalSetOutFromRatio(r){const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;t.outCue=Math.min(t.endCue||_wvModal.dur,Math.max(r*_wvModal.dur,(t.startCue||0)+0.01));_wvModalUpdateHandles();_wvModalUpdateTC();}
+
+
+
 function wvModalZoomChange(val){
   const z=parseFloat(val);_wvModal.zoom=z;
   document.getElementById('wv-modal-zoom-val').textContent='×'+z.toFixed(1);
@@ -1415,11 +1493,128 @@ function wvModalStop(){
 function wvModalGoIn(){const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;if(_wvModal.audio)_wvModal.audio.currentTime=t.inCue||0;}
 function wvModalGoOut(){const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;if(_wvModal.audio)_wvModal.audio.currentTime=Math.max(0,(t.outCue||_wvModal.dur)-2);}
 function wvModalReset(){const d=D[_wvModal.diffIdx];if(!d)return;const t=d.tracks[_wvModal.trackIdx];if(!t)return;t.inCue=0;t.outCue=_wvModal.dur;_wvModalUpdateHandles();_wvModalUpdateTC();}
+
+function wvModalSetIn(){
+  // Pose le point START à la position courante du playhead
+  const d=D[_wvModal.diffIdx];if(!d)return;
+  const t=d.tracks[_wvModal.trackIdx];if(!t)return;
+  const pos=_wvModal.audio?_wvModal.audio.currentTime:0;
+  t.startCue=Math.max(0,Math.min(pos,(t.outCue||t.endCue||_wvModal.dur)-0.01));
+  _wvModalUpdateHandles();_wvModalUpdateTC();
+  D[_wvModal.diffIdx].render();
+}
+function wvModalSetOut(){
+  // Pose le point OUT à la position courante du playhead
+  const d=D[_wvModal.diffIdx];if(!d)return;
+  const t=d.tracks[_wvModal.trackIdx];if(!t)return;
+  const pos=_wvModal.audio?_wvModal.audio.currentTime:0;
+  t.outCue=Math.min(t.endCue||_wvModal.dur,Math.max(pos,(t.startCue||0)+0.01));
+  _wvModalUpdateHandles();_wvModalUpdateTC();
+  D[_wvModal.diffIdx].render();
+}
+function wvModalSetEnd(){
+  // Pose le point END à la position courante du playhead
+  const d=D[_wvModal.diffIdx];if(!d)return;
+  const t=d.tracks[_wvModal.trackIdx];if(!t)return;
+  const pos=_wvModal.audio?_wvModal.audio.currentTime:0;
+  t.endCue=Math.min(_wvModal.dur,Math.max(pos,(t.outCue||t.startCue||0)+0.01));
+  _wvModalUpdateHandles();_wvModalUpdateTC();
+  D[_wvModal.diffIdx].render();
+}
+function wvModalSetIntro(){
+  // Pose le point INTRO à la position courante du playhead
+  const d=D[_wvModal.diffIdx];if(!d)return;
+  const t=d.tracks[_wvModal.trackIdx];if(!t)return;
+  const pos=_wvModal.audio?_wvModal.audio.currentTime:0;
+  t.introCue=Math.max(t.startCue||0,Math.min(pos,t.endCue||_wvModal.dur));
+  _wvModalUpdateHandles();_wvModalUpdateTC();
+  D[_wvModal.diffIdx].render();
+}
+function wvModalClearIntro(){
+  const d=D[_wvModal.diffIdx];if(!d)return;
+  const t=d.tracks[_wvModal.trackIdx];if(!t)return;
+  t.introCue=null;
+  _wvModalUpdateHandles();_wvModalUpdateTC();
+  D[_wvModal.diffIdx].render();
+}
 function wvModalNudge(deltaSec){if(!_wvModal.audio)return;_wvModal.audio.currentTime=Math.max(0,Math.min(_wvModal.dur,_wvModal.audio.currentTime+deltaSec));}
 
 // ═══════════════════════════════════════════════════════
 // BOUCLE PRINCIPALE
 // ═══════════════════════════════════════════════════════
+
+// ── Pré-écoute isolée ──
+// Audio séparé, gain indépendant, sans impact sur la lecture principale
+
+function previewPlay(diffIdx, trackIdx){
+  const d=D[diffIdx];if(!d)return;
+  const t=d.tracks[trackIdx];if(!t||!t.file)return;
+  const dur=d.durs[trackIdx]||0;if(!dur)return;
+
+  // Stopper toute pré-écoute en cours
+  previewStop();
+
+  const a=new Audio();
+  a.src=t.file;
+  a.currentTime=d._startOf(trackIdx);
+
+  // Brancher sur un gain séparé (AudioContext principal)
+  const ctx=getCtx();
+  if(ctx){
+    if(!_previewGn){
+      _previewGn=ctx.createGain();
+      _previewGn.gain.value=1;
+      _previewGn.connect(ctx.destination);
+    }
+    try{
+      const src=ctx.createMediaElementSource(a);
+      src.connect(_previewGn);
+      a._prevSrc=src;
+    }catch(e){}
+  }
+
+  _previewAudio=a;
+  _previewTrack={diffIdx,trackIdx};
+
+  a.play().catch(e=>console.warn('preview error:',e));
+
+  // Arrêter à endCue
+  const endCue=d._endOf(trackIdx);
+  _previewTimer=setInterval(()=>{
+    if(!_previewAudio||_previewAudio.paused){previewStop();return;}
+    if(_previewAudio.currentTime>=endCue) previewStop();
+  }, 200);
+
+  // Mettre à jour le bouton
+  _updatePreviewBtn(diffIdx, trackIdx, true);
+}
+
+function previewStop(){
+  if(_previewTimer){clearInterval(_previewTimer);_previewTimer=null;}
+  if(_previewAudio){
+    _previewAudio.pause();
+    _previewAudio.onended=null;
+    _previewAudio=null;
+  }
+  if(_previewTrack){
+    _updatePreviewBtn(_previewTrack.diffIdx, _previewTrack.trackIdx, false);
+    _previewTrack=null;
+  }
+}
+
+function _updatePreviewBtn(diffIdx, trackIdx, playing){
+  const btn=document.getElementById('prev-btn-'+diffIdx+'-'+trackIdx);
+  if(btn){
+    btn.textContent=playing?'◼':'▷';
+    btn.style.color=playing?'#ef5350':'#455a64';
+    btn.style.borderColor=playing?'#ef5350':'#2e3238';
+  }
+}
+
+let _previewAudio=null;
+let _previewGn=null;
+let _previewTimer=null;
+let _previewTrack=null;
 function mainLoop(){
   requestAnimationFrame(mainLoop);
   D.forEach(d=>d.tick());
