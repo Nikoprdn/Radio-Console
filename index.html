@@ -186,13 +186,13 @@
 <body>
 
 <!-- Modal éditeur IN/OUT -->
-<div class="wv-modal-overlay" id="wv-modal">
+<div class="wv-modal-overlay" id="wv-modal" onclick="if(event.target===this)wvModalClose()">
   <div style="background:#03050f;border:3px solid #1a3a9a;border-radius:10px;width:min(96vw,1100px);max-height:92vh;display:flex;flex-direction:column;overflow:hidden;font-family:'Share Tech Mono',monospace;box-shadow:0 0 40px rgba(0,60,255,.25)">
     <div style="display:flex;align-items:center;gap:1rem;padding:.5rem 1rem;background:#030508;border-bottom:1px solid #1e3060;flex-shrink:0">
       <span style="font-family:var(--display);font-size:13px;color:var(--cyan);letter-spacing:3px">ÉDITEUR POINTS</span>
       <span style="font-family:var(--mono);font-size:12px;color:#f5c400;flex:1" id="wv-modal-title">—</span>
       <span style="font-family:var(--mono);font-size:10px;color:var(--txt-mute)" id="wv-modal-file-dur">—</span>
-      <button onclick="wvModalClose()" style="background:transparent;border:1px solid #3a1010;color:#e03020;font-size:13px;width:26px;height:26px;border-radius:3px;cursor:pointer;line-height:1">✕</button>
+      <button onclick="wvModalClose()" style="background:transparent;border:1px solid #3a1010;color:#e03020;font-size:13px;width:26px;height:26px;border-radius:3px;cursor:pointer;line-height:1;position:relative;z-index:10;pointer-events:all">✕</button>
     </div>
     <div style="position:relative;background:#04060e;flex-shrink:0;cursor:crosshair" id="wv-modal-wrap">
       <canvas id="wv-modal-canvas" style="display:block;width:100%;height:180px"></canvas>
@@ -1449,11 +1449,14 @@ function _wvModalBindDrag(){
   const wrap=document.getElementById('wv-modal-wrap');if(!wrap||wrap._bound)return;wrap._bound=true;
   const getPos=(clientX)=>{const rect=wrap.getBoundingClientRect();return Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));};
   wrap.addEventListener('mousedown',e=>{
+    // Ne pas intercepter les clics sur les boutons (fermeture, etc.)
+    if(e.target.tagName==='BUTTON'||e.target.closest('button'))return;
     const role=e.target.dataset.role;
     if(role==='start'||role==='end'||role==='out'||role==='intro'||role==='in'){
       _wvModal.dragging=role;e.preventDefault();
     } else {
-      // Clic dans la waveform → seek
+      // Clic dans la waveform → seek uniquement si dans le wrap
+      if(!e.target.closest('#wv-modal-wrap'))return;
       const ratio=getPos(e.clientX);
       const globalR=_wvModal.viewStart+ratio*(_wvModal.viewEnd-_wvModal.viewStart);
       const sec=globalR*_wvModal.dur;
@@ -1479,8 +1482,10 @@ function _wvModalBindDrag(){
     }
     _wvModalUpdateHandles();_wvModalUpdateTC();
   });
-  document.addEventListener('mouseup',()=>{
-    if(_wvModal.dragging){_wvModal.dragging=null;if(D[_wvModal.diffIdx])D[_wvModal.diffIdx].render();}
+  document.addEventListener('mouseup',e=>{
+    if(!_wvModal.dragging)return;
+    _wvModal.dragging=null;
+    if(D[_wvModal.diffIdx])D[_wvModal.diffIdx].render();
   });
 }
 
@@ -1695,6 +1700,8 @@ window.addEventListener('online',()=>{_consecutiveErrors=0;_safeHeartbeat();_saf
 window.addEventListener('offline',()=>{if(_pollIntervalId)clearInterval(_pollIntervalId);if(_hbIntervalId)clearInterval(_hbIntervalId);});
 
 document.addEventListener('click',_unlockAudio,{once:true,passive:true});
+// Fermer le modal éditeur avec Échap
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('wv-modal').classList.contains('open'))wvModalClose();});
 // iOS AudioContext unlock
 let _aul=false;
 function _unlockAudio(){
