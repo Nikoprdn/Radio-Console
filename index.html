@@ -77,6 +77,8 @@
   .row-active-time{font-family:var(--mono);font-size:11px;color:var(--cyan-dim);position:relative;z-index:3;}
   .row-active-cues{font-family:var(--mono);font-size:8px;color:rgba(0,212,240,.6);letter-spacing:1px;position:relative;z-index:3;margin-top:2px;}
   .table.is-radio tbody tr.row-next{background:#071408;border-left:3px solid var(--green-dk);}
+  /* Prochain pas avec un point INTRO défini → bordure jaune */
+  .table.is-radio tbody tr.row-has-intro{background:#0e0e00;border-left:3px solid #8a7000!important;}
   .cell-num{width:36px;font-family:var(--mono);font-size:12px;text-align:center;}
   .cell-num.is-playing{color:var(--red)!important;}
   .cell-time{width:80px;font-family:var(--mono);font-size:11px;color:var(--cyan-dim)!important;}
@@ -709,7 +711,7 @@ class Diffuser{
       const isNext=i===nextIdx;
       const tr=document.createElement('tr');
       if(isActive||isMacroActive)tr.className='row-active';
-      else if(isNext)tr.className='row-next';
+      else if(isNext)tr.className='row-next'+(this._introOf(i)!=null&&this._introOf(i)>this._startOf(i)?' row-has-intro':'');
       tr.onclick=()=>this.jumpTo(i);
       const st=starts[i];
       const hhmm=fmt2(st.getHours())+':'+fmt2(st.getMinutes())+':'+fmt2(st.getSeconds());
@@ -747,16 +749,8 @@ class Diffuser{
           <td class="cell-wv" style="width:50px;padding:4px 6px!important;text-align:center"><button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" style="position:static;opacity:1">✎</button></td>
           <td class="cell-dur"><span class="row-active-dur">${fmtFull(this.durs[i]||0)}</span></td>
           <td class="cell-cd" style="min-width:120px;text-align:right;padding-right:12px;vertical-align:middle">
-            ${this._introOf(i)!==null?`
-              <div id="${this.ids.body}-intro-wrap-${i}">
-                <span class="intro-countdown" id="${this.ids.body}-intro-cd-${i}">${fmtFull(Math.max(0,(this._introOf(i)||0)-pos))}</span>
-                <div class="cd-sublabel" style="color:#a08000;text-align:right;font-size:8px;letter-spacing:2px">INTRO</div>
-              </div>
-              <span class="row-active-tc" id="${this.ids.body}-cd-${i}" style="line-height:1">${fmtFull(rem)}</span>
-            `:`
-              <span class="row-active-tc" id="${this.ids.body}-cd-${i}" style="line-height:1">${fmtFull(rem)}</span>
-              <div class="cd-sublabel" style="color:#7a1010;text-align:right;font-size:8px;letter-spacing:2px">OUT</div>
-            `}
+            <span class="row-active-tc" id="${this.ids.body}-cd-${i}" style="line-height:1">${fmtFull(rem)}</span>
+            <div class="cd-sublabel" id="${this.ids.body}-cd-sub-${i}" style="color:#7a1010;text-align:right;font-size:8px;letter-spacing:2px">OUT</div>
           </td>
           <td class="cell-bar"><span class="color-bar" style="background:${t.color};height:96px"></span></td>`;
         tbody.appendChild(tr);
@@ -937,41 +931,67 @@ class Diffuser{
     const tr=document.getElementById(this.ids.body)?.querySelector('tr.row-active');
     if(tr){
       tr.style.setProperty('--prog',progFull);
-      // Positions relatives dans la barre
       tr.style.setProperty('--out-pct',((outCue-startCue)/(endCue-startCue||1)*100).toFixed(1)+'%');
       tr.style.setProperty('--intro-pct',introCue!=null?((introCue-startCue)/(endCue-startCue||1)*100).toFixed(1)+'%':'0%');
-    }
 
-    // ── Décompte : INTRO d'abord, puis OUT ──
-    const cdEl=document.getElementById(this.ids.body+'-cd-'+activeIdx);
-    if(cdEl){
-      const remIntro=introCue!=null?introCue-pos:null;
-      const remOut=outCue-pos;
-      if(remIntro!=null&&remIntro>0){
-        // Phase INTRO : décompte jaune jusqu'au point INTRO
-        cdEl.textContent='⚡ '+fmtFull(remIntro);
-        cdEl.style.color='#f5c400';
-        cdEl.style.fontWeight='700';
-      } else if(remOut>0){
-        // Phase normale : décompte rouge jusqu'au OUT
-        cdEl.textContent=fmtFull(remOut);
-        cdEl.style.color='#ff4040';
-        cdEl.style.fontWeight='700';
+      // ── Couleur du pas selon la phase ──
+      const inIntroPhase = introCue!=null && introCue>startCue && pos<introCue;
+      const pastOut = pos>=outCue;
+      if(inIntroPhase){
+        tr.style.background='linear-gradient(90deg,#1a1400 0%,#0c0c00 100%)';
+        tr.style.borderLeft='4px solid #f5c400';
+        tr.style.borderTop='1px solid #6a5000';
+        tr.style.borderBottom='1px solid #6a5000';
+        tr._phase='intro';
+      } else if(pastOut){
+        tr.style.background='linear-gradient(90deg,#1a0800 0%,#0c0500 100%)';
+        tr.style.borderLeft='4px solid #f07800';
+        tr.style.borderTop='1px solid #5a2a00';
+        tr.style.borderBottom='1px solid #5a2a00';
+        tr._phase='post';
       } else {
-        // Après OUT : queue restante en orange
-        cdEl.textContent='+ '+fmtFull(-remOut);
-        cdEl.style.color='#f07800';
-        cdEl.style.fontWeight='400';
+        if(tr._phase!=='normal'){
+          tr.style.background='linear-gradient(90deg,#180303 0%,#0c0303 100%)';
+          tr.style.borderLeft='4px solid #ff2020';
+          tr.style.borderTop='1px solid #6a1010';
+          tr.style.borderBottom='1px solid #6a1010';
+          tr._phase='normal';
+        }
       }
     }
 
-    // ── Zoom waveform à 20s du OUT ──
+    // ── Décompte principal avec sublabel ──
+    const cdEl=document.getElementById(this.ids.body+'-cd-'+activeIdx);
+    const subEl=document.getElementById(this.ids.body+'-cd-sub-'+activeIdx);
+    if(cdEl){
+      const remIntro=introCue!=null?introCue-pos:null;
+      const remOut=outCue-pos;
+      const inIntroPhase2 = remIntro!=null && remIntro>0 && introCue>startCue;
+      if(inIntroPhase2){
+        cdEl.textContent='⚡ '+fmtFull(remIntro);
+        cdEl.style.color='#f5c400';
+        cdEl.style.fontWeight='700';
+        if(subEl){subEl.textContent='INTRO';subEl.style.color='#a08000';}
+      } else if(remOut>0){
+        cdEl.textContent=fmtFull(remOut);
+        cdEl.style.color='#ff4040';
+        cdEl.style.fontWeight='700';
+        if(subEl){subEl.textContent='OUT';subEl.style.color='#7a1010';}
+      } else {
+        // Après OUT : queue restante en orange jusqu'à END
+        cdEl.textContent='+ '+fmtFull(-remOut);
+        cdEl.style.color='#f07800';
+        cdEl.style.fontWeight='400';
+        if(subEl){subEl.textContent='END';subEl.style.color='#8a4000';}
+      }
+    }
+
+    // ── Zoom waveform à 20s du OUT : fenêtre -10s/+10s autour du point OUT ──
     const wvId='wv-'+this.idx+'-'+activeIdx;
     const cv=document.getElementById(wvId);
     const remToOut=outCue-pos;
     if(cv&&WV_DATA_CACHE[t.file]){
-      if(remToOut>0&&remToOut<=20){
-        // Zoom : -10s/+10s autour du OUT (relatif à fileDur)
+      if(remToOut>=0&&remToOut<=20){
         const zoomCenter=outCue/fileDur;
         const zoomHalf=10/fileDur;
         const zStart=Math.max(0,zoomCenter-zoomHalf);
@@ -1207,12 +1227,28 @@ class Diffuser{
     }
     const cdEl=document.getElementById(this.ids.body+'-cd-'+activeIdx);
     if(cdEl){
+      const introCue2=this._introOf(activeIdx);
+      const remIntro2=introCue2!=null?introCue2-pos:null;
       const rem=outCue-pos;
-      if(rem>0){cdEl.textContent=fmtFull(rem);cdEl.style.color='#ff4040';}
-      else{cdEl.textContent='+ '+fmtFull(-rem);cdEl.style.color='#f07800';}
+      const startCue2=this._startOf(activeIdx);
+      const inIntroPhase = remIntro2!=null && remIntro2>0 && introCue2>startCue2;
+      const subEl2=document.getElementById(this.ids.body+'-cd-sub-'+activeIdx);
+      if(inIntroPhase){
+        cdEl.textContent='⚡ '+fmtFull(remIntro2);
+        cdEl.style.color='#f5c400';cdEl.style.fontWeight='700';
+        if(subEl2){subEl2.textContent='INTRO';subEl2.style.color='#a08000';}
+        const tr2=document.getElementById(this.ids.body)?.querySelector('tr.row-active');
+        if(tr2&&tr2._phase!=='intro'){tr2._phase='intro';tr2.style.borderLeft='4px solid #f5c400';tr2.style.borderTopColor='#6a5000';tr2.style.borderBottomColor='#6a5000';}
+      } else if(rem>0){
+        cdEl.textContent=fmtFull(rem);cdEl.style.color='#ff4040';cdEl.style.fontWeight='700';
+        if(subEl2){subEl2.textContent='OUT';subEl2.style.color='#7a1010';}
+        const tr2=document.getElementById(this.ids.body)?.querySelector('tr.row-active');
+        if(tr2&&tr2._phase!=='normal'){tr2._phase='normal';tr2.style.borderLeft='4px solid #ff2020';tr2.style.borderTopColor='#6a1010';tr2.style.borderBottomColor='#6a1010';}
+      } else {
+        cdEl.textContent='+ '+fmtFull(-rem);cdEl.style.color='#f07800';cdEl.style.fontWeight='400';
+        if(subEl2){subEl2.textContent='END';subEl2.style.color='#8a4000';}
+      }
     }
-    const introEl=document.getElementById(this.ids.body+'-intro-cd-'+activeIdx);
-    if(introEl){const ic=this._introOf(activeIdx)||0;introEl.textContent=fmtFull(Math.max(0,ic-pos));}
     const pb=document.getElementById('c1-progress-fill');
     if(pb)pb.style.width=(progFull*100).toFixed(2)+'%';
     const micros=document.getElementById(this.ids.micros);
@@ -1544,7 +1580,7 @@ function wvModalNudge(deltaSec){if(!_wvModal.audio)return;_wvModal.audio.current
 // ═══════════════════════════════════════════════════════
 
 // ── Pré-écoute isolée ──
-// Audio séparé, gain indépendant, sans impact sur la lecture principale
+// AudioContext DÉDIÉ — aucun impact sur la lecture principale
 
 function previewPlay(diffIdx, trackIdx){
   const d=D[diffIdx];if(!d)return;
@@ -1558,16 +1594,19 @@ function previewPlay(diffIdx, trackIdx){
   a.src=t.file;
   a.currentTime=d._startOf(trackIdx);
 
-  // Brancher sur un gain séparé (AudioContext principal)
-  const ctx=getCtx();
-  if(ctx){
+  // AudioContext SÉPARÉ — jamais le ctx principal pour ne pas interférer
+  if(!_previewCtx){
+    try{_previewCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  }
+  if(_previewCtx){
+    if(_previewCtx.state==='suspended')_previewCtx.resume();
     if(!_previewGn){
-      _previewGn=ctx.createGain();
+      _previewGn=_previewCtx.createGain();
       _previewGn.gain.value=1;
-      _previewGn.connect(ctx.destination);
+      _previewGn.connect(_previewCtx.destination);
     }
     try{
-      const src=ctx.createMediaElementSource(a);
+      const src=_previewCtx.createMediaElementSource(a);
       src.connect(_previewGn);
       a._prevSrc=src;
     }catch(e){}
@@ -1612,6 +1651,7 @@ function _updatePreviewBtn(diffIdx, trackIdx, playing){
 }
 
 let _previewAudio=null;
+let _previewCtx=null;  // AudioContext DÉDIÉ pré-écoute — indépendant du ctx principal
 let _previewGn=null;
 let _previewTimer=null;
 let _previewTrack=null;
