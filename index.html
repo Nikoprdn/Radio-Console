@@ -75,9 +75,9 @@
   .table.is-radio tbody tr:hover td{background:#0e1830;}
   .table.is-radio tbody td{border-color:var(--border)!important;color:var(--txt-dim);padding:0 10px;height:56px;vertical-align:middle;white-space:nowrap;}
   .table.is-radio tbody tr.row-active{background:linear-gradient(90deg,#180303 0%,#0c0303 100%);border-left:4px solid #ff2020;border-top:1px solid #6a1010;border-bottom:1px solid #6a1010;}
-  .table.is-radio tbody tr.row-active td{height:96px;vertical-align:middle;position:relative;z-index:2;}
+  .table.is-radio tbody tr.row-active td{height:130px;vertical-align:middle;position:relative;z-index:2;}
   .table.is-radio tbody tr.row-active::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(180,10,10,.85) 0%,rgba(80,5,5,.5) 100%);z-index:0;transform-origin:left;transform:scaleX(var(--prog,0));transition:transform 0.05s linear;}
-  .row-active-wv-bg{position:absolute;inset:0;z-index:1;width:100%;height:100%;opacity:0.55;object-fit:fill;pointer-events:none;display:block;}
+  .row-active-wv-bg{position:absolute;inset:0;z-index:1;width:100%;height:100%;opacity:0.65;object-fit:fill;pointer-events:none;display:block;}
   .row-active-title{font-family:var(--display);font-size:22px;font-weight:700;color:#ffffff;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 8px rgba(0,0,0,.8);position:relative;z-index:3;}
   .row-active-tc{font-family:var(--mono);font-size:13px;color:#ff4040;letter-spacing:1px;font-weight:700;position:relative;z-index:3;}
   .row-active-dur{font-family:var(--mono);font-size:11px;color:#7a9ab8;position:relative;z-index:3;}
@@ -227,12 +227,22 @@
       <div id="wv-modal-out-ov" style="position:absolute;top:0;bottom:0;width:1px;background:#ff2020;opacity:.6;pointer-events:none"></div>
       <div id="wv-modal-ph-ov" style="position:absolute;top:0;bottom:0;width:1px;background:#f5c400;opacity:.7;pointer-events:none"></div>
     </div>
-    <div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .75rem;background:#030508;border-top:1px solid #0d1828;flex-shrink:0;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px;padding:.4rem .75rem;background:#020408;border-top:1px solid #0d1828;flex-shrink:0;flex-wrap:wrap">
+      <!-- PRÉ-ÉCOUTE -->
+      <button id="wvm-play-btn" onclick="wvModalPlayPause()" style="background:linear-gradient(180deg,#0a2a0a,#051405);border:1px solid #1a6a2a;color:#00d96a;font-family:var(--mono);font-size:13px;width:34px;height:28px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center" title="Play/Pause pré-écoute">▶</button>
+      <button onclick="wvModalStop()" style="background:transparent;border:1px solid #2a1010;color:#e03020;font-family:var(--mono);font-size:11px;width:28px;height:28px;border-radius:3px;cursor:pointer" title="Stop">■</button>
+      <button onclick="wvModalGoIn()" style="background:transparent;border:1px solid #1a3a2a;color:#66bb6a;font-family:var(--mono);font-size:9px;padding:0 7px;height:28px;border-radius:3px;cursor:pointer;letter-spacing:1px" title="Aller au START">|▶ START</button>
+      <button onclick="wvModalGoOut()" style="background:transparent;border:1px solid #2a103a;color:#a855f7;font-family:var(--mono);font-size:9px;padding:0 7px;height:28px;border-radius:3px;cursor:pointer;letter-spacing:1px" title="Aller au OUT">⊗ OUT</button>
+      <span id="wvm-pos-display" style="font-family:var(--mono);font-size:13px;color:#f5c400;letter-spacing:2px;min-width:80px;padding:0 6px;background:#0a0800;border:1px solid #2a2000;border-radius:3px;line-height:28px;text-align:center">00:00</span>
+      <div style="width:1px;height:20px;background:#1e3060;margin:0 4px"></div>
+      <!-- ZOOM -->
       <span style="font-family:var(--mono);font-size:8px;color:var(--txt-mute);letter-spacing:1px">ZOOM</span>
-      <input type="range" id="wv-modal-zoom-range" min="1" max="50" value="1" step="0.5" style="width:140px;accent-color:var(--cyan)" oninput="wvModalZoomChange(this.value)">
+      <input type="range" id="wv-modal-zoom-range" min="1" max="50" value="1" step="0.5" style="width:120px;accent-color:var(--cyan)" oninput="wvModalZoomChange(this.value)">
       <span id="wv-modal-zoom-val" style="font-family:var(--mono);font-size:9px;color:var(--cyan);min-width:36px">×1.0</span>
-      <button onclick="wvModalZoomToOut()" style="background:transparent;border:1px solid #1e3060;color:var(--txt-mute);font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px">ZOOM OUT −20s</button>
-      <button onclick="wvModalZoomFull()" style="background:transparent;border:1px solid #1e3060;color:var(--txt-mute);font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px">VUE COMPLÈTE</button>
+      <button onclick="wvModalZoomToOut()" style="background:transparent;border:1px solid #1e3060;color:var(--txt-mute);font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px">−20s OUT</button>
+      <button onclick="wvModalZoomFull()" style="background:transparent;border:1px solid #1e3060;color:var(--txt-mute);font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px">TOUT</button>
+      <button onclick="wvModalNudge(-5)" style="background:transparent;border:1px solid #1e3060;color:var(--txt-mute);font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:2px;cursor:pointer">−5s</button>
+      <button onclick="wvModalNudge(5)" style="background:transparent;border:1px solid #1e3060;color:var(--txt-mute);font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:2px;cursor:pointer">+5s</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);background:#030508;border-top:1px solid #0d1828;flex-shrink:0">
       <div style="padding:.35rem .6rem;border-right:1px solid #0d1828"><div style="font-family:var(--mono);font-size:7px;color:var(--txt-mute);letter-spacing:1px">POSITION</div><div style="font-family:var(--mono);font-size:13px;color:#f5c400;letter-spacing:1px" id="wvm-tc-pos">00:00.000</div></div>
@@ -740,37 +750,39 @@ class Diffuser{
       const delBtn=t.pinned?'':`<button onclick="event.stopPropagation();diffRemoveTrack(${this.idx},${i})" style="background:transparent;border:none;color:#3a4050;cursor:pointer;font-size:11px;padding:0 4px;line-height:1;transition:color .1s" onmouseover="this.style.color='#e03020'" onmouseout="this.style.color='#3a4050'" title="Supprimer">✕</button>`;
       const isMacro=!!t.isMacro;
       if(isActive && !isMacro){
+        // Pré-calculs intro
+        const _hasIntro=this._introOf(i)!=null&&this._introOf(i)>this._startOf(i);
+        const _introPct=_hasIntro?((this._introOf(i)/( this.durs[i]||1))*100).toFixed(1)+'%':'0%';
         tr.innerHTML=`
-          <canvas class="row-active-wv-bg" id="${wvId}-bg" width="1200" height="96"></canvas>
-          <div style="position:absolute;top:0;bottom:0;z-index:1;pointer-events:none;left:${inPct}%;width:2px;background:rgba(0,255,96,.5)"></div>
-          <div style="position:absolute;top:0;bottom:0;z-index:1;pointer-events:none;left:${outPct}%;width:2px;background:rgba(255,40,40,.5)"></div>
-          <td class="cell-num is-playing" style="width:32px">▶</td>
-          <td class="cell-time" style="width:72px"><span class="row-active-time">${hhmm}</span><span class="cell-sub" style="color:rgba(0,212,240,.5)">${sub}</span></td>
-          <td class="cell-title" style="max-width:none;flex:1;padding-left:8px!important">${delBtn}
-            <div>
-              <div style="display:flex;align-items:center;gap:6px">
-                <div class="row-active-title">${t.title}</div>
-                ${this._introOf(i)!==null?'<span class="intro-badge">⚡ INTRO</span>':''}
-              </div>
-              <div class="row-active-cues" style="display:flex;gap:8px;flex-wrap:wrap">
-                  <span style="color:#66bb6a">▶ ${fmtMs(this._startOf(i))}</span>
-                  <span style="color:#ef5350">■ ${fmtMs(this._endOf(i))}</span>
-                  ${this._introOf(i)!=null?`<span style="color:#f5c400">⚡ ${fmtMs(this._introOf(i))}</span>`:''}
-                  <span style="color:#a855f7">⊗ ${fmtMs(this._outOf(i))}</span>
-                </div>
+          <canvas class="row-active-wv-bg" id="${wvId}-bg" width="1200" height="130"></canvas>
+          <div style="position:absolute;top:0;bottom:0;z-index:2;pointer-events:none;left:${inPct}%;width:3px;background:#00ff60;box-shadow:0 0 8px #00ff60"></div>
+          <div style="position:absolute;top:0;bottom:0;z-index:2;pointer-events:none;left:${outPct}%;width:3px;background:rgba(255,40,40,.8);box-shadow:0 0 8px rgba(255,40,40,.6)"></div>
+          ${_hasIntro?`<div style="position:absolute;top:0;bottom:0;z-index:2;pointer-events:none;left:${_introPct};width:3px;background:#f5c400;box-shadow:0 0 8px #f5c400"></div>`:''}
+          <td style="width:44px;text-align:center;vertical-align:middle;position:relative;z-index:3;padding:0 4px">
+            <div style="font-family:var(--mono);font-size:22px;color:#ff4040;line-height:1">▶</div>
+            <div style="font-family:var(--mono);font-size:9px;color:rgba(0,212,240,.5);letter-spacing:1px;margin-top:2px">${hhmm.slice(0,5)}</div>
+          </td>
+          <td style="padding:0 10px 0 4px;vertical-align:middle;position:relative;z-index:3;min-width:0;flex:1">
+            <div style="font-family:var(--display);font-size:28px;font-weight:700;color:#ffffff;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:600px;text-shadow:0 2px 12px rgba(0,0,0,.9);line-height:1.1">${t.title}</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap">
+              ${delBtn}
+              <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" style="position:static;opacity:1;font-size:10px;padding:2px 8px">✎ EDIT</button>
+              <span style="font-family:var(--mono);font-size:10px;color:#66bb6a;letter-spacing:1px">▶ ${fmtMs(this._startOf(i))}</span>
+              ${_hasIntro?`<span style="font-family:var(--mono);font-size:10px;color:#f5c400;letter-spacing:1px">⚡ ${fmtMs(this._introOf(i))}</span>`:''}
+              <span style="font-family:var(--mono);font-size:10px;color:#a855f7;letter-spacing:1px">⊗ ${fmtMs(this._outOf(i))}</span>
+              <span style="font-family:var(--mono);font-size:10px;color:#ef5350;letter-spacing:1px">■ ${fmtMs(this._endOf(i))}</span>
+              <span style="font-family:var(--mono);font-size:10px;color:#4a6080;letter-spacing:1px">${fmtFull(this.durs[i]||0)}</span>
             </div>
           </td>
-          <td class="cell-wv" style="width:50px;padding:4px 6px!important;text-align:center"><button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" style="position:static;opacity:1">✎</button></td>
-          <td class="cell-dur"><span class="row-active-dur">${fmtFull(this.durs[i]||0)}</span></td>
-          <td class="cell-cd" style="min-width:120px;text-align:right;padding-right:12px;vertical-align:middle">
-            <span class="row-active-tc" id="${this.ids.body}-cd-${i}" style="line-height:1">${fmtFull(rem)}</span>
-            <div class="cd-sublabel" id="${this.ids.body}-cd-sub-${i}" style="color:#7a1010;text-align:right;font-size:8px;letter-spacing:2px">OUT</div>
+          <td style="width:180px;text-align:right;vertical-align:middle;position:relative;z-index:3;padding:0 16px 0 0">
+            <div id="${this.ids.body}-cd-${i}" style="font-family:var(--mono);font-size:48px;font-weight:700;color:#ff4040;letter-spacing:2px;line-height:1;text-shadow:0 0 20px rgba(255,64,64,.4)">${fmtFull(rem)}</div>
+            <div id="${this.ids.body}-cd-sub-${i}" style="font-family:var(--mono);font-size:11px;color:#7a1010;text-align:right;letter-spacing:3px;margin-top:4px">OUT</div>
           </td>
-          <td class="cell-bar"><span class="color-bar" style="background:${t.color};height:96px"></span></td>`;
+          <td style="width:6px;padding:0"><span style="width:6px;height:130px;display:block;background:${t.color};border-radius:0 2px 2px 0;opacity:.9"></span></td>`;
         tbody.appendChild(tr);
         const bgCv=document.getElementById(wvId+'-bg');
         if(bgCv&&this.durs[i]>0){
-          bgCv.width=1200;bgCv.height=96;
+          bgCv.width=1200;bgCv.height=130;
           if(WV_DATA_CACHE[t.file])drawWaveformBg(bgCv,WV_DATA_CACHE[t.file]);
           else drawWaveform(document.createElement('canvas'),t.file).then(()=>{
             if(WV_DATA_CACHE[t.file]&&document.getElementById(wvId+'-bg'))
@@ -964,20 +976,20 @@ class Diffuser{
       const inIntroPhase2=introCue!=null&&introCue>startCue&&pos<introCue;
       const remOut=outCue-pos;
       if(inIntroPhase2){
-        // Décompte : temps restant entre pos et INTRO
         const remIntro=introCue-pos;
         cdEl.textContent='⚡ '+fmtFull(remIntro);
-        cdEl.style.color='#f5c400';cdEl.style.fontWeight='700';cdEl.style.fontSize='22px';
+        cdEl.style.color='#f5c400';cdEl.style.fontWeight='700';cdEl.style.fontSize='48px';
+        cdEl.style.textShadow='0 0 20px rgba(245,196,0,.5)';
         if(subEl){subEl.textContent='INTRO';subEl.style.color='#a08000';}
       } else if(remOut>0){
-        // Décompte : temps restant jusqu'au OUT
         cdEl.textContent=fmtFull(remOut);
-        cdEl.style.color='#ff4040';cdEl.style.fontWeight='700';cdEl.style.fontSize='';
+        cdEl.style.color='#ff4040';cdEl.style.fontWeight='700';cdEl.style.fontSize='48px';
+        cdEl.style.textShadow='0 0 20px rgba(255,64,64,.4)';
         if(subEl){subEl.textContent='OUT';subEl.style.color='#7a1010';}
       } else {
-        // Après OUT : queue restante jusqu'à END
         cdEl.textContent='+ '+fmtFull(-remOut);
-        cdEl.style.color='#f07800';cdEl.style.fontWeight='400';cdEl.style.fontSize='';
+        cdEl.style.color='#f07800';cdEl.style.fontWeight='400';cdEl.style.fontSize='32px';
+        cdEl.style.textShadow='0 0 16px rgba(240,120,0,.3)';
         if(subEl){subEl.textContent='END';subEl.style.color='#8a4000';}
       }
     }
@@ -1333,6 +1345,14 @@ function wvModalOpen(wvId,diffIdx,trackIdx){
   if(_wvModal.audio&&_wvModal.audio!==d.audios[trackIdx]){try{_wvModal.audio.pause();}catch(e){}}
   _wvModal.audio=new Audio();_wvModal.audio.src=t.file;
   _wvModal.audio.currentTime=d._startOf(trackIdx);
+  // Router sur le ctx dédié pré-écoute (séparé du ctx principal)
+  if(!_previewCtx){try{_previewCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  if(_previewCtx&&!_wvModal.audio._wired){
+    _wvModal.audio._wired=true;
+    if(_previewCtx.state==='suspended')_previewCtx.resume();
+    if(!_previewGn){_previewGn=_previewCtx.createGain();_previewGn.gain.value=1;_previewGn.connect(_previewCtx.destination);}
+    try{const src=_previewCtx.createMediaElementSource(_wvModal.audio);src.connect(_previewGn);}catch(e){}
+  }
   document.getElementById('wv-modal-title').textContent=t.title||'—';
   document.getElementById('wv-modal-file-dur').textContent=fmtFull(dur);
   document.getElementById('wv-modal').classList.add('open');
@@ -1411,6 +1431,8 @@ function _wvModalUpdateTC(){
   const outCue=d._outOf(_wvModal.trackIdx);
   const introCue=d._introOf(_wvModal.trackIdx);
   document.getElementById('wvm-tc-pos').textContent=fmtMs3(pos);
+  const posDisp=document.getElementById('wvm-pos-display');
+  if(posDisp)posDisp.textContent=fmtMs(pos);
   document.getElementById('wvm-tc-in').textContent=fmtMs3(startCue);
   const endEl=document.getElementById('wvm-tc-end');if(endEl)endEl.textContent=fmtMs3(endCue);
   document.getElementById('wvm-tc-out').textContent=fmtMs3(outCue);
