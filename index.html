@@ -784,18 +784,17 @@ class Diffuser{
         const bgCv=document.getElementById(wvId+'-bg');
         if(bgCv&&this.durs[i]>0){
           bgCv.width=1200;bgCv.height=130;
-          // Dessin initial : vue complète — tick() prendra le relais pour le zoom live
+          // Dessin initial : vue complète START→END — tick() prend le relais pour le zoom live
+          const _s=this._startOf(i)/(this.durs[i]||1);
+          const _e=Math.min(1,this._endOf(i)/(this.durs[i]||1));
           if(WV_DATA_CACHE[t.file]){
-            const _d=D[this.idx],_i=activeIdx!==-1?activeIdx:i;
-            const _s=this._startOf(i)/( this.durs[i]||1);
-            const _e=this._endOf(i)/(this.durs[i]||1);
             drawWaveformFromData(bgCv,WV_DATA_CACHE[t.file],_s,_e);
           } else {
             drawWaveform(document.createElement('canvas'),t.file).then(()=>{
               const bgEl=document.getElementById(wvId+'-bg');
               if(WV_DATA_CACHE[t.file]&&bgEl){
                 const _s2=this._startOf(i)/(this.durs[i]||1);
-                const _e2=this._endOf(i)/(this.durs[i]||1);
+                const _e2=Math.min(1,this._endOf(i)/(this.durs[i]||1));
                 drawWaveformFromData(bgEl,WV_DATA_CACHE[t.file],_s2,_e2);
               }
             });
