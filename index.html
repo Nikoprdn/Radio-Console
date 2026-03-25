@@ -51,8 +51,8 @@
     box-shadow:0 0 6px #a855f7;
   }
   /* ── Phase INTRO : pas entièrement jaune ── */
-  .table.is-radio tbody tr.row-active.is-intro{background:linear-gradient(90deg,#1a1400,#0c0a00)!important;border-left:4px solid #f5c400!important;border-top:1px solid #6a5000!important;border-bottom:1px solid #6a5000!important;}
-  .table.is-radio tbody tr.row-active.is-intro::before{background:linear-gradient(90deg,rgba(200,160,0,.65),rgba(200,160,0,.1))!important;}
+  .table.is-radio tbody tr.row-active.is-intro{background:linear-gradient(90deg,#221800,#0f0c00)!important;border-left:5px solid #ffe000!important;border-top:1px solid #8a6500!important;border-bottom:1px solid #8a6500!important;}
+  .table.is-radio tbody tr.row-active.is-intro::before{background:linear-gradient(90deg,rgba(255,210,0,.55),rgba(255,190,0,.08))!important;}
   .table.is-radio tbody tr.row-active.is-intro .row-active-title{color:#f5e060!important;text-shadow:0 0 14px rgba(245,196,0,.5)!important;}
   .table.is-radio tbody tr.row-active.is-intro .row-active-tc{color:#f5c400!important;}
   /* ── Phase post-OUT : orange ── */
@@ -113,14 +113,22 @@
   .button.is-auto{background:transparent!important;border-color:var(--border)!important;color:var(--txt-dim)!important;transition:all .15s!important;}
   .button.is-auto.active{background:#0a2a00!important;border-color:var(--green)!important;color:var(--green)!important;}
   /* Encart flèche enchaînement */
-  .chain-cell{width:36px;text-align:center;padding:0 2px!important;}
-  .chain-box{display:inline-flex;flex-direction:column;align-items:center;gap:1px;background:#060b14;border:1px solid #1a2538;border-radius:3px;width:28px;padding:3px 0;cursor:pointer;transition:all .15s;user-select:none;}
-  .chain-box:hover{border-color:#2a4060;}
-  .chain-box.on{background:rgba(0,200,255,0.1);border-color:#00a8cc;box-shadow:0 0 5px rgba(0,200,255,0.2);}
-  .chain-box .ch-arrow{font-size:14px;line-height:1;color:#1e2a40;transition:color .15s;}
-  .chain-box.on .ch-arrow{color:#00e8ff;}
-  .chain-box .ch-lbl{font-family:var(--mono);font-size:6px;letter-spacing:1px;color:#1e2a40;transition:color .15s;}
-  .chain-box.on .ch-lbl{color:#00a8cc;}
+  /* Bouton enchaînement rectangulaire — rail droit */
+  .chain-rail{position:absolute;right:0;top:0;bottom:0;width:48px;display:flex;flex-direction:column;align-items:stretch;z-index:10;}
+  .chain-btn-wrap{flex:1;display:flex;flex-direction:column;align-items:stretch;}
+  .chain-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:#060c1a;border-left:1px solid #0d1828;cursor:pointer;
+    transition:all .15s;user-select:none;padding:4px 0;
+  }
+  .chain-btn:hover{background:#0a1428;}
+  .chain-btn.on{background:linear-gradient(180deg,#001a28,#002030);border-left-color:#00a8cc;box-shadow:inset 0 0 12px rgba(0,180,220,0.15);}
+  .chain-btn .cb-arrow{font-size:22px;line-height:1;color:#1e2a40;transition:all .15s;}
+  .chain-btn.on .cb-arrow{color:#00e8ff;text-shadow:0 0 10px rgba(0,220,255,0.6);}
+  .chain-btn .cb-lbl{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:#1e2a40;transition:color .15s;text-transform:uppercase;}
+  .chain-btn.on .cb-lbl{color:#00a8cc;}
+  /* Compat — vieille classe chain-cell masquée */
+  .chain-cell{display:none!important;}
   .tag{font-family:var(--mono)!important;font-size:10px!important;letter-spacing:1px!important;border-radius:2px!important;}
 
   /* Drop zone */
@@ -175,6 +183,18 @@
 
   /* ── Voyants ON AIR ── */
   .onair-badge-wrap{display:flex;gap:12px;padding:8px 14px;background:#06080f;border-top:1px solid #0d1828;}
+  /* ─── Blocs départs ─── */
+  .depart-block{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 10px;border-radius:6px;border:1px solid #1e2a40;background:#08090f;transition:all .2s;min-width:60px;}
+  .depart-block.on-air{border-color:#cc0000;background:#130000;box-shadow:0 0 12px rgba(200,0,0,0.2);}
+  .dep-header{display:flex;align-items:center;gap:5px;}
+  .dep-dot{width:8px;height:8px;border-radius:50%;background:#1e2a40;flex-shrink:0;transition:all .2s;}
+  .depart-block.on-air .dep-dot{background:#ff0000;box-shadow:0 0 6px #ff0000;animation:live-pulse .8s ease-in-out infinite;}
+  .dep-name{font-family:var(--mono);font-size:10px;letter-spacing:2px;font-weight:700;color:#2a3a50;}
+  .depart-block.on-air .dep-name{color:#ff2020;}
+  .dep-state{font-family:var(--mono);font-size:8px;letter-spacing:1px;color:#1e2a40;}
+  .depart-block.on-air .dep-state{color:#cc0000;}
+  /* VU canvas vertical */
+  .dep-vu{width:18px;height:60px;display:block;border-radius:3px;background:#04060e;border:1px solid #0d1828;}
   .onair-badge{display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:6px;border:1px solid #1e2a40;background:#0a0e18;transition:all .2s;}
   .onair-badge.on-air{border-color:#cc0000;background:#1a0000;}
   .onair-badge.off-air{border-color:#1e2a40;background:#0a0e18;}
@@ -315,7 +335,7 @@
       <span class="fdz-count" id="fdz1-count">Aucun fichier</span>
     </div>
   </div>
-  <div class="card-content" ondragover="event.preventDefault();document.getElementById('fdz1').classList.add('drag-over')" ondragleave="document.getElementById('fdz1').classList.remove('drag-over')" ondrop="handleDrop(event,0)">
+  <div class="card-content" style="position:relative;padding-right:48px" ondragover="event.preventDefault();document.getElementById('fdz1').classList.add('drag-over')" ondragleave="document.getElementById('fdz1').classList.remove('drag-over')" ondrop="handleDrop(event,0)">
     <table class="table is-radio is-fullwidth is-narrow">
       <thead><tr>
         <th style="width:36px">#</th>
@@ -324,11 +344,14 @@
         <th>Waveform · IN / OUT</th>
         <th style="width:64px;text-align:right">Durée</th>
         <th style="width:84px;text-align:right;padding-right:10px">Décompte</th>
-        <th class="chain-cell" style="color:#1e2a40;font-size:10px">↓</th>
         <th style="width:5px"></th>
       </tr></thead>
       <tbody id="c1-body"></tbody>
     </table>
+    <!-- Rail enchaînement — rectangle à droite -->
+    <div class="chain-rail" id="chain-rail-0">
+      <div class="chain-btn-wrap" id="chain-rail-rows-0"></div>
+    </div>
   </div>
   <div class="card-footer">
     <span class="card-footer-item">Durée écoulée&nbsp;<strong id="c1-micros" style="color:#f07800;font-family:var(--mono)">00:00</strong></span>
@@ -339,17 +362,49 @@
     <div class="vu-strip-bar" style="background:#f5c400"></div><div class="vu-strip-bar" style="background:#f5c400"></div><div class="vu-strip-bar" style="background:#f5c400"></div>
     <div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div>
   </div>
-  <!-- Voyants ON AIR -->
-  <div class="onair-badge-wrap">
-    <div class="onair-badge off-air" id="badge-diffa">
+  <!-- Voyants ON AIR + Départs -->
+  <div class="onair-badge-wrap" style="flex-wrap:wrap;gap:8px;padding:10px 14px">
+    <!-- Badge DIFF A global -->
+    <div class="onair-badge off-air" id="badge-diffa" style="flex-shrink:0">
       <div class="onair-dot"></div>
       <span class="onair-label">DIFF A</span>
       <span class="onair-state" id="badge-diffa-state">OFF AIR</span>
     </div>
-    <div class="onair-badge off-air" id="badge-diffa-ext">
+    <div class="onair-badge off-air" id="badge-diffa-ext" style="display:none">
       <div class="onair-dot"></div>
       <span class="onair-label">DIFF A EXT</span>
       <span class="onair-state" id="badge-diffa-ext-state">OFF AIR</span>
+    </div>
+    <div style="flex:1"></div>
+    <!-- ═══ 3 DÉPARTS ═══ -->
+    <div style="display:flex;gap:8px;align-items:stretch">
+      <!-- SAT -->
+      <div class="depart-block off-air" id="dep-sat">
+        <div class="dep-header">
+          <div class="dep-dot" id="dep-sat-dot"></div>
+          <span class="dep-name">SAT</span>
+          <span class="dep-state" id="dep-sat-state">OFF AIR</span>
+        </div>
+        <canvas class="dep-vu" id="vu-sat" width="6" height="60" title="VU SAT"></canvas>
+      </div>
+      <!-- IDF -->
+      <div class="depart-block off-air" id="dep-idf">
+        <div class="dep-header">
+          <div class="dep-dot" id="dep-idf-dot"></div>
+          <span class="dep-name">IDF</span>
+          <span class="dep-state" id="dep-idf-state">OFF AIR</span>
+        </div>
+        <canvas class="dep-vu" id="vu-idf" width="6" height="60" title="VU IDF"></canvas>
+      </div>
+      <!-- DAB+ -->
+      <div class="depart-block off-air" id="dep-dab">
+        <div class="dep-header">
+          <div class="dep-dot" id="dep-dab-dot"></div>
+          <span class="dep-name">DAB+</span>
+          <span class="dep-state" id="dep-dab-state">OFF AIR</span>
+        </div>
+        <canvas class="dep-vu" id="vu-dab" width="6" height="60" title="VU DAB+"></canvas>
+      </div>
     </div>
   </div>
 </div>
@@ -782,7 +837,7 @@ class Diffuser{
               ${delBtn}
               <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" style="position:static;opacity:1;font-size:10px;padding:2px 8px">✎ EDIT</button>
               <span style="font-family:var(--mono);font-size:10px;color:#66bb6a;letter-spacing:1px">▶ ${fmtMs(this._startOf(i))}</span>
-              ${_hasIntro?`<span style="font-family:var(--mono);font-size:10px;color:#f5c400;letter-spacing:1px">⚡ ${fmtMs(this._introOf(i))}</span>`:''}
+              ${_hasIntro?`<span style="font-family:var(--mono);font-size:10px;color:#f5c400;letter-spacing:1px">INTRO ${fmtMs(this._introOf(i))}</span>`:''}
               <span style="font-family:var(--mono);font-size:10px;color:#a855f7;letter-spacing:1px">⊗ ${fmtMs(this._outOf(i))}</span>
               <span style="font-family:var(--mono);font-size:10px;color:#ef5350;letter-spacing:1px">■ ${fmtMs(this._endOf(i))}</span>
               <span style="font-family:var(--mono);font-size:10px;color:#4a6080;letter-spacing:1px">${fmtFull(this.durs[i]||0)}</span>
@@ -801,14 +856,19 @@ class Diffuser{
           // Dessin initial : vue complète START→END — tick() prend le relais pour le zoom live
           const _s=this._startOf(i)/(this.durs[i]||1);
           const _e=Math.min(1,this._endOf(i)/(this.durs[i]||1));
+          // Zoom initial : START→INTRO si intro existe, sinon plein
+          const _hasIntroInit=this._introOf(i)!=null&&this._introOf(i)>this._startOf(i);
+          const _si=_hasIntroInit?_s:_s;
+          const _ei=_hasIntroInit?Math.min(1,this._introOf(i)/(this.durs[i]||1)):_e;
           if(WV_DATA_CACHE[t.file]){
-            drawWaveformFromData(bgCv,WV_DATA_CACHE[t.file],_s,_e);
+            drawWaveformFromData(bgCv,WV_DATA_CACHE[t.file],_si,_ei);
           } else {
             drawWaveform(document.createElement('canvas'),t.file).then(()=>{
               const bgEl=document.getElementById(wvId+'-bg');
               if(WV_DATA_CACHE[t.file]&&bgEl){
+                const _hasI2=this._introOf(i)!=null&&this._introOf(i)>this._startOf(i);
                 const _s2=this._startOf(i)/(this.durs[i]||1);
-                const _e2=Math.min(1,this._endOf(i)/(this.durs[i]||1));
+                const _e2=_hasI2?Math.min(1,this._introOf(i)/(this.durs[i]||1)):Math.min(1,this._endOf(i)/(this.durs[i]||1));
                 drawWaveformFromData(bgEl,WV_DATA_CACHE[t.file],_s2,_e2);
               }
             });
@@ -900,6 +960,7 @@ class Diffuser{
         this._bindHandles(wvId,i);
       }
     });
+    renderChainRail(this.idx);
     document.getElementById(this.ids.counter).textContent=this.tracks.length?`${this.ci+1}/${this.tracks.length}`:'0/0';
     let tot=0;this.tracks.forEach((_,i)=>tot+=this._playDur(i));
     document.getElementById(this.ids.total).textContent=fmtFull(tot);
@@ -1009,7 +1070,7 @@ class Diffuser{
       const remOut=outCue-pos;
       if(inIntroPhase2){
         const remIntro=introCue-pos;
-        cdEl.textContent='⚡ '+fmtFull(remIntro);
+        cdEl.textContent=fmtFull(remIntro);
         cdEl.style.color='#f5c400';cdEl.style.fontWeight='700';cdEl.style.fontSize='48px';
         cdEl.style.textShadow='0 0 20px rgba(245,196,0,.5)';
         if(subEl){subEl.textContent='INTRO';subEl.style.color='#a08000';}
@@ -1066,7 +1127,12 @@ class Diffuser{
         // Zone START→INTRO : fond jaune translucide
         if(introCue!=null&&introCue>startCue){
           const x0=Math.max(0,toX(startCue)),x1=Math.min(W,toX(introCue));
-          ctx2.fillStyle='rgba(245,196,0,0.13)';ctx2.fillRect(x0,0,x1-x0,H);
+          // Barre intro : jaune vif et visible
+          ctx2.fillStyle='rgba(255,210,0,0.28)';ctx2.fillRect(x0,0,x1-x0,H);
+          // Dégradé jaune plus intense sur le bord gauche
+          const grd=bgCvLive.getContext('2d').createLinearGradient(x0,0,x1,0);
+          grd.addColorStop(0,'rgba(255,220,0,0.45)');grd.addColorStop(1,'rgba(255,200,0,0.05)');
+          ctx2.fillStyle=grd;ctx2.fillRect(x0,0,x1-x0,H);
         }
         // START
         ctx2.fillStyle='rgba(0,200,255,.75)';ctx2.fillRect(toX(startCue)-1,0,3,H);
@@ -1359,7 +1425,7 @@ class Diffuser{
       const tr2=document.getElementById(this.ids.body)?.querySelector('tr.row-active');
       if(inIntroPhase){
         const remIntroDisp=introCue2-pos;
-        cdEl.textContent='⚡ '+fmtFull(remIntroDisp);cdEl.style.color='#f5c400';cdEl.style.fontWeight='700';
+        cdEl.textContent=fmtFull(remIntroDisp);cdEl.style.color='#f5c400';cdEl.style.fontWeight='700';
         if(subEl2){subEl2.textContent='INTRO';subEl2.style.color='#a08000';}
         if(tr2){tr2.classList.add('is-intro');tr2.classList.remove('is-post');}
       } else if(rem>0){
@@ -1409,6 +1475,25 @@ function handleDrop(e,diffIdx){
   const files=Array.from((e.dataTransfer&&e.dataTransfer.files)||[]);
   handleFiles(files,diffIdx);
 }
+function renderChainRail(diffIdx){
+  const d=D[diffIdx];if(!d)return;
+  const rail=document.getElementById('chain-rail-rows-'+diffIdx);if(!rail)return;
+  rail.innerHTML='';
+  d.tracks.forEach((t,i)=>{
+    if(t.isMacro){
+      const div=document.createElement('div');
+      div.style.cssText='flex:1;border-left:1px solid #0d1828;background:#06080e;';
+      rail.appendChild(div);return;
+    }
+    const on=!!(t.chain||d.auto);
+    const div=document.createElement('div');
+    div.className='chain-btn'+(on?' on':'');
+    div.title=on?'Désactiver enchaînement':'Activer enchaînement';
+    div.innerHTML=`<span class="cb-arrow">${on?'↓':'·'}</span><span class="cb-lbl">${on?'ON':'–'}</span>`;
+    div.onclick=()=>toggleChain(diffIdx,i);
+    rail.appendChild(div);
+  });
+}
 function toggleChain(diffIdx,trackIdx){
   const d=D[diffIdx];if(!d)return;
   const t=d.tracks[trackIdx];if(!t||t.isMacro)return;
@@ -1448,14 +1533,70 @@ function wireAudioToDiff(el,diffIdx){
 }
 function paintStripFromVU(){
   if(!vu0)return;
-  const el=document.getElementById('vu-strip-d0');if(!el)return;
-  const bars=el.querySelectorAll('.vu-strip-bar');if(!bars.length)return;
-  const data=new Float32Array(vu0.aL.fftSize);vu0.aL.getFloatTimeDomainData(data);
-  let s=0;for(const v of data)s+=v*v;
-  const rms=Math.sqrt(s/data.length);
-  const db=rms>0?Math.max(-60,20*Math.log10(rms)):-60;
-  const active=Math.round(((db+60)/60)*bars.length);
-  bars.forEach((b,i)=>b.style.opacity=i<active?'1':'0.08');
+  // VU strip latéral (original)
+  const el=document.getElementById('vu-strip-d0');if(el){
+    const bars=el.querySelectorAll('.vu-strip-bar');
+    if(bars.length){
+      const data=new Float32Array(vu0.aL.fftSize);vu0.aL.getFloatTimeDomainData(data);
+      let s=0;for(const v of data)s+=v*v;
+      const rms=Math.sqrt(s/data.length);
+      const db=rms>0?Math.max(-60,20*Math.log10(rms)):-60;
+      const active=Math.round(((db+60)/60)*bars.length);
+      bars.forEach((b,i)=>b.style.opacity=i<active?'1':'0.08');
+    }
+  }
+  // VU canvas par départ (SAT / IDF / DAB+) — même signal, DIFF A est sur les 3
+  _paintDepVU('vu-sat');
+  _paintDepVU('vu-idf');
+  _paintDepVU('vu-dab');
+  // Mise à jour états ON AIR départs
+  const isPlaying=D[0]&&D[0].playing;
+  ['sat','idf','dab'].forEach(dep=>{
+    const blk=document.getElementById('dep-'+dep);
+    const dot=document.getElementById('dep-'+dep+'-dot');
+    const st=document.getElementById('dep-'+dep+'-state');
+    if(blk) blk.className='depart-block '+(isPlaying?'on-air':'off-air');
+    if(st) st.textContent=isPlaying?'ON AIR':'OFF AIR';
+  });
+}
+
+function _paintDepVU(canvasId){
+  if(!vu0)return;
+  const cv=document.getElementById(canvasId);if(!cv)return;
+  const W=cv.width,H=cv.height;
+  const ctx=cv.getContext('2d');
+  // Récupérer RMS gauche + droite
+  const dL=new Float32Array(vu0.aL.fftSize);vu0.aL.getFloatTimeDomainData(dL);
+  const dR=new Float32Array(vu0.aR.fftSize);vu0.aR.getFloatTimeDomainData(dR);
+  const rmsOf=(d)=>{let s=0;for(const v of d)s+=v*v;return Math.sqrt(s/d.length);};
+  const dbL=Math.max(-60,vu0.aL?20*Math.log10(Math.max(rmsOf(dL),1e-6)):-60);
+  const dbR=Math.max(-60,vu0.aR?20*Math.log10(Math.max(rmsOf(dR),1e-6)):-60);
+  const pctL=Math.max(0,Math.min(1,(dbL+60)/60));
+  const pctR=Math.max(0,Math.min(1,(dbR+60)/60));
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#04060e';ctx.fillRect(0,0,W,H);
+  // Barre Gauche (demi-gauche)
+  const hw=Math.floor(W/2)-1;
+  _drawVuBar(ctx,0,H,hw,pctL);
+  _drawVuBar(ctx,hw+2,H,hw,pctR);
+}
+function _drawVuBar(ctx,x,H,w,pct){
+  const barH=Math.round(H*pct);
+  const y0=H-barH;
+  // Zone verte
+  const greenH=Math.round(H*0.6),yellowH=Math.round(H*0.25),redH=H-greenH-yellowH;
+  // fond sombre
+  ctx.fillStyle='#08100a';ctx.fillRect(x,0,w,H);
+  if(barH<=0)return;
+  // Couleur par zone
+  if(y0<H-redH){// touche la zone rouge
+    ctx.fillStyle='#cc2020';ctx.fillRect(x,Math.max(y0,0),w,Math.min(barH,redH-(H-barH<0?0:0)));
+  }
+  const grd=ctx.createLinearGradient(0,H,0,0);
+  grd.addColorStop(0,'#00d96a');grd.addColorStop(0.6,'#00d96a');
+  grd.addColorStop(0.85,'#f5c400');grd.addColorStop(1,'#e03020');
+  ctx.fillStyle=grd;
+  ctx.fillRect(x,H-barH,w,barH);
 }
 
 // ═══════════════════════════════════════════════════════
