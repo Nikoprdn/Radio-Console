@@ -314,7 +314,7 @@
         <th>Waveform · IN / OUT</th>
         <th style="width:64px;text-align:right">Durée</th>
         <th style="width:84px;text-align:right;padding-right:10px">Décompte</th>
-        <th style="width:32px;text-align:center;color:#1e2a40;font-size:9px">▶▶</th>
+        <th style="width:36px;text-align:center;color:#1e2a40;font-size:10px">↓</th>
         <th style="width:5px"></th>
       </tr></thead>
       <tbody id="c1-body"></tbody>
@@ -813,7 +813,7 @@ class Diffuser{
             <div style="font-family:var(--display);font-size:20px;font-weight:700;color:#f5c400;letter-spacing:3px">${t.title}</div>
             <div style="font-family:var(--mono);font-size:9px;color:#7a6000;letter-spacing:2px;margin-top:2px">EN COURS D'EXÉCUTION…</div>
           </td>
-          <td style="width:32px"></td>
+          <td style="width:36px"></td>
           <td class="cell-bar"><span class="color-bar" style="background:#f5c400;height:56px"></span></td>`;
         tbody.appendChild(tr);
       } else if(isMacro){
@@ -830,7 +830,7 @@ class Diffuser{
             </div>
           </td>
           <td class="cell-cd" style="color:#6a5000;font-family:var(--mono);font-size:10px;text-align:right;padding-right:10px">ACTION</td>
-          <td style="width:32px"></td>
+          <td style="width:36px"></td>
           <td class="cell-bar"><span class="color-bar" style="background:#3a2a00"></span></td>`;
         tbody.appendChild(tr);
       } else {
@@ -872,13 +872,19 @@ class Diffuser{
             <div style="font-family:var(--mono);font-size:12px;color:${isNext?'var(--green)':'#4a6080'};letter-spacing:1px">${fmtFull(this._playDur(i))}</div>
             <button id="prev-btn-${this.idx}-${i}" onclick="event.stopPropagation();previewPlay(${this.idx},${i})" style="background:transparent;border:1px solid #2e3238;color:#455a64;font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:2px;cursor:pointer;margin-top:2px;width:100%;transition:all .15s" title="Pré-écoute">▷</button>
           </td>
-          <td style="width:32px;text-align:center;vertical-align:middle;padding:0 4px">
-            <button id="chain-btn-${this.idx}-${i}" onclick="event.stopPropagation();toggleChain(${this.idx},${i})"
-              title="Enchaîner avec le suivant"
-              style="background:${t.chain?'rgba(0,200,255,0.12)':'transparent'};border:1px solid ${t.chain?'#00c8ff':'#1e2a40'};color:${t.chain?'#00c8ff':'#2a3a50'};font-family:var(--mono);font-size:14px;width:26px;height:26px;border-radius:3px;cursor:pointer;line-height:1;transition:all .15s;display:flex;align-items:center;justify-content:center"
-              onmouseover="this.style.borderColor='#00c8ff';this.style.color='#00c8ff'"
-              onmouseout="if(!this.classList.contains('chain-on')){this.style.borderColor=${t.chain?"'#00c8ff'":"'#1e2a40'"};this.style.color=${t.chain?"'#00c8ff'":"'#2a3a50'"};}"
-            >${t.chain?'▶▶':'▶▶'}</button>
+          <td style="width:36px;text-align:center;vertical-align:middle;padding:0 3px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+              <button id="chain-btn-${this.idx}-${i}" onclick="event.stopPropagation();toggleChain(${this.idx},${i})"
+                title="${t.chain?'Désactiver enchaînement':'Activer enchaînement'}"
+                style="background:${t.chain?'rgba(0,200,255,0.15)':'rgba(10,16,30,0.8)'};
+                       border:1px solid ${t.chain?'#00c8ff':'#1e2a40'};
+                       color:${t.chain?'#00e8ff':'#2a3a50'};
+                       font-size:16px;width:28px;height:32px;border-radius:4px;cursor:pointer;
+                       line-height:1;transition:all .15s;display:flex;align-items:center;
+                       justify-content:center;box-shadow:${t.chain?'0 0 8px rgba(0,200,255,0.3)':'none'}"
+              >↓</button>
+              <span style="font-family:var(--mono);font-size:7px;letter-spacing:1px;color:${t.chain?'#00c8ff':'#1e2a40'}">${t.chain?'ON':'OFF'}</span>
+            </div>
           </td>
           <td class="cell-bar"><span style="width:4px;height:56px;display:block;background:${t.color};border-radius:2px;opacity:.8"></span></td>`;
         tbody.appendChild(tr);
@@ -1026,19 +1032,19 @@ class Diffuser{
 
     if(bgCvLive&&data){
       const inIntroZoom=introCue!=null&&introCue>startCue&&pos<introCue;
-      const inOutZoom=remToOut>=0&&remToOut<=20;
+      const inOutZoom=remToOut>=-20&&remToOut<=20; // ±20s autour du OUT
 
       let zStart,zEnd,zoneLabel;
       if(inIntroZoom){
         // Zoom sur la fenêtre START→INTRO (+5% de marge de chaque côté)
-        const margin=(introCue-startCue)*0.05/fileDur;
+        const margin=Math.max((introCue-startCue)*0.05,0.5)/fileDur;
         zStart=Math.max(0,startCue/fileDur-margin);
         zEnd=Math.min(1,introCue/fileDur+margin);
         zoneLabel='intro';
       } else if(inOutZoom){
-        // Zoom sur OUT ±10s
-        zStart=Math.max(0,(outCue-10)/fileDur);
-        zEnd=Math.min(1,(outCue+10)/fileDur);
+        // Zoom sur OUT ±20s
+        zStart=Math.max(0,(outCue-20)/fileDur);
+        zEnd=Math.min(1,(outCue+20)/fileDur);
         zoneLabel='out';
       } else {
         // Vue complète START→END
@@ -1126,21 +1132,20 @@ class Diffuser{
     let _chained=false;
     let _ended=false;
 
-    // ── Surveille le point OUT (enchaînement) en RAF ──
+    // ── Surveille le point OUT : le son continue jusqu'à END, on lance le suivant ──
     const _watchOut=()=>{
       if(myToken!==this._playToken||!this.playing||audio.paused)return;
-      const currentOut=this._outOf(i); // relu live → modifiable pendant lecture
+      const currentOut=this._outOf(i);
       if(audio.currentTime>=currentOut&&!_chained){
         _chained=true;
-        // Lancer le suivant — _pendingChain sera posé par _doRemove
-        // On pré-autorise ici si la piste a chain:true ou auto
-        this._pendingChain = !!(t.chain || this.auto);
-        if(!this._stopAfterMacro&&this.tracks.length>1) this._startNextInQueue();
-        // Programmer la suppression à endCue (le son continue jusqu'à END)
-        const remainToEnd=Math.max(0,(endCue-currentOut))*1000;
-        this._removeTimer=setTimeout(()=>{
-          _doRemove();
-        }, remainToEnd+100);
+        // Programmer le lancement du suivant (si chain/auto) et la suppression
+        const remainToEnd=Math.max(0,(endCue-audio.currentTime))*1000;
+        // Lancer le suivant MAINTENANT si chain actif — il joue en parallèle
+        if(!this._stopAfterMacro && (t.chain||this.auto) && this.tracks.length>1){
+          this._launchNext();
+        }
+        // Supprimer cette piste quand elle atteint END
+        this._removeTimer=setTimeout(()=>{ _doRemove(false); }, remainToEnd+100);
       } else {
         this._outTimer=requestAnimationFrame(_watchOut);
       }
@@ -1153,26 +1158,26 @@ class Diffuser{
         _ended=true;
         audio.onended=null;
         if(!audio.paused)audio.pause();
-        _doRemove();
+        _doRemove(true); // fin naturelle → enchaîner si chain/auto
       } else {
         requestAnimationFrame(_watchEnd);
       }
     };
 
-    const _doRemove=()=>{
+    const _doRemove=(tryChain)=>{
       if(this._outTimer){cancelAnimationFrame(this._outTimer);this._outTimer=null;}
       if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
       audio.onended=null;
       if(!audio.paused)audio.pause();
-      // Mémoriser si la piste qui se termine autorisait l'enchaînement
-      this._pendingChain = !!(t.chain || this.auto);
+      const shouldChain = tryChain && !this._stopAfterMacro && (t.chain||this.auto);
       const idx=this.tracks.indexOf(t);
       if(idx!==-1){
         if(t.file?.startsWith('blob:'))URL.revokeObjectURL(t.file);
         this.tracks.splice(idx,1);this.durs.splice(idx,1);this.audios.splice(idx,1);
       }
       this.ci=0;this._updateFdzCount();
-      if(!this.tracks.length)this.playing=false;
+      if(!this.tracks.length){ this.playing=false; }
+      else if(shouldChain){ this._launchNext(); }
       this.render();
     };
 
@@ -1181,7 +1186,7 @@ class Diffuser{
       audio.onended=null;
       if(this._outTimer){cancelAnimationFrame(this._outTimer);this._outTimer=null;}
       if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-      _doRemove();
+      _doRemove(true);
     };
 
     // Démarrer
@@ -1199,19 +1204,17 @@ class Diffuser{
     });
   }
 
-  _startNextInQueue(){
+  _launchNext(){
+    // Appelé APRÈS suppression de la piste courante — tracks[0] est déjà la suivante
     if(!this.playing||!this.tracks.length) return;
     const t=this.tracks[0];
-    if(t.isMacro){this._startTrack(0);return;}
+    if(t.isMacro){ this._startTrack(0); return; }
     const a=this.audios[0];
     if(!a) return;
-    // Enchaîner seulement si la piste PRÉCÉDENTE avait chain:true
-    // (la piste courante vient d'être supprimée, tracks[0] est la suivante)
-    // On passe le flag via _pendingChain posé avant la suppression
-    if(!this._pendingChain) return;
-    this._pendingChain=false;
     if(a.paused) this._startTrack(0);
   }
+  // Compat alias
+  _startNextInQueue(){ this._launchNext(); }
 
   _updateFdzCount(){
     const cfg=CONFIGS[this.idx];if(!cfg)return;
