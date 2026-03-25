@@ -1135,27 +1135,20 @@ class Diffuser{
 
     let _outPassed=false;
 
-    // Suppression silencieuse à END (sans enchaîner — déjà fait au OUT)
-    const _silentRemove=()=>{
-      if(this._rafId){cancelAnimationFrame(this._rafId);this._rafId=null;}
-      if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-      audio.onended=null;
-      if(!audio.paused) audio.pause();
-      const idx=this.tracks.indexOf(t);
-      if(idx!==-1){
-        if(t.file?.startsWith('blob:')) URL.revokeObjectURL(t.file);
-        this.tracks.splice(idx,1); this.durs.splice(idx,1); this.audios.splice(idx,1);
+    // ── Nettoyage de la queue tail (si une ancienne piste finit en arrière-plan) ──
+    const _clearTail=()=>{
+      if(this._tailAudio){
+        this._tailAudio.onended=null;
+        if(!this._tailAudio.paused) this._tailAudio.pause();
+        this._tailAudio=null;
       }
-      this._updateFdzCount();
-      if(!this.tracks.length) this.playing=false;
-      this.render();
+      if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
     };
 
-    // Suppression + enchaînement (appelé si pas de chain, ou à END sans enchaînement préalable)
-    const _doRemove=(shouldChain)=>{
+    // ── Arrêt complet sans enchaînement ──
+    const _doStop=()=>{
       if(this._rafId){cancelAnimationFrame(this._rafId);this._rafId=null;}
-      if(this._outTimer){cancelAnimationFrame(this._outTimer);this._outTimer=null;}
-      if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
+      _clearTail();
       audio.onended=null;
       if(!audio.paused) audio.pause();
       const idx=this.tracks.indexOf(t);
@@ -1164,13 +1157,7 @@ class Diffuser{
         this.tracks.splice(idx,1); this.durs.splice(idx,1); this.audios.splice(idx,1);
       }
       this.ci=0; this._updateFdzCount();
-      if(!this.tracks.length){
-        this.playing=false;
-      } else if(shouldChain){
-        const nx=this.tracks[0];
-        if(nx.isMacro){ this._startTrack(0); }
-        else { const a=this.audios[0]; if(a&&a.paused) this._startTrack(0); }
-      }
+      if(!this.tracks.length) this.playing=false;
       this.render();
     };
 
@@ -1180,33 +1167,52 @@ class Diffuser{
       const curOut=this._outOf(i);
       const curEnd=this._endOf(i);
 
-      // ── POINT OUT ── enchaîner MAINTENANT
+      // ── POINT OUT ── action immédiate
       if(!_outPassed && pos>=curOut){
         _outPassed=true;
 
         if(!this._stopAfterMacro && (t.chain||this.auto) && this.tracks.length>1){
-          // Enchaîner immédiatement — le son actuel continue jusqu'à END en arrière-plan
-          const nx=this.tracks[1]; // piste suivante (indice 1 car piste actuelle est encore à 0)
-          if(nx&&!nx.isMacro){ const a=this.audios[1]; if(a&&a.paused) this._startTrack(1); }
-          else if(nx&&nx.isMacro){ this._startTrack(1); }
-          // Programmer la suppression silencieuse de CETTE piste à END
+          // ── ENCHAÎNEMENT ──
+          // 1. Extraire la piste courante de tracks[] MAINTENANT
+          //    → render() verra immédiatement la piste suivante comme active
+          const idx=this.tracks.indexOf(t);
+          if(idx!==-1){
+            this.tracks.splice(idx,1); this.durs.splice(idx,1); this.audios.splice(idx,1);
+          }
+          this._updateFdzCount();
+          // 2. Le son continue en tant que _tailAudio jusqu'à END
+          _clearTail();
+          this._tailAudio=audio;
           const msToEnd=Math.max(0,(curEnd-pos)*1000);
+          audio.onended=()=>{ this._tailAudio=null; };
           this._removeTimer=setTimeout(()=>{
-            if(myToken!==this._playToken) return;
-            _silentRemove();
+            if(this._tailAudio===audio){
+              audio.onended=null;
+              if(!audio.paused) audio.pause();
+              if(t.file?.startsWith('blob:')) URL.revokeObjectURL(t.file);
+              this._tailAudio=null;
+            }
           }, msToEnd+80);
-          return; // RAF arrêtée, setTimeout prend le relais
+          // 3. Lancer la piste suivante (maintenant à l'indice 0)
+          this.ci=0;
+          const nx=this.tracks[0];
+          if(nx){
+            if(nx.isMacro){ this._startTrack(0); }
+            else { const a=this.audios[0]; if(a&&a.paused) this._startTrack(0); }
+          }
+          // 4. Render immédiat → la piste suivante s'affiche en rouge/active
+          this.render();
+          return; // RAF de cette piste arrêtée
+
         } else {
-          // Pas d'enchaînement : continuer jusqu'à END puis s'arrêter
-          // (la boucle continue)
+          // Pas d'enchaînement → continuer jusqu'à END
         }
       }
 
-      // ── POINT END ── arrêt
+      // ── POINT END ── arrêt normal (pas d'enchaînement)
       if(pos>=curEnd){
         if(!audio.paused) audio.pause();
-        // Si on arrive ici sans être passé par OUT+chain, c'est qu'il n'y avait pas d'enchaînement
-        _doRemove(false);
+        _doStop();
         return;
       }
 
@@ -1217,13 +1223,7 @@ class Diffuser{
     audio.onended=()=>{
       if(myToken!==this._playToken) return;
       audio.onended=null;
-      if(_outPassed){
-        // Déjà enchaîné au OUT → suppression silencieuse
-        _silentRemove();
-      } else {
-        // Fin naturelle sans avoir atteint OUT (fichier court ?)
-        _doRemove(!this._stopAfterMacro && (t.chain||this.auto) && this.tracks.length>1);
-      }
+      _doStop();
     };
 
     this._rafId=requestAnimationFrame(_loop);
@@ -1266,6 +1266,7 @@ class Diffuser{
       if(this._rafId){cancelAnimationFrame(this._rafId);this._rafId=null;}
       if(this._outTimer){cancelAnimationFrame(this._outTimer);clearTimeout(this._outTimer);this._outTimer=null;}
       if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
+      if(this._tailAudio){this._tailAudio.onended=null;if(!this._tailAudio.paused)this._tailAudio.pause();this._tailAudio=null;}
       this.audios.forEach(a=>{if(a){a.onended=null;if(!a.paused)a.pause();}});
       this._stopAfterMacro=false;
       this.playing=false;this.render();
@@ -1277,6 +1278,7 @@ class Diffuser{
     if(this._rafId){cancelAnimationFrame(this._rafId);this._rafId=null;}
     if(this._outTimer){cancelAnimationFrame(this._outTimer);clearTimeout(this._outTimer);this._outTimer=null;}
     if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
+    if(this._tailAudio){this._tailAudio.onended=null;if(!this._tailAudio.paused)this._tailAudio.pause();this._tailAudio=null;}
     this.audios.forEach(a=>{if(a){a.onended=null;if(!a.paused)a.pause();a.currentTime=0;}});
     this._stopAfterMacro=false;
     this.playing=false;this.ci=0;this._chainDone.clear();
