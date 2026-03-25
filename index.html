@@ -113,20 +113,24 @@
   .button.is-auto{background:transparent!important;border-color:var(--border)!important;color:var(--txt-dim)!important;transition:all .15s!important;}
   .button.is-auto.active{background:#0a2a00!important;border-color:var(--green)!important;color:var(--green)!important;}
   /* Encart flèche enchaînement */
-  /* Bouton enchaînement rectangulaire — rail droit */
-  .chain-rail{position:absolute;right:0;top:0;bottom:0;width:48px;display:flex;flex-direction:column;align-items:stretch;z-index:10;}
+  /* Bouton NEXT rectangulaire — rail droit */
+  .chain-rail{position:absolute;right:0;top:0;bottom:0;width:54px;display:flex;flex-direction:column;align-items:stretch;z-index:10;}
   .chain-btn-wrap{flex:1;display:flex;flex-direction:column;align-items:stretch;}
   .chain-btn{
-    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    background:#060c1a;border-left:1px solid #0d1828;cursor:pointer;
-    transition:all .15s;user-select:none;padding:4px 0;
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    background:#09080a;border-left:2px solid #1a1208;cursor:pointer;
+    transition:all .15s;user-select:none;padding:4px 2px;
   }
-  .chain-btn:hover{background:#0a1428;}
-  .chain-btn.on{background:linear-gradient(180deg,#001a28,#002030);border-left-color:#00a8cc;box-shadow:inset 0 0 12px rgba(0,180,220,0.15);}
-  .chain-btn .cb-arrow{font-size:22px;line-height:1;color:#1e2a40;transition:all .15s;}
-  .chain-btn.on .cb-arrow{color:#00e8ff;text-shadow:0 0 10px rgba(0,220,255,0.6);}
-  .chain-btn .cb-lbl{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:#1e2a40;transition:color .15s;text-transform:uppercase;}
-  .chain-btn.on .cb-lbl{color:#00a8cc;}
+  .chain-btn:hover{background:#141008;border-left-color:#3a2a00;}
+  .chain-btn.on{
+    background:linear-gradient(180deg,#1a0e00,#120900);
+    border-left:2px solid #f07800;
+    box-shadow:inset 0 0 16px rgba(240,120,0,0.18),inset -1px 0 0 #2a1800;
+  }
+  .chain-btn .cb-arrow{font-size:16px;line-height:1;color:#2a1a00;transition:all .15s;}
+  .chain-btn.on .cb-arrow{color:#ff9020;text-shadow:0 0 8px rgba(255,140,0,0.7);}
+  .chain-btn .cb-lbl{font-family:var(--mono);font-size:8px;letter-spacing:2px;color:#2a1a00;transition:color .15s;text-transform:uppercase;font-weight:700;}
+  .chain-btn.on .cb-lbl{color:#f07800;text-shadow:0 0 6px rgba(240,120,0,0.5);}
   /* Compat — vieille classe chain-cell masquée */
   .chain-cell{display:none!important;}
   .tag{font-family:var(--mono)!important;font-size:10px!important;letter-spacing:1px!important;border-radius:2px!important;}
@@ -219,6 +223,28 @@
 
   /* Row active */
   .row-active{background:transparent;position:relative;}
+
+  /* ═══ FENÊTRE MIXAGE ═══ */
+  .mix-panel{background:#05080f;border:1px solid #1a2a40;border-radius:8px;margin-top:.75rem;overflow:hidden;}
+  .mix-header{display:flex;align-items:center;gap:10px;padding:6px 14px;background:#07090f;border-bottom:1px solid #0d1828;}
+  .mix-header-title{font-family:var(--display);font-size:13px;font-weight:700;color:#4a6080;letter-spacing:3px;}
+  .mix-header-title.active{color:var(--cyan);}
+  .mix-body{position:relative;padding:10px 14px 14px;}
+  .mix-tracks{display:flex;flex-direction:column;gap:4px;}
+  .mix-row{position:relative;height:52px;border-radius:4px;overflow:hidden;background:#04060e;}
+  .mix-row canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .mix-row-label{position:absolute;top:3px;left:8px;z-index:4;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:2px;text-shadow:0 1px 4px rgba(0,0,0,.9);}
+  .mix-row-label.a{color:#ff4040;}
+  .mix-row-label.b{color:#00d0ff;}
+  .mix-cursor-wrap{position:relative;height:28px;display:flex;align-items:center;gap:10px;margin-top:6px;}
+  .mix-cursor-label{font-family:var(--mono);font-size:9px;color:#3a5070;letter-spacing:1px;white-space:nowrap;}
+  .mix-cursor-bar{flex:1;position:relative;height:4px;background:#0d1828;border-radius:2px;cursor:pointer;}
+  .mix-cursor-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#f07800,#ff4040);border-radius:2px;transition:width .05s;}
+  .mix-cursor-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;background:#f07800;border:2px solid #ff9020;border-radius:50%;cursor:grab;box-shadow:0 0 8px rgba(240,120,0,0.5);transition:background .1s;}
+  .mix-cursor-thumb:active{cursor:grabbing;background:#ff9020;}
+  .mix-time{font-family:var(--mono);font-size:9px;color:#f07800;min-width:48px;text-align:right;letter-spacing:1px;}
+  .mix-status{font-family:var(--mono);font-size:9px;color:#2a4060;letter-spacing:1px;margin-top:4px;text-align:center;}
+  .mix-status.active{color:#f07800;}
   .row-active::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(220,48,32,.35) 0%,rgba(220,48,32,.05) 100%);pointer-events:none;z-index:0;transform-origin:left;transform:scaleX(var(--prog,0));transition:transform .08s linear;}
   .row-active td{position:relative;z-index:1;}
 </style>
@@ -335,7 +361,7 @@
       <span class="fdz-count" id="fdz1-count">Aucun fichier</span>
     </div>
   </div>
-  <div class="card-content" style="position:relative;padding-right:48px" ondragover="event.preventDefault();document.getElementById('fdz1').classList.add('drag-over')" ondragleave="document.getElementById('fdz1').classList.remove('drag-over')" ondrop="handleDrop(event,0)">
+  <div class="card-content" style="position:relative;padding-right:54px" ondragover="event.preventDefault();document.getElementById('fdz1').classList.add('drag-over')" ondragleave="document.getElementById('fdz1').classList.remove('drag-over')" ondrop="handleDrop(event,0)">
     <table class="table is-radio is-fullwidth is-narrow">
       <thead><tr>
         <th style="width:36px">#</th>
@@ -410,26 +436,43 @@
 </div>
 
 
-<!-- ── Diffusion Régionale — voyants + playlist ── -->
-<div class="card is-dark-card" style="margin-top:.75rem">
-  <div style="background:var(--s2);border-bottom:1px solid var(--border);padding:.5rem 1rem;display:flex;align-items:center;justify-content:space-between">
-    <span style="font-family:var(--display);font-size:13px;font-weight:700;color:var(--txt);letter-spacing:2px">DIFFUSION RÉGIONALE</span>
-    <span style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:2px" id="regions-online-count">8 VILLES</span>
-  </div>
-  <!-- Grille voyants ON AIR -->
-  <div style="padding:.75rem 1rem;display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="regions-voyants-grid">
-  </div>
-  <!-- Playlist régionale reçue de D3 -->
-  <div id="regions-playlist-wrap" style="border-top:1px solid var(--border);display:none">
-    <div style="padding:4px 1rem 4px;background:var(--s3);display:flex;align-items:center;justify-content:space-between">
-      <span style="font-family:var(--mono);font-size:8px;color:#42a5f5;letter-spacing:3px">PLAYLIST MARSEILLE</span>
-      <span style="font-family:var(--mono);font-size:8px;color:var(--txt-mute)" id="regions-playlist-count">—</span>
-    </div>
-    <div id="regions-playlist-body" style="max-height:200px;overflow-y:auto"></div>
-  </div>
 </div>
+</section>
 
-</div>
+<!-- ═══ FENÊTRE MIXAGE ═══ -->
+<section class="section is-console" style="padding-top:0">
+  <div class="mix-panel" id="mix-panel">
+    <div class="mix-header">
+      <div class="mix-header-title" id="mix-title">MIXAGE</div>
+      <span style="font-family:var(--mono);font-size:9px;color:#2a3a50;letter-spacing:1px" id="mix-subtitle">En attente de 2 pistes…</span>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <span style="font-family:var(--mono);font-size:8px;color:#2a3a50" id="mix-overlap-label">CHEVAUCHEMENT : 0s</span>
+      </div>
+    </div>
+    <div class="mix-body">
+      <div class="mix-tracks">
+        <div class="mix-row" id="mix-row-a">
+          <canvas id="mix-cv-a"></canvas>
+          <span class="mix-row-label a" id="mix-lbl-a">—</span>
+        </div>
+        <div class="mix-row" id="mix-row-b">
+          <canvas id="mix-cv-b"></canvas>
+          <span class="mix-row-label b" id="mix-lbl-b">—</span>
+        </div>
+      </div>
+      <!-- Curseur chevauchement -->
+      <div class="mix-cursor-wrap">
+        <span class="mix-cursor-label">← ÉLOIGNER</span>
+        <div class="mix-cursor-bar" id="mix-bar">
+          <div class="mix-cursor-fill" id="mix-fill" style="width:50%"></div>
+          <div class="mix-cursor-thumb" id="mix-thumb" style="left:50%"></div>
+        </div>
+        <span class="mix-cursor-label">SUPERPOSER →</span>
+        <span class="mix-time" id="mix-time">0s</span>
+      </div>
+      <div class="mix-status" id="mix-status">Déposez des pistes dans DIFF A pour activer le mixage</div>
+    </div>
+  </div>
 </section>
 
 <script>
@@ -856,21 +899,33 @@ class Diffuser{
           // Dessin initial : vue complète START→END — tick() prend le relais pour le zoom live
           const _s=this._startOf(i)/(this.durs[i]||1);
           const _e=Math.min(1,this._endOf(i)/(this.durs[i]||1));
-          // Zoom initial : START→INTRO si intro existe, sinon plein
+          // Zoom initial : START→INTRO si intro défini, sinon START→END
           const _hasIntroInit=this._introOf(i)!=null&&this._introOf(i)>this._startOf(i);
-          const _si=_hasIntroInit?_s:_s;
-          const _ei=_hasIntroInit?Math.min(1,this._introOf(i)/(this.durs[i]||1)):_e;
+          const _zs=_s; // toujours START
+          const _ze=_hasIntroInit ? Math.min(1,this._introOf(i)/(this.durs[i]||1)) : _e;
+          const _drawInitial=(bgEl)=>{
+            drawWaveformFromData(bgEl,WV_DATA_CACHE[t.file],_zs,_ze);
+            // Dessiner les marqueurs par-dessus
+            const W2=bgEl.width,H2=bgEl.height;
+            const ctx2=bgEl.getContext('2d');
+            const range=_ze-_zs||0.001;
+            const toX2=(s)=>Math.round((s/(this.durs[i]||1)-_zs)/range*W2);
+            if(_hasIntroInit){
+              // Zone jaune START→INTRO
+              const x0=Math.max(0,toX2(this._startOf(i))),x1=Math.min(W2,toX2(this._introOf(i)));
+              const grd=ctx2.createLinearGradient(x0,0,x1,0);
+              grd.addColorStop(0,'rgba(255,220,0,0.45)');grd.addColorStop(1,'rgba(255,200,0,0.08)');
+              ctx2.fillStyle=grd;ctx2.fillRect(x0,0,x1-x0,H2);
+            }
+            ctx2.fillStyle='rgba(0,200,255,.8)';ctx2.fillRect(toX2(this._startOf(i))-1,0,3,H2);
+            if(_hasIntroInit){ctx2.fillStyle='rgba(255,210,0,.9)';ctx2.fillRect(toX2(this._introOf(i))-1,0,3,H2);}
+          };
           if(WV_DATA_CACHE[t.file]){
-            drawWaveformFromData(bgCv,WV_DATA_CACHE[t.file],_si,_ei);
+            _drawInitial(bgCv);
           } else {
             drawWaveform(document.createElement('canvas'),t.file).then(()=>{
               const bgEl=document.getElementById(wvId+'-bg');
-              if(WV_DATA_CACHE[t.file]&&bgEl){
-                const _hasI2=this._introOf(i)!=null&&this._introOf(i)>this._startOf(i);
-                const _s2=this._startOf(i)/(this.durs[i]||1);
-                const _e2=_hasI2?Math.min(1,this._introOf(i)/(this.durs[i]||1)):Math.min(1,this._endOf(i)/(this.durs[i]||1));
-                drawWaveformFromData(bgEl,WV_DATA_CACHE[t.file],_s2,_e2);
-              }
+              if(WV_DATA_CACHE[t.file]&&bgEl) _drawInitial(bgEl);
             });
           }
         }
@@ -961,6 +1016,7 @@ class Diffuser{
       }
     });
     renderChainRail(this.idx);
+    if(typeof _mixRender==='function')_mixRender();
     document.getElementById(this.ids.counter).textContent=this.tracks.length?`${this.ci+1}/${this.tracks.length}`:'0/0';
     let tot=0;this.tracks.forEach((_,i)=>tot+=this._playDur(i));
     document.getElementById(this.ids.total).textContent=fmtFull(tot);
@@ -1100,17 +1156,17 @@ class Diffuser{
 
       let zStart,zEnd,zoneLabel;
       if(inIntroZoom){
-        const margin=Math.max((introCue-startCue)*0.05,0.5)/fileDur;
-        zStart=Math.max(0,startCue/fileDur-margin);
-        zEnd=Math.min(1,introCue/fileDur+margin);
+        // ZOOM INTRO : exactement START → INTRO (pas de marge, plein écran)
+        zStart=startCue/fileDur;
+        zEnd=introCue/fileDur;
         zoneLabel='intro';
       } else if(inOutZoom){
-        // Zoom sur OUT ±20s
+        // ZOOM OUT : ±20s autour du point OUT
         zStart=Math.max(0,(outCue-20)/fileDur);
         zEnd=Math.min(1,(outCue+20)/fileDur);
         zoneLabel='out';
       } else {
-        // Vue complète START→END
+        // VUE COMPLÈTE : START → END
         zStart=startCue/fileDur;
         zEnd=endCue/fileDur;
         zoneLabel='full';
@@ -1489,7 +1545,7 @@ function renderChainRail(diffIdx){
     const div=document.createElement('div');
     div.className='chain-btn'+(on?' on':'');
     div.title=on?'Désactiver enchaînement':'Activer enchaînement';
-    div.innerHTML=`<span class="cb-arrow">${on?'↓':'·'}</span><span class="cb-lbl">${on?'ON':'–'}</span>`;
+    div.innerHTML=`<span class="cb-arrow">${on?'▶':'·'}</span><span class="cb-lbl">${on?'NEXT':'–'}</span>`;
     div.onclick=()=>toggleChain(diffIdx,i);
     rail.appendChild(div);
   });
@@ -1941,6 +1997,115 @@ let _previewCtx=null;  // AudioContext DÉDIÉ pré-écoute
 let _previewGn=null;
 let _previewTimer=null;
 let _previewTrack=null;
+// ═══════════════════════════════════════════════════════
+// FENÊTRE MIXAGE
+// ═══════════════════════════════════════════════════════
+let _mixOverlap=0; // secondes de chevauchement (0 = bout-à-bout, >0 = superposition)
+let _mixDragging=false;
+
+function mixInit(){
+  const bar=document.getElementById('mix-bar');
+  const thumb=document.getElementById('mix-thumb');
+  if(!bar||!thumb)return;
+
+  const setFromX=(clientX)=>{
+    const rect=bar.getBoundingClientRect();
+    let pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
+    // pct 0 = -30s (éloigné), 0.5 = 0s, 1 = +30s (superposé)
+    _mixOverlap=(pct-0.5)*60; // -30s … +30s
+    _mixRender();
+  };
+
+  thumb.addEventListener('mousedown',(e)=>{e.preventDefault();_mixDragging=true;});
+  document.addEventListener('mousemove',(e)=>{if(_mixDragging)setFromX(e.clientX);});
+  document.addEventListener('mouseup',()=>{_mixDragging=false;});
+  thumb.addEventListener('touchstart',(e)=>{_mixDragging=true;},{passive:true});
+  document.addEventListener('touchmove',(e)=>{if(_mixDragging&&e.touches[0])setFromX(e.touches[0].clientX);},{passive:true});
+  document.addEventListener('touchend',()=>{_mixDragging=false;});
+  _mixRender();
+}
+
+function _mixRender(){
+  const d=D[0];
+  const fill=document.getElementById('mix-fill');
+  const thumb=document.getElementById('mix-thumb');
+  const timeEl=document.getElementById('mix-time');
+  const olLabel=document.getElementById('mix-overlap-label');
+  const status=document.getElementById('mix-status');
+  const subtitle=document.getElementById('mix-subtitle');
+  const title=document.getElementById('mix-title');
+
+  const pct=(_mixOverlap/60+0.5)*100;
+  if(fill)fill.style.width=pct+'%';
+  if(thumb)thumb.style.left=pct+'%';
+  const overlapSec=Math.round(_mixOverlap);
+  if(timeEl)timeEl.textContent=(overlapSec>0?'+':'')+overlapSec+'s';
+  if(olLabel)olLabel.textContent='CHEVAUCHEMENT : '+(overlapSec>0?'+':'')+overlapSec+'s';
+
+  // Trouver les 2 pistes (active + suivante, ou pistes 0 et 1)
+  const tracks=d?d.tracks.filter(t=>!t.isMacro):[];
+  const hasTwo=tracks.length>=2;
+
+  if(title)title.className='mix-header-title'+(hasTwo?' active':'');
+  if(status)status.className='mix-status'+(hasTwo?' active':'');
+  if(status)status.textContent=hasTwo
+    ? (overlapSec>0?'Les 2 sons joueront en simultané pendant '+overlapSec+'s'
+      :overlapSec<0?'Silence de '+(-overlapSec)+'s entre les 2 sons'
+      :'Enchaînement direct — bout à bout')
+    : 'Déposez au moins 2 pistes dans DIFF A pour activer le mixage';
+  if(subtitle)subtitle.textContent=hasTwo?tracks[0].title+' → '+tracks[1].title:'En attente de 2 pistes…';
+
+  // Dessiner les 2 waveforms avec décalage visuel
+  _mixDrawTrack('mix-cv-a','mix-lbl-a',d,tracks[0],0,overlapSec,true);
+  _mixDrawTrack('mix-cv-b','mix-lbl-b',d,tracks[1],overlapSec,0,false);
+}
+
+function _mixDrawTrack(cvId,lblId,d,t,offsetSec,_unused,isA){
+  const cv=document.getElementById(cvId);
+  const lbl=document.getElementById(lblId);
+  if(!cv)return;
+  const W=cv.offsetWidth||600,H=cv.offsetHeight||52;
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#04060e';ctx.fillRect(0,0,W,H);
+  if(lbl)lbl.textContent=t?t.title:'—';
+  if(!t||!t.file)return;
+  const data=WV_DATA_CACHE[t.file];
+  if(!data){drawWaveform(document.createElement('canvas'),t.file).then(()=>_mixRender());return;}
+  const dur=d&&d.durs[d.tracks.indexOf(t)]||1;
+  const startR=(t.startCue||0)/dur;
+  const endR=Math.min(1,(t.endCue??dur)/dur);
+  // Décalage visuel : overlapping = les 2 waveforms se chevauchent à droite/gauche
+  const totalSec=Math.max(dur,1);
+  const shiftPct=Math.max(0,Math.min(0.4,Math.abs(offsetSec)/totalSec));
+  const x0=isA?0:Math.round(shiftPct*W);
+  const drawW=W-x0;
+  // Fond coloré semi-transparent
+  ctx.fillStyle=isA?'rgba(200,20,20,0.06)':'rgba(0,180,255,0.06)';
+  ctx.fillRect(x0,0,drawW,H);
+  // Waveform
+  const step=Math.max(1,Math.floor((data.length*(endR-startR))/drawW));
+  const segStart=Math.floor(startR*data.length);
+  const segEnd=Math.floor(endR*data.length);
+  const segLen=Math.max(1,segEnd-segStart);
+  for(let px=0;px<drawW;px++){
+    const base=segStart+Math.floor(px/drawW*segLen);
+    let mn=0,mx=0;
+    for(let j=0;j<step;j++){const v=data[base+j]||0;if(v<mn)mn=v;if(v>mx)mx=v;}
+    const amp=Math.max(Math.abs(mn),Math.abs(mx));
+    if(amp<0.003)continue;
+    const br=Math.round(100+amp*155);
+    ctx.fillStyle=isA?`rgb(${br},${Math.round(br*0.4)},${Math.round(br*0.4)})`:`rgb(${Math.round(br*0.4)},${Math.round(br*0.85)},${br})`;
+    const y1=Math.round((1+mn)*H/2),y2=Math.round((1+mx)*H/2);
+    ctx.fillRect(x0+px,y1,1,Math.max(1,y2-y1));
+  }
+  // Ligne de jonction si chevauchement
+  if(!isA&&offsetSec>0&&x0>0){
+    ctx.fillStyle='rgba(240,120,0,0.6)';ctx.fillRect(x0-1,0,2,H);
+    ctx.fillStyle='rgba(240,120,0,0.15)';ctx.fillRect(0,0,x0,H);
+  }
+}
+
 function mainLoop(){
   requestAnimationFrame(mainLoop);
   D.forEach(d=>d.tick());
@@ -1954,6 +2119,7 @@ function mainLoop(){
 function _onReady(){
   D.forEach(d=>d.render());
   mainLoop();
+  mixInit();
   diff2Connect();
   _buildVoyantsGrid(); _updateRegionsMap(); // init voyants
   // Toggle play avec resume AudioContext
