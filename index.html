@@ -314,6 +314,7 @@
         <th>Waveform · IN / OUT</th>
         <th style="width:64px;text-align:right">Durée</th>
         <th style="width:84px;text-align:right;padding-right:10px">Décompte</th>
+        <th style="width:32px;text-align:center;color:#1e2a40;font-size:9px">▶▶</th>
         <th style="width:5px"></th>
       </tr></thead>
       <tbody id="c1-body"></tbody>
@@ -620,10 +621,10 @@ function drawWaveformFromData(canvas,data,startRatio=0,endRatio=1){
   const W=canvas.width,H=canvas.height;
   const c=canvas.getContext('2d');
   // Fond sombre neutre — lisible, pas de bleu électrique
-  c.fillStyle='#0a1520';
+  c.fillStyle='#06101c';
   c.fillRect(0,0,W,H);
   // Ligne centrale discrète
-  c.fillStyle='rgba(255,255,255,0.06)';
+  c.fillStyle='rgba(100,200,255,0.08)';
   c.fillRect(0,Math.floor(H/2),W,1);
   const start=Math.floor(startRatio*data.length),end=Math.floor(endRatio*data.length);
   const len=Math.max(1,end-start),step=Math.max(1,Math.floor(len/W));
@@ -638,7 +639,7 @@ function drawWaveformFromData(canvas,data,startRatio=0,endRatio=1){
     const h=Math.max(1,y2-y1);
     // Couleur : vert pâle sur fond sombre — lisible et broadcast
     const brightness=Math.round(120+amp*135); // 120..255
-    c.fillStyle=`rgb(${Math.round(brightness*0.55)},${brightness},${Math.round(brightness*0.7)})`;
+    c.fillStyle=`rgb(${Math.round(brightness*0.6)},${Math.round(brightness*0.85)},${brightness})`; // bleu-blanc glacé
     c.fillRect(x,y1,1,h);
   }
 }
@@ -673,6 +674,7 @@ class Diffuser{
     this._outTimer=null; this._removeTimer=null;
     this._tailAudio=null;   // audio en queue (après le point OUT)
     this._stopAfterMacro=false; // bloque l'enchaînement après START EXT
+    this._pendingChain=false;      // flèche enchaînement — posée par _doRemove
     this._lastSentState=''; // pour éviter de spammer sigSend
   }
   addTracks(newTracks){
@@ -756,7 +758,7 @@ class Diffuser{
         tr.innerHTML=`
           <canvas class="row-active-wv-bg" id="${wvId}-bg" width="1200" height="130"></canvas>
           <div id="${wvId}-playhead" style="position:absolute;top:0;bottom:0;z-index:5;pointer-events:none;left:0%;width:2px;background:rgba(255,255,255,0.9);box-shadow:0 0 6px #fff"></div>
-          <div style="position:absolute;top:0;bottom:0;z-index:2;pointer-events:none;left:${inPct}%;width:3px;background:#00ff60;box-shadow:0 0 8px #00ff60"></div>
+          <div style="position:absolute;top:0;bottom:0;z-index:2;pointer-events:none;left:${inPct}%;width:3px;background:#00c8ff;box-shadow:0 0 8px #00c8ff"></div>
           <div style="position:absolute;top:0;bottom:0;z-index:2;pointer-events:none;left:${outPct}%;width:3px;background:rgba(255,40,40,.8);box-shadow:0 0 8px rgba(255,40,40,.6)"></div>
           ${_hasIntro?`<div style="position:absolute;top:0;bottom:0;z-index:2;pointer-events:none;left:${_introPct};width:3px;background:#f5c400;box-shadow:0 0 8px #f5c400"></div>`:''}
           <td style="width:44px;text-align:center;vertical-align:middle;position:relative;z-index:3;padding:0 4px">
@@ -811,6 +813,7 @@ class Diffuser{
             <div style="font-family:var(--display);font-size:20px;font-weight:700;color:#f5c400;letter-spacing:3px">${t.title}</div>
             <div style="font-family:var(--mono);font-size:9px;color:#7a6000;letter-spacing:2px;margin-top:2px">EN COURS D'EXÉCUTION…</div>
           </td>
+          <td style="width:32px"></td>
           <td class="cell-bar"><span class="color-bar" style="background:#f5c400;height:56px"></span></td>`;
         tbody.appendChild(tr);
       } else if(isMacro){
@@ -827,6 +830,7 @@ class Diffuser{
             </div>
           </td>
           <td class="cell-cd" style="color:#6a5000;font-family:var(--mono);font-size:10px;text-align:right;padding-right:10px">ACTION</td>
+          <td style="width:32px"></td>
           <td class="cell-bar"><span class="color-bar" style="background:#3a2a00"></span></td>`;
         tbody.appendChild(tr);
       } else {
@@ -867,6 +871,14 @@ class Diffuser{
           <td style="width:80px;text-align:right;vertical-align:middle;padding:0 6px">
             <div style="font-family:var(--mono);font-size:12px;color:${isNext?'var(--green)':'#4a6080'};letter-spacing:1px">${fmtFull(this._playDur(i))}</div>
             <button id="prev-btn-${this.idx}-${i}" onclick="event.stopPropagation();previewPlay(${this.idx},${i})" style="background:transparent;border:1px solid #2e3238;color:#455a64;font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:2px;cursor:pointer;margin-top:2px;width:100%;transition:all .15s" title="Pré-écoute">▷</button>
+          </td>
+          <td style="width:32px;text-align:center;vertical-align:middle;padding:0 4px">
+            <button id="chain-btn-${this.idx}-${i}" onclick="event.stopPropagation();toggleChain(${this.idx},${i})"
+              title="Enchaîner avec le suivant"
+              style="background:${t.chain?'rgba(0,200,255,0.12)':'transparent'};border:1px solid ${t.chain?'#00c8ff':'#1e2a40'};color:${t.chain?'#00c8ff':'#2a3a50'};font-family:var(--mono);font-size:14px;width:26px;height:26px;border-radius:3px;cursor:pointer;line-height:1;transition:all .15s;display:flex;align-items:center;justify-content:center"
+              onmouseover="this.style.borderColor='#00c8ff';this.style.color='#00c8ff'"
+              onmouseout="if(!this.classList.contains('chain-on')){this.style.borderColor=${t.chain?"'#00c8ff'":"'#1e2a40'"};this.style.color=${t.chain?"'#00c8ff'":"'#2a3a50'"};}"
+            >${t.chain?'▶▶':'▶▶'}</button>
           </td>
           <td class="cell-bar"><span style="width:4px;height:56px;display:block;background:${t.color};border-radius:2px;opacity:.8"></span></td>`;
         tbody.appendChild(tr);
@@ -1043,10 +1055,15 @@ class Diffuser{
         const W=bgCvLive.width,H=bgCvLive.height;
         const ctx2=bgCvLive.getContext('2d');
         const toX=(s)=>Math.round((s/fileDur-zStart)/(zEnd-zStart)*W);
+        // Zone START→INTRO : fond jaune translucide
+        if(introCue!=null&&introCue>startCue){
+          const x0=Math.max(0,toX(startCue)),x1=Math.min(W,toX(introCue));
+          ctx2.fillStyle='rgba(245,196,0,0.13)';ctx2.fillRect(x0,0,x1-x0,H);
+        }
         // START
-        ctx2.fillStyle='rgba(0,255,96,.7)';ctx2.fillRect(toX(startCue)-1,0,3,H);
+        ctx2.fillStyle='rgba(0,200,255,.75)';ctx2.fillRect(toX(startCue)-1,0,3,H);
         // INTRO
-        if(introCue!=null){ctx2.fillStyle='rgba(245,196,0,.7)';ctx2.fillRect(toX(introCue)-1,0,3,H);}
+        if(introCue!=null){ctx2.fillStyle='rgba(245,196,0,.85)';ctx2.fillRect(toX(introCue)-1,0,3,H);}
         // OUT
         ctx2.fillStyle='rgba(168,85,247,.7)';ctx2.fillRect(toX(outCue)-1,0,3,H);
         // END
@@ -1115,7 +1132,9 @@ class Diffuser{
       const currentOut=this._outOf(i); // relu live → modifiable pendant lecture
       if(audio.currentTime>=currentOut&&!_chained){
         _chained=true;
-        // Lancer le suivant
+        // Lancer le suivant — _pendingChain sera posé par _doRemove
+        // On pré-autorise ici si la piste a chain:true ou auto
+        this._pendingChain = !!(t.chain || this.auto);
         if(!this._stopAfterMacro&&this.tracks.length>1) this._startNextInQueue();
         // Programmer la suppression à endCue (le son continue jusqu'à END)
         const remainToEnd=Math.max(0,(endCue-currentOut))*1000;
@@ -1145,6 +1164,8 @@ class Diffuser{
       if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
       audio.onended=null;
       if(!audio.paused)audio.pause();
+      // Mémoriser si la piste qui se termine autorisait l'enchaînement
+      this._pendingChain = !!(t.chain || this.auto);
       const idx=this.tracks.indexOf(t);
       if(idx!==-1){
         if(t.file?.startsWith('blob:'))URL.revokeObjectURL(t.file);
@@ -1160,7 +1181,6 @@ class Diffuser{
       audio.onended=null;
       if(this._outTimer){cancelAnimationFrame(this._outTimer);this._outTimer=null;}
       if(this._removeTimer){clearTimeout(this._removeTimer);this._removeTimer=null;}
-      if(!_chained&&!this._stopAfterMacro&&this.tracks.length>1)this._startNextInQueue();
       _doRemove();
     };
 
@@ -1182,13 +1202,15 @@ class Diffuser{
   _startNextInQueue(){
     if(!this.playing||!this.tracks.length) return;
     const t=this.tracks[0];
-    // Si c'est une macro, la lancer
     if(t.isMacro){this._startTrack(0);return;}
-    // Vérifier que l'audio est bien en pause (pas encore lancé)
     const a=this.audios[0];
     if(!a) return;
+    // Enchaîner seulement si la piste PRÉCÉDENTE avait chain:true
+    // (la piste courante vient d'être supprimée, tracks[0] est la suivante)
+    // On passe le flag via _pendingChain posé avant la suppression
+    if(!this._pendingChain) return;
+    this._pendingChain=false;
     if(a.paused) this._startTrack(0);
-    // Si a.paused===false : déjà en cours (ne rien faire)
   }
 
   _updateFdzCount(){
@@ -1227,7 +1249,14 @@ class Diffuser{
     this.render();
   }
 
-  toggleAuto(){this.auto=!this.auto;const btn=document.getElementById(this.cfg.autoBtn);if(btn)btn.classList.toggle('active',this.auto);}
+  toggleAuto(){
+    this.auto=!this.auto;
+    const btn=document.getElementById(this.cfg.autoBtn);
+    if(btn)btn.classList.toggle('active',this.auto);
+    // AUTO active/désactive la flèche sur toutes les pistes
+    this.tracks.forEach(t=>{ if(!t.isMacro) t.chain=this.auto; });
+    this.render();
+  }
   nextTrack(){}
   prevTrack(){}
   jumpTo(i){if(this.playing){this.audios.forEach(a=>{if(a&&!a.paused)a.pause();});this.ci=i;this._chainDone.clear();this._startTrack(i);}else{this.ci=i;}this.render();}
@@ -1332,6 +1361,7 @@ function handleFiles(files,diffIdx){
     endCue:null,   // rouge — fin de lecture (=durée si null)
     introCue:null, // jaune — point intro (décompte)
     outCue:null,   // violet — point d'enchaînement
+    chain:false,   // flèche enchaînement — activée manuellement ou via AUTO
   }));
   D[diffIdx].addTracks(newTracks);
 }
@@ -1343,6 +1373,12 @@ function handleDrop(e,diffIdx){
   // Snapshot immediat des fichiers (Chrome invalide dataTransfer hors event synchrone)
   const files=Array.from((e.dataTransfer&&e.dataTransfer.files)||[]);
   handleFiles(files,diffIdx);
+}
+function toggleChain(diffIdx,trackIdx){
+  const d=D[diffIdx];if(!d)return;
+  const t=d.tracks[trackIdx];if(!t||t.isMacro)return;
+  t.chain=!t.chain;
+  d.render();
 }
 function diffRemoveTrack(diffIdx,trackIdx){
   const d=D[diffIdx];if(!d)return;
