@@ -242,7 +242,7 @@
   .mix-header-title.active{color:var(--cyan);}
   .mix-body{position:relative;padding:10px 14px 14px;user-select:none;}
   /* Timeline container */
-  .mix-timeline{position:relative;background:#030509;border:1px solid #0d1828;border-radius:4px;overflow:hidden;height:120px;cursor:default;}
+  .mix-timeline{position:relative;background:#030509;border:1px solid #0d1828;border-radius:4px;overflow:hidden;height:140px;cursor:ew-resize;}
   /* Axe temporel (règle) */
   .mix-ruler{position:absolute;top:0;left:0;right:0;height:18px;background:#050810;border-bottom:1px solid #0d1828;z-index:2;pointer-events:none;}
   /* Blocs waveform draggables */
@@ -480,23 +480,13 @@
       </div>
     </div>
     <div class="mix-body">
-      <div class="mix-timeline" id="mix-timeline">
-        <canvas id="mix-ruler-cv" class="mix-ruler" style="position:absolute;inset:0 0 auto 0;height:18px;width:100%"></canvas>
-        <div id="mix-join" class="mix-join" style="display:none"></div>
-        <div class="mix-block a" id="mix-block-a" style="left:0;width:45%">
-          <canvas id="mix-cv-a"></canvas>
-          <span class="mix-block-label" id="mix-lbl-a">—</span>
-          <div class="mix-block-out" style="background:rgba(255,60,60,.8)"></div>
-        </div>
-        <div class="mix-block b" id="mix-block-b" style="left:47%;width:45%">
-          <canvas id="mix-cv-b"></canvas>
-          <span class="mix-block-label" id="mix-lbl-b">—</span>
-        </div>
+      <div class="mix-timeline" id="mix-timeline" style="cursor:ew-resize">
+        <!-- Canvas timeline généré par JS -->
       </div>
-      <div class="mix-info-row">
-        <span class="mix-info" id="mix-info-a">A : —</span>
-        <div class="mix-status" id="mix-status">Déposez des pistes dans DIFF A pour activer le mixage</div>
-        <span class="mix-info" id="mix-info-b">B : —</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+        <span style="font-family:var(--mono);font-size:8px;color:#1e2a40">← glisser B pour ajuster</span>
+        <div class="mix-status" id="mix-status">Déposez des pistes dans DIFF A</div>
+        <span style="font-family:var(--mono);font-size:8px;color:#1e2a40">▶ START · I INTRO · N NEXT · E END</span>
       </div>
     </div>
   </div>
@@ -857,197 +847,224 @@ class Diffuser{
     const tbody=document.getElementById(this.ids.body);
     if(!tbody)return;
     tbody.innerHTML='';
-    // Piste suivante = première piste en pause (pas encore lancée)
-    const nextIdx=this.playing?this.tracks.findIndex((tt,ii)=>!tt.isMacro&&this.audios[ii]?.paused):-1;
+
     this.tracks.forEach((t,i)=>{
       const audio_i=this.audios[i];
-      // isActive = audio joue OU vient d'être lancé (play() async pas encore démarré)
       const isActive=this.playing && !t.isMacro && !!audio_i && (!audio_i.paused || !!t._launching);
       const isMacroActive=this.playing && t.isMacro && i===this.ci;
-      const isNext=i===nextIdx;
-      const tr=document.createElement('tr');
-      if(isActive||isMacroActive){
-        const _pos2=this.audios[i]?this.audios[i].currentTime:0;
-        const _intro2=this._introOf(i);const _start2=this._startOf(i);
-        const _out2=this._outOf(i);
-        const _isIntro=_intro2!=null&&_intro2>_start2&&_pos2<_intro2;
-        const _isPost=_pos2>=_out2;
-        tr.className='row-active'+(_isIntro?' is-intro':_isPost?' is-post':'');
-      } else if(isNext)tr.className='row-next'+(this._introOf(i)!=null&&this._introOf(i)>this._startOf(i)?' row-has-intro':'');
-      tr.onclick=()=>this.jumpTo(i);
-      const st=starts[i];
-      const hhmm=fmt2(st.getHours())+':'+fmt2(st.getMinutes())+':'+fmt2(st.getSeconds());
-      const sub='('+fmt2(st.getHours())+':'+fmt2(st.getMinutes()+Math.floor(this._playDur(i)/60))+')';
+      const isNext=!this.playing?false:(this.tracks.findIndex((tt,ii)=>!tt.isMacro&&this.audios[ii]?.paused)===i);
       const audio=this.audios[i];
       const pos=audio?audio.currentTime:0;
-      const rem=isActive?Math.max(0,this._outOf(i)-pos):this._playDur(i);
-      const wvId=`wv-${this.idx}-${i}`;
       const dur=this.durs[i]||1;
-      const inPct=(this._inOf(i)/dur*100).toFixed(1);
-      const outPct=Math.min(98,(this._outOf(i)/dur*100)).toFixed(1);
-      const delBtn=t.pinned?'':`<button onclick="event.stopPropagation();diffRemoveTrack(${this.idx},${i})" style="background:transparent;border:none;color:#3a4050;cursor:pointer;font-size:11px;padding:0 4px;line-height:1;transition:color .1s" onmouseover="this.style.color='#e03020'" onmouseout="this.style.color='#3a4050'" title="Supprimer">✕</button>`;
+      const wvId=`wv-${this.idx}-${i}`;
+      const startSec=this._startOf(i), endSec=this._endOf(i);
+      const outSec=this._outOf(i), introSec=this._introOf(i);
+      const hasIntro=introSec!=null&&introSec>startSec;
+      const inIntroPhase=hasIntro&&pos<introSec&&isActive;
+      const isPost=isActive&&pos>=outSec;
+      // %ages sur la durée totale du fichier
+      const pStart=(startSec/dur*100).toFixed(2);
+      const pEnd=(endSec/dur*100).toFixed(2);
+      const pOut=(outSec/dur*100).toFixed(2);
+      const pIntro=hasIntro?(introSec/dur*100).toFixed(2):null;
+      const delBtn=t.pinned?'':`<button onclick="event.stopPropagation();diffRemoveTrack(${this.idx},${i})" style="background:transparent;border:none;color:#2a3040;cursor:pointer;font-size:10px;padding:0 3px;line-height:1" onmouseover="this.style.color='#e03020'" onmouseout="this.style.color='#2a3040'" title="Supprimer">✕</button>`;
+      const chainOn=!!(t.chain||this.auto);
       const isMacro=!!t.isMacro;
+      const tr=document.createElement('tr');
+      const st=starts[i];
+      const hhmm=fmt2(st.getHours())+':'+fmt2(st.getMinutes())+':'+fmt2(st.getSeconds());
+
+      // ════════════════════════════════════════
+      // SLOT 1 : PISTE ACTIVE
+      // ════════════════════════════════════════
       if(isActive && !isMacro){
-        // Pré-calculs intro
-        const _hasIntro=this._introOf(i)!=null&&this._introOf(i)>this._startOf(i);
-        const _introPct=_hasIntro?((this._introOf(i)/( this.durs[i]||1))*100).toFixed(1)+'%':'0%';
+        tr.className='slot-active'+(inIntroPhase?' is-intro':isPost?' is-post':'');
+        const rem=inIntroPhase?Math.max(0,introSec-pos):Math.max(0,outSec-pos);
+        const cdLabel=inIntroPhase?'INTRO':isPost?'END':'NEXT';
+        const cdColor=inIntroPhase?'#ffe000':isPost?'#f07800':'#ff4040';
         tr.innerHTML=`
-          <canvas class="row-active-wv-bg" id="${wvId}-bg" width="1200" height="130"></canvas>
-          <div id="${wvId}-playhead" style="position:absolute;top:0;bottom:0;z-index:5;pointer-events:none;left:0%;width:2px;background:rgba(255,255,255,0.9);box-shadow:0 0 6px #fff"></div>
-          <div style="position:absolute;top:0;bottom:0;z-index:2;pointer-events:none;left:${inPct}%;width:3px;background:#00c8ff;box-shadow:0 0 8px #00c8ff"></div>
-          <div style="position:absolute;top:0;bottom:0;z-index:2;pointer-events:none;left:${outPct}%;width:3px;background:rgba(255,40,40,.8);box-shadow:0 0 8px rgba(255,40,40,.6)"></div>
-          ${_hasIntro?`<div style="position:absolute;top:0;bottom:0;z-index:2;pointer-events:none;left:${_introPct};width:3px;background:#f5c400;box-shadow:0 0 8px #f5c400"></div>`:''}
-          <td style="width:44px;text-align:center;vertical-align:middle;position:relative;z-index:3;padding:0 4px">
-            <div style="font-family:var(--mono);font-size:22px;color:#ff4040;line-height:1">▶</div>
-            <div style="font-family:var(--mono);font-size:9px;color:rgba(0,212,240,.5);letter-spacing:1px;margin-top:2px">${hhmm.slice(0,5)}</div>
-          </td>
-          <td style="padding:0 10px 0 4px;vertical-align:middle;position:relative;z-index:3;min-width:0;flex:1">
-            <div style="font-family:var(--display);font-size:28px;font-weight:700;color:#ffffff;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:600px;text-shadow:0 2px 12px rgba(0,0,0,.9);line-height:1.1">${t.title}</div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap">
-              ${delBtn}
-              <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})" style="position:static;opacity:1;font-size:10px;padding:2px 8px">✎ EDIT</button>
-              <span style="font-family:var(--mono);font-size:10px;color:#66bb6a;letter-spacing:1px">▶ ${fmtMs(this._startOf(i))}</span>
-              ${_hasIntro?`<span style="font-family:var(--mono);font-size:10px;color:#f5c400;letter-spacing:1px">INTRO ${fmtMs(this._introOf(i))}</span>`:''}
-              <span style="font-family:var(--mono);font-size:10px;color:#a855f7;letter-spacing:1px">⊗ ${fmtMs(this._outOf(i))}</span>
-              <span style="font-family:var(--mono);font-size:10px;color:#ef5350;letter-spacing:1px">■ ${fmtMs(this._endOf(i))}</span>
-              <span style="font-family:var(--mono);font-size:10px;color:#4a6080;letter-spacing:1px">${fmtFull(this.durs[i]||0)}</span>
+          <td colspan="5" style="padding:0;height:200px;position:relative;overflow:hidden;border-bottom:2px solid ${inIntroPhase?'#ffe000':isPost?'#f07800':'#cc0000'}">
+            <!-- WAVEFORM fond -->
+            <canvas id="${wvId}-bg" width="1400" height="200" style="position:absolute;inset:0;width:100%;height:200px;display:block;z-index:1"></canvas>
+            <!-- Barre de progression -->
+            <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#0a1020;z-index:6">
+              <div id="${wvId}-prog" style="height:100%;width:0%;background:${inIntroPhase?'#ffe000':'#cc2020'};transition:width .05s linear"></div>
             </div>
-          </td>
-          <td style="width:180px;text-align:right;vertical-align:middle;position:relative;z-index:3;padding:0 16px 0 0">
-            <div id="${this.ids.body}-cd-${i}" style="font-family:var(--mono);font-size:48px;font-weight:700;color:#ff4040;letter-spacing:2px;line-height:1;text-shadow:0 0 20px rgba(255,64,64,.4)">${fmtFull(rem)}</div>
-            <div id="${this.ids.body}-cd-sub-${i}" style="font-family:var(--mono);font-size:11px;color:#7a1010;text-align:right;letter-spacing:3px;margin-top:4px">OUT</div>
-          </td>
-          <td class="chain-cell" style="vertical-align:middle;position:relative;z-index:3"><div class="chain-box${t.chain||this.auto?' on':''}" onclick="event.stopPropagation();toggleChain(${this.idx},${i})" title="Enchaîner avec le suivant"><span class="ch-arrow">↓</span><span class="ch-lbl">${t.chain||this.auto?'ON':'-'}</span></div></td>
-          <td style="width:6px;padding:0"><span style="width:6px;height:130px;display:block;background:${t.color};border-radius:0 2px 2px 0;opacity:.9"></span></td>`;
+            <!-- Playhead -->
+            <div id="${wvId}-playhead" style="position:absolute;top:0;bottom:3px;z-index:7;pointer-events:none;left:0%;width:2px;background:rgba(255,255,255,.9);box-shadow:0 0 8px #fff"></div>
+            <!-- Overlay infos — par-dessus la waveform -->
+            <div style="position:absolute;inset:0;z-index:8;display:flex;align-items:stretch;pointer-events:none">
+              <!-- Numéro + horaire -->
+              <div style="width:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.7);border-right:1px solid rgba(255,255,255,.08);flex-shrink:0">
+                <div style="font-size:22px;color:${cdColor};line-height:1">▶</div>
+                <div style="font-family:var(--mono);font-size:8px;color:rgba(200,200,200,.4);margin-top:4px">${hhmm.slice(0,5)}</div>
+              </div>
+              <!-- Titre + cues + boutons -->
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 14px;min-width:0;pointer-events:all">
+                <div style="font-family:var(--display);font-size:${inIntroPhase?'26':'30'}px;font-weight:700;color:${inIntroPhase?'#ffe060':'#ffffff'};letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 12px rgba(0,0,0,.95);line-height:1.15">${t.title}</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
+                  ${delBtn}
+                  <button onclick="wvModalOpen('${wvId}',${this.idx},${i})" style="background:rgba(0,0,0,.6);border:1px solid #2a3a50;color:#5a8090;font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px;pointer-events:all">✎ EDIT</button>
+                  <span style="font-family:var(--mono);font-size:9px;background:rgba(0,40,60,.7);border:1px solid rgba(0,200,255,.3);color:#00c8ff;padding:2px 7px;border-radius:2px">START ${fmtMs(startSec)}</span>
+                  ${hasIntro?`<span style="font-family:var(--mono);font-size:9px;background:rgba(40,30,0,.7);border:1px solid rgba(255,220,0,.4);color:#ffe000;padding:2px 7px;border-radius:2px">INTRO ${fmtMs(introSec)}</span>`:''}
+                  <span style="font-family:var(--mono);font-size:9px;background:rgba(40,0,40,.7);border:1px solid rgba(200,80,255,.4);color:#f07800;padding:2px 7px;border-radius:2px">NEXT ${fmtMs(outSec)}</span>
+                  <span style="font-family:var(--mono);font-size:9px;background:rgba(40,0,0,.7);border:1px solid rgba(200,40,40,.4);color:#ff5050;padding:2px 7px;border-radius:2px">END ${fmtMs(endSec)}</span>
+                </div>
+              </div>
+              <!-- Compteur -->
+              <div style="width:140px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding-right:14px;background:rgba(0,0,0,.65);border-left:1px solid rgba(255,255,255,.06);flex-shrink:0;pointer-events:none">
+                <div style="font-family:var(--mono);font-size:8px;color:rgba(200,200,200,.4);letter-spacing:2px;margin-bottom:4px">${cdLabel}</div>
+                <div id="${this.ids.body}-cd-${i}" style="font-family:var(--mono);font-size:38px;font-weight:700;color:${cdColor};letter-spacing:1px;line-height:1;text-shadow:0 0 20px ${cdColor}60">${fmtMs(rem)}</div>
+                <div id="${this.ids.body}-cd-sub-${i}" style="font-family:var(--mono);font-size:8px;color:rgba(200,200,200,.3);letter-spacing:2px;margin-top:3px">${fmtMs(endSec-pos>0?endSec-pos:0)}</div>
+              </div>
+            </div>
+          </td>`;
         tbody.appendChild(tr);
+        // Dessin waveform initial
         const bgCv=document.getElementById(wvId+'-bg');
         if(bgCv&&this.durs[i]>0){
-          bgCv.width=1200;bgCv.height=130;
-          // Dessin initial : vue complète START→END — tick() prend le relais pour le zoom live
-          const _s=this._startOf(i)/(this.durs[i]||1);
-          const _e=Math.min(1,this._endOf(i)/(this.durs[i]||1));
-          // Zoom initial : START→INTRO si intro défini, sinon START→END
-          const _hasIntroInit=this._introOf(i)!=null&&this._introOf(i)>this._startOf(i);
-          const _zs=_s; // toujours START
-          const _ze=_hasIntroInit ? Math.min(1,this._introOf(i)/(this.durs[i]||1)) : _e;
-          const _drawInitial=(bgEl)=>{
-            drawWaveformFromData(bgEl,WV_DATA_CACHE[t.file],_zs,_ze);
-            // Dessiner les marqueurs par-dessus
-            const W2=bgEl.width,H2=bgEl.height;
-            const ctx2=bgEl.getContext('2d');
-            const range=_ze-_zs||0.001;
-            const toX2=(s)=>Math.round((s/(this.durs[i]||1)-_zs)/range*W2);
-            if(_hasIntroInit){
-              // Zone jaune START→INTRO
-              const x0=Math.max(0,toX2(this._startOf(i))),x1=Math.min(W2,toX2(this._introOf(i)));
-              const grd=ctx2.createLinearGradient(x0,0,x1,0);
-              grd.addColorStop(0,'rgba(255,220,0,0.45)');grd.addColorStop(1,'rgba(255,200,0,0.08)');
-              ctx2.fillStyle=grd;ctx2.fillRect(x0,0,x1-x0,H2);
+          bgCv.width=1400;bgCv.height=200;
+          const _drawSlot1=(el)=>{
+            // Vue START→END complète au démarrage — tick() zoome ensuite
+            drawWaveformFromData(el,WV_DATA_CACHE[t.file],startSec/dur,endSec/dur);
+            const W2=el.width,H2=el.height;const ctx2=el.getContext('2d');
+            const rng=endSec-startSec||0.001;
+            const toX=(s)=>Math.round((s-startSec)/rng*W2);
+            // Zone INTRO
+            if(hasIntro){
+              const g=ctx2.createLinearGradient(toX(startSec),0,toX(introSec),0);
+              g.addColorStop(0,'rgba(255,220,0,.3)');g.addColorStop(1,'rgba(255,210,0,.04)');
+              ctx2.fillStyle=g;ctx2.fillRect(toX(startSec),0,toX(introSec)-toX(startSec),H2);
             }
-            ctx2.fillStyle='rgba(0,200,255,.8)';ctx2.fillRect(toX2(this._startOf(i))-1,0,3,H2);
-            if(_hasIntroInit){ctx2.fillStyle='rgba(255,210,0,.9)';ctx2.fillRect(toX2(this._introOf(i))-1,0,3,H2);}
+            // Marqueurs
+            const mkr=(x,clr,w=2)=>{ctx2.fillStyle=clr;ctx2.fillRect(x-1,0,w,H2);};
+            mkr(toX(startSec),'rgba(0,200,255,.9)',3);
+            if(hasIntro)mkr(toX(introSec),'rgba(255,220,0,.95)',3);
+            mkr(toX(outSec),'rgba(240,120,0,.9)',3);
+            mkr(toX(endSec),'rgba(220,40,40,.9)',3);
+            // Labels
+            ctx2.font='700 10px monospace';ctx2.textBaseline='top';
+            const tag=(x,clr,txt)=>{ctx2.fillStyle=clr;ctx2.fillText(txt,Math.max(2,x+3),3);};
+            tag(toX(startSec),'rgba(0,200,255,.7)','START');
+            if(hasIntro)tag(toX(introSec),'rgba(255,220,0,.7)','INTRO');
+            tag(toX(outSec),'rgba(240,120,0,.8)','NEXT');
+            tag(toX(endSec)-40,'rgba(220,40,40,.7)','END');
           };
-          if(WV_DATA_CACHE[t.file]){
-            _drawInitial(bgCv);
-          } else {
-            drawWaveform(document.createElement('canvas'),t.file).then(()=>{
-              const bgEl=document.getElementById(wvId+'-bg');
-              if(WV_DATA_CACHE[t.file]&&bgEl) _drawInitial(bgEl);
-            });
-          }
+          if(WV_DATA_CACHE[t.file]) _drawSlot1(bgCv);
+          else drawWaveform(document.createElement('canvas'),t.file).then(()=>{
+            const el=document.getElementById(wvId+'-bg');
+            if(WV_DATA_CACHE[t.file]&&el)_drawSlot1(el);
+          });
         }
-      } else if(isActive && isMacro){
-        // Macro en cours d'exécution
-        tr.style.background='linear-gradient(90deg,#2a1a00 0%,#1a1000 100%)';
-        tr.style.borderLeft='4px solid #f5c400';
+
+      // ════════════════════════════════════════
+      // MACRO ACTIVE
+      // ════════════════════════════════════════
+      } else if(isMacroActive){
+        tr.style.cssText='background:linear-gradient(90deg,#1a1200,#0a0800);border-left:3px solid #f5c400;height:56px;';
         tr.innerHTML=`
-          <td class="cell-num" style="color:#f5c400;font-size:18px">⚡</td>
-          <td class="cell-time" style="color:#f5c400;font-family:var(--mono);font-size:11px">ACTION</td>
-          <td colspan="4" style="padding:0 16px;vertical-align:middle">
-            <div style="font-family:var(--display);font-size:20px;font-weight:700;color:#f5c400;letter-spacing:3px">${t.title}</div>
-            <div style="font-family:var(--mono);font-size:9px;color:#7a6000;letter-spacing:2px;margin-top:2px">EN COURS D'EXÉCUTION…</div>
+          <td style="width:32px;text-align:center;color:#f5c400;font-size:16px">⚡</td>
+          <td colspan="2" style="padding:0 12px">
+            <div style="font-family:var(--display);font-size:15px;font-weight:700;color:#f5c400;letter-spacing:2px">${t.title}</div>
+            <div style="font-family:var(--mono);font-size:8px;color:#6a5000;margin-top:2px;letter-spacing:2px">EN COURS…</div>
           </td>
-          <td class="chain-cell"></td>
-          <td class="cell-bar"><span class="color-bar" style="background:#f5c400;height:56px"></span></td>`;
+          <td style="text-align:right;padding-right:10px;font-family:var(--mono);font-size:9px;color:#6a5000">MACRO</td>
+          <td style="width:52px;background:#09080a;border-left:1px solid #0d1424"></td>`;
         tbody.appendChild(tr);
+
+      // ════════════════════════════════════════
+      // MACRO EN ATTENTE
+      // ════════════════════════════════════════
       } else if(isMacro){
-        // Macro en attente dans la playlist
-        tr.style.borderLeft='3px solid #3a2a00';
+        tr.style.cssText='border-left:2px solid #2a1a00;height:48px;';
         tr.innerHTML=`
-          <td class="cell-num" style="color:#6a5000;font-size:14px">⚡</td>
-          <td class="cell-time" style="font-family:var(--mono);font-size:10px;color:#4a3800">MACRO</td>
-          <td colspan="3" style="padding:0 16px;vertical-align:middle">
-            <div style="display:flex;align-items:center;gap:8px">
+          <td style="width:32px;text-align:center;color:#4a3800;font-size:13px">⚡</td>
+          <td colspan="2" style="padding:0 12px">
+            <div style="display:flex;align-items:center;gap:6px">
               ${delBtn}
-              <span style="font-family:var(--display);font-size:14px;font-weight:700;color:#8a6a00;letter-spacing:2px">${t.title}</span>
-              <span style="font-family:var(--mono);font-size:8px;color:#4a3800;border:1px solid #4a3800;padding:1px 5px;border-radius:2px;letter-spacing:1px">→ SE DÉCLENCHE À LA LECTURE</span>
+              <span style="font-family:var(--display);font-size:13px;font-weight:700;color:#5a4800;letter-spacing:1px">${t.title}</span>
             </div>
           </td>
-          <td class="cell-cd" style="color:#6a5000;font-family:var(--mono);font-size:10px;text-align:right;padding-right:10px">ACTION</td>
-          <td class="chain-cell"></td>
-          <td class="cell-bar"><span class="color-bar" style="background:#3a2a00"></span></td>`;
+          <td style="text-align:right;padding-right:10px;font-family:var(--mono);font-size:8px;color:#4a3800">ACTION</td>
+          <td style="width:52px;background:#07060a;border-left:1px solid #0d1424"></td>`;
         tbody.appendChild(tr);
+
+      // ════════════════════════════════════════
+      // SLOTS 2-N : PISTES EN ATTENTE
+      // ════════════════════════════════════════
       } else {
-        // ── LIGNE NORMALE ──
-        const isNext=i===this.ci+1&&this.playing;
-        const numClr=isNext?'var(--green)':'#4a6888';
-        const timeClr=isNext?'#00ff80':'#00b8d4';
-        const titleClr=isNext?'#00ff80':'#c8ddf0';
-        const durClr=isNext?'#00d96a':'#5a8090';
+        // Couleurs selon position dans la liste
+        const isImmediate=isNext;
+        const borderClr=isImmediate?'#00cc50':'#0d1828';
+        const bgClr=isImmediate?'#041008':'#050810';
+        const numClr=isImmediate?'#00cc50':'#2a4060';
+        const titleClr=isImmediate?'#80e0a0':'#a0b8c8';
+        tr.style.cssText=`border-left:2px solid ${borderClr};background:${bgClr};height:56px;`;
+        tr.onclick=()=>this.jumpTo(i);
         tr.innerHTML=`
+          <!-- Numéro -->
           <td style="width:32px;text-align:center;vertical-align:middle;padding:0;border-right:1px solid #0d1828">
-            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${numClr};line-height:1">${i+1}</div>
+            <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${numClr}">${i+1}</div>
           </td>
-          <td style="width:92px;vertical-align:middle;padding:0 10px;border-right:1px solid #0d1828">
-            <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${timeClr};letter-spacing:1px;line-height:1">${hhmm.slice(0,5)}</div>
-            <div style="font-family:var(--mono);font-size:9px;color:#2a4060;margin-top:3px">${fmtFull(this._playDur(i))}</div>
-          </td>
-          <td style="padding:0 10px;vertical-align:middle;overflow:hidden">
-            <div style="display:flex;align-items:center;gap:6px;min-width:0">
+          <!-- Titre + cues -->
+          <td style="padding:0 10px;vertical-align:middle;overflow:hidden;max-width:220px">
+            <div style="display:flex;align-items:center;gap:5px;min-width:0">
               ${delBtn}
-              <div style="min-width:0;flex:1">
-                <div style="font-family:var(--display);font-size:17px;font-weight:700;color:${titleClr};letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.title}">${t.title}</div>
-                <div style="font-family:var(--mono);font-size:9px;margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                  <span style="color:#2a7a50;background:#061410;border:1px solid #0d2a1a;padding:1px 5px;border-radius:2px">▶ ${fmtMs(this._startOf(i))}</span>
-                  ${this._introOf(i)!=null?`<span style="color:#8a7000;background:#0e0c00;border:1px solid #2a2000;padding:1px 5px;border-radius:2px">⚡ ${fmtMs(this._introOf(i))}</span>`:''}
-                  <span style="color:#6a3a8a;background:#0c0614;border:1px solid #2a1040;padding:1px 5px;border-radius:2px">⊗ ${fmtMs(this._outOf(i))}</span>
-                  <span style="color:#6a2020;background:#100606;border:1px solid #2a0e0e;padding:1px 5px;border-radius:2px">■ ${fmtMs(this._endOf(i))}</span>
+              <div style="min-width:0">
+                <div style="font-family:var(--display);font-size:15px;font-weight:700;color:${titleClr};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.5px">${t.title}</div>
+                <div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap">
+                  <span style="font-family:var(--mono);font-size:8px;color:#00a0cc;background:#020c14;border:1px solid #0a2030;padding:1px 4px;border-radius:2px">▶ ${fmtMs(startSec)}</span>
+                  ${hasIntro?`<span style="font-family:var(--mono);font-size:8px;color:#aa8800;background:#0a0800;border:1px solid #201400;padding:1px 4px;border-radius:2px">I ${fmtMs(introSec)}</span>`:''}
+                  <span style="font-family:var(--mono);font-size:8px;color:#c06000;background:#0c0600;border:1px solid #201000;padding:1px 4px;border-radius:2px">N ${fmtMs(outSec)}</span>
+                  <span style="font-family:var(--mono);font-size:8px;color:#a03030;background:#0a0404;border:1px solid #200808;padding:1px 4px;border-radius:2px">E ${fmtMs(endSec)}</span>
                 </div>
               </div>
             </div>
           </td>
-          <td style="padding:4px 8px;vertical-align:middle;min-width:200px">
-            <div style="position:relative;height:56px;border-radius:4px;overflow:hidden;background:#04080e;box-shadow:0 0 0 1px #0d1828">
-              <canvas id="${wvId}" width="600" height="56" style="display:block;width:100%;height:56px"></canvas>
-              <div id="${wvId}-pre" style="position:absolute;top:0;bottom:0;left:0;width:${inPct}%;background:rgba(0,0,0,.5);pointer-events:none"></div>
-              <div id="${wvId}-post" style="position:absolute;top:0;bottom:0;left:${outPct}%;right:0;background:rgba(0,0,0,.5);pointer-events:none"></div>
-              <div id="${wvId}-in" class="wv-handle wv-handle-in" style="left:${inPct}%" data-label="IN" data-wv="${wvId}" data-diff="${this.idx}" data-track="${i}"></div>
-              <div id="${wvId}-out" class="wv-handle wv-handle-out" style="left:${outPct}%" data-label="OUT" data-wv="${wvId}" data-diff="${this.idx}" data-track="${i}"></div>
-              <button class="wv-edit-btn" onclick="wvModalOpen('${wvId}',${this.idx},${i})">✎</button>
+          <!-- Waveform mini avec marqueurs -->
+          <td style="padding:4px 8px;vertical-align:middle">
+            <div style="position:relative;height:44px;border-radius:3px;overflow:hidden;background:#030608;box-shadow:0 0 0 1px #0a1420">
+              <canvas id="${wvId}" width="500" height="44" style="display:block;width:100%;height:44px"></canvas>
+              <!-- Zones obscurcies avant START et après END -->
+              <div style="position:absolute;top:0;bottom:0;left:0;width:${pStart}%;background:rgba(0,0,0,.55);pointer-events:none"></div>
+              <div style="position:absolute;top:0;bottom:0;left:${pEnd}%;right:0;background:rgba(0,0,0,.55);pointer-events:none"></div>
+              <!-- Marqueurs -->
+              <div style="position:absolute;top:0;bottom:0;left:${pStart}%;width:2px;background:#00c8ff;opacity:.8;pointer-events:none"></div>
+              ${hasIntro?`<div style="position:absolute;top:0;bottom:0;left:${pIntro}%;width:2px;background:#ffe000;opacity:.8;pointer-events:none"></div>`:''}
+              <div style="position:absolute;top:0;bottom:0;left:${pOut}%;width:2px;background:#f07800;opacity:.8;pointer-events:none"></div>
+              <div style="position:absolute;top:0;bottom:0;left:${pEnd}%;width:2px;background:#cc2020;opacity:.8;pointer-events:none"></div>
+              <!-- Zone intro colorée -->
+              ${hasIntro?`<div style="position:absolute;top:0;bottom:0;left:${pStart}%;width:${(parseFloat(pIntro)-parseFloat(pStart)).toFixed(2)}%;background:rgba(255,220,0,.08);pointer-events:none"></div>`:''}
+              <button class="wv-edit-btn" onclick="event.stopPropagation();wvModalOpen('${wvId}',${this.idx},${i})">✎</button>
             </div>
           </td>
+          <!-- Durée + pré-écoute -->
           <td style="width:80px;text-align:right;vertical-align:middle;padding:0 8px;border-left:1px solid #0d1828">
-            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:${durClr};letter-spacing:1px;line-height:1">${fmtMs(this._playDur(i))}</div>
-            <button id="prev-btn-${this.idx}-${i}" onclick="event.stopPropagation();previewPlay(${this.idx},${i})" style="background:transparent;border:1px solid #1a2430;color:#3a5060;font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:2px;cursor:pointer;margin-top:4px;width:100%;transition:all .15s" onmouseover="this.style.color='var(--cyan)';this.style.borderColor='var(--cyan-dim)'" onmouseout="this.style.color='#3a5060';this.style.borderColor='#1a2430'" title="Pré-écoute">▷ PRÉ</button>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${isImmediate?'#00cc50':'#2a4a60'};letter-spacing:1px">${fmtMs(this._playDur(i))}</div>
+            <button id="prev-btn-${this.idx}-${i}" onclick="event.stopPropagation();previewPlay(${this.idx},${i})" style="background:transparent;border:1px solid #0d1a24;color:#2a3a48;font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:2px;cursor:pointer;margin-top:3px;width:100%;transition:all .12s" onmouseover="this.style.color='var(--cyan)';this.style.borderColor='var(--cyan-dim)'" onmouseout="this.style.color='#2a3a48';this.style.borderColor='#0d1a24'" title="Pré-écoute">▷</button>
           </td>
-          <td class="chain-cell"><div class="chain-box${t.chain||this.auto?' on':''}" onclick="event.stopPropagation();toggleChain(${this.idx},${i})" title="Enchaîner avec le suivant"><span class="ch-arrow">↓</span><span class="ch-lbl">${t.chain||this.auto?'ON':'-'}</span></div></td>
-          <td class="cell-bar"><span style="width:5px;height:64px;display:block;background:${t.color};border-radius:2px;opacity:.9"></span></td>`;
+          <!-- Bouton NEXT -->
+          <td style="width:52px;vertical-align:middle;padding:0;background:${chainOn?'linear-gradient(180deg,#180e00,#0e0800)':'#070810'};border-left:1px solid ${chainOn?'#f07800':'#0d1424'}">
+            <div onclick="event.stopPropagation();toggleChain(${this.idx},${i})" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:4px 0">
+              <span style="font-size:16px;color:${chainOn?'#ff8800':'#1a2030'};text-shadow:${chainOn?'0 0 10px rgba(255,140,0,.6)':'none'};transition:all .15s">▶</span>
+              <span style="font-family:var(--mono);font-size:8px;letter-spacing:2px;color:${chainOn?'#f07800':'#1a2030'};font-weight:700;transition:color .15s">NEXT</span>
+            </div>
+          </td>`;
         tbody.appendChild(tr);
+        // Waveform mini
         const cv=document.getElementById(wvId);
         if(cv){
-          cv.width=600;cv.height=56;
+          cv.width=500;cv.height=44;
           if(WV_DATA_CACHE[t.file]) drawWaveformFromData(cv,WV_DATA_CACHE[t.file],0,1);
           else drawWaveform(cv,t.file);
         }
-        this._bindHandles(wvId,i);
       }
     });
-    renderChainRail(this.idx);
+
     if(typeof _mixRender==='function')_mixRender();
     document.getElementById(this.ids.counter).textContent=this.tracks.length?`${this.ci+1}/${this.tracks.length}`:'0/0';
     let tot=0;this.tracks.forEach((_,i)=>tot+=this._playDur(i));
     document.getElementById(this.ids.total).textContent=fmtFull(tot);
-    // ── État neutre : playing=false dès qu'aucun audio ne joue ──
     const anyAudioPlaying=this.tracks.some((t2,j)=>!t2.isMacro&&this.audios[j]&&!this.audios[j].paused);
     if(!anyAudioPlaying) this.playing=false;
     document.getElementById(this.ids.suffix).textContent=this.playing?'EN DIRECT':'A';
@@ -1063,16 +1080,11 @@ class Diffuser{
     if(bar)bar.classList.toggle('is-live',this.playing);
     const card=hdr?.closest('.card');
     if(card)card.classList.toggle('diff-is-live',this.playing);
-    // ── Mettre à jour les voyants ON AIR ──
     _updateOnAirBadges();
-    // ── Notifier DIFF A EXT du statut RC (seulement si changement) ──
     const activeTitle=anyAudioPlaying?this.tracks.find((t2,j)=>!t2.isMacro&&this.audios[j]&&!this.audios[j].paused)?.title||'':'';
     if(typeof sigSend==='function'){
       const newState=this.playing+'|'+activeTitle;
-      if(newState!==this._lastSentState){
-        this._lastSentState=newState;
-        sigSend({action:'rc-status',playing:this.playing,track:activeTitle});
-      }
+      if(newState!==this._lastSentState){this._lastSentState=newState;sigSend({action:'rc-status',playing:this.playing,track:activeTitle});}
     }
   }
 
@@ -1179,58 +1191,66 @@ class Diffuser{
 
     if(bgCvLive&&data){
       const inIntroZoom=introCue!=null&&introCue>startCue&&pos<introCue;
-      const inOutZoom=remToOut>=-20&&remToOut<=20;
+      const inOutZoom=remToOut>=-20&&remToOut<=20&&!inIntroZoom;
 
       let zStart,zEnd,zoneLabel;
       if(inIntroZoom){
-        // ZOOM INTRO : exactement START → INTRO (pas de marge, plein écran)
         zStart=startCue/fileDur;
         zEnd=introCue/fileDur;
         zoneLabel='intro';
       } else if(inOutZoom){
-        // ZOOM OUT : ±20s autour du point OUT
         zStart=Math.max(0,(outCue-20)/fileDur);
         zEnd=Math.min(1,(outCue+20)/fileDur);
         zoneLabel='out';
       } else {
-        // VUE COMPLÈTE : START → END
         zStart=startCue/fileDur;
         zEnd=endCue/fileDur;
         zoneLabel='full';
       }
 
-      // Ne redessiner que si la zone change (évite le clignotement)
       if(t._wvZone!==zoneLabel){
         t._wvZone=zoneLabel;
+        bgCvLive.width=1400;bgCvLive.height=200;
         drawWaveformFromData(bgCvLive,data,zStart,zEnd);
-        // Redessiner les marqueurs sur le bg canvas
         const W=bgCvLive.width,H=bgCvLive.height;
         const ctx2=bgCvLive.getContext('2d');
         const toX=(s)=>Math.round((s/fileDur-zStart)/(zEnd-zStart)*W);
-        // Zone START→INTRO : fond jaune translucide
+        // Zone intro
         if(introCue!=null&&introCue>startCue){
           const x0=Math.max(0,toX(startCue)),x1=Math.min(W,toX(introCue));
-          // Barre intro : jaune vif et visible
-          ctx2.fillStyle='rgba(255,210,0,0.28)';ctx2.fillRect(x0,0,x1-x0,H);
-          // Dégradé jaune plus intense sur le bord gauche
-          const grd=bgCvLive.getContext('2d').createLinearGradient(x0,0,x1,0);
-          grd.addColorStop(0,'rgba(255,220,0,0.45)');grd.addColorStop(1,'rgba(255,200,0,0.05)');
-          ctx2.fillStyle=grd;ctx2.fillRect(x0,0,x1-x0,H);
+          if(x1>x0){
+            const g=ctx2.createLinearGradient(x0,0,x1,0);
+            g.addColorStop(0,'rgba(255,220,0,.32)');g.addColorStop(1,'rgba(255,210,0,.04)');
+            ctx2.fillStyle=g;ctx2.fillRect(x0,0,x1-x0,H);
+          }
         }
-        // START
-        ctx2.fillStyle='rgba(0,200,255,.75)';ctx2.fillRect(toX(startCue)-1,0,3,H);
-        // INTRO
-        if(introCue!=null){ctx2.fillStyle='rgba(245,196,0,.85)';ctx2.fillRect(toX(introCue)-1,0,3,H);}
-        // OUT
-        ctx2.fillStyle='rgba(168,85,247,.7)';ctx2.fillRect(toX(outCue)-1,0,3,H);
-        // END
-        ctx2.fillStyle='rgba(239,83,80,.7)';ctx2.fillRect(toX(endCue)-1,0,3,H);
+        // Marqueurs
+        const mkr=(s,clr,w=3)=>{const x=toX(s);if(x>=0&&x<=W){ctx2.fillStyle=clr;ctx2.fillRect(x-1,0,w,H);}};
+        mkr(startCue,'rgba(0,200,255,.9)');
+        if(introCue!=null)mkr(introCue,'rgba(255,220,0,.95)');
+        mkr(outCue,'rgba(240,120,0,.9)');
+        mkr(endCue,'rgba(220,40,40,.9)');
+        // Labels
+        ctx2.font='700 10px monospace';ctx2.textBaseline='top';
+        const lbl=(s,clr,txt)=>{const x=toX(s);if(x>=0&&x<W-20){ctx2.fillStyle=clr;ctx2.fillText(txt,x+3,3);}};
+        lbl(startCue,'rgba(0,200,255,.7)','START');
+        if(introCue!=null)lbl(introCue,'rgba(255,220,0,.7)','INTRO');
+        lbl(outCue,'rgba(240,120,0,.8)','NEXT');
+        lbl(endCue,'rgba(220,40,40,.7)','END');
       }
 
-      // Playhead : position exacte dans la fenêtre courante
       const zRange=zEnd-zStart||0.001;
       const playRatio=Math.max(0,Math.min(1,(pos/fileDur-zStart)/zRange));
       if(playheadEl)playheadEl.style.left=(playRatio*100).toFixed(2)+'%';
+      // Barre de progression
+      const progEl=document.getElementById(wvId+'-prog');
+      if(progEl){
+        const inIP=introCue!=null&&introCue>startCue&&pos<introCue;
+        const progPct=inIP?Math.max(0,Math.min(100,(pos-startCue)/(introCue-startCue)*100)):
+          Math.max(0,Math.min(100,(pos-startCue)/(endCue-startCue||1)*100));
+        progEl.style.width=progPct.toFixed(2)+'%';
+        progEl.style.background=inIP?'#ffe000':'#cc2020';
+      }
     }
 
     const pb=document.getElementById('c1-progress-fill');
@@ -1558,25 +1578,7 @@ function handleDrop(e,diffIdx){
   const files=Array.from((e.dataTransfer&&e.dataTransfer.files)||[]);
   handleFiles(files,diffIdx);
 }
-function renderChainRail(diffIdx){
-  const d=D[diffIdx];if(!d)return;
-  const rail=document.getElementById('chain-rail-rows-'+diffIdx);if(!rail)return;
-  rail.innerHTML='';
-  d.tracks.forEach((t,i)=>{
-    if(t.isMacro){
-      const div=document.createElement('div');
-      div.style.cssText='flex:1;border-left:1px solid #0d1828;background:#06080e;';
-      rail.appendChild(div);return;
-    }
-    const on=!!(t.chain||d.auto);
-    const div=document.createElement('div');
-    div.className='chain-btn'+(on?' on':'');
-    div.title=on?'Désactiver enchaînement':'Activer enchaînement';
-    div.innerHTML=`<span class="cb-arrow">${on?'▶':'·'}</span><span class="cb-lbl">${on?'NEXT':'–'}</span>`;
-    div.onclick=()=>toggleChain(diffIdx,i);
-    rail.appendChild(div);
-  });
-}
+function renderChainRail(diffIdx){} // intégré inline dans render()
 function toggleChain(diffIdx,trackIdx){
   const d=D[diffIdx];if(!d)return;
   const t=d.tracks[trackIdx];if(!t||t.isMacro)return;
@@ -2096,102 +2098,151 @@ function volumeInit(){
 function _mixRender(){
   const d=D[0];
   const tracks=d?d.tracks.filter(t=>!t.isMacro):[];
-  const hasTwo=tracks.length>=2;
-  const tA=tracks[0],tB=tracks[1];
-
   const title=document.getElementById('mix-title');
   const subtitle=document.getElementById('mix-subtitle');
   const status=document.getElementById('mix-status');
   const olLabel=document.getElementById('mix-overlap-label');
-  const infoA=document.getElementById('mix-info-a');
-  const infoB=document.getElementById('mix-info-b');
-  const join=document.getElementById('mix-join');
-  const blockA=document.getElementById('mix-block-a');
-  const blockB=document.getElementById('mix-block-b');
-
-  if(title)title.className='mix-header-title'+(hasTwo?' active':'');
-
-  if(!hasTwo){
-    if(status){status.className='mix-status';status.textContent='Déposez au moins 2 pistes dans DIFF A pour activer le mixage';}
-    if(subtitle)subtitle.textContent='En attente de 2 pistes…';
-    if(olLabel)olLabel.textContent='—';
-    if(join)join.style.display='none';
-    return;
+  if(title)title.className='mix-header-title'+(tracks.length>=2?' active':'');
+  if(tracks.length<1){
+    if(subtitle)subtitle.textContent='En attente de pistes…';
+    if(status){status.className='mix-status';status.textContent='Déposez des pistes dans DIFF A';}
+    _mixDrawTimeline(tracks,d);return;
   }
-
-  if(subtitle)subtitle.textContent=(tA?tA.title:'?')+' → '+(tB?tB.title:'?');
-
-  // Dimensions du bloc A (fixe, occupe 50% de la timeline)
-  const tl=document.getElementById('mix-timeline');
-  const tlW=tl?tl.offsetWidth:600;
-  const durA=d.durs[d.tracks.indexOf(tA)]||1;
-  const durB=d.durs[d.tracks.indexOf(tB)]||1;
-  const durMax=Math.max(durA,durB,1);
-
-  // Largeur des blocs proportionnelle à la durée (sur 90% de la timeline)
-  const scale=tlW*0.9/((durA+durB)*1.1);
-  const wA=Math.round(durA*scale);
-  const wB=Math.round(durB*scale);
-
-  // Bloc A : toujours à gauche, sa largeur est fixe
-  if(blockA){blockA.style.left='2%';blockA.style.width=wA+'px';}
-
-  // Bloc B : déplaçable, sa position détermine le décalage
-  if(!blockB)return;
-  const leftB=parseFloat(blockB.style.left)||50;
-  const xB=tlW*leftB/100;
-  if(blockB)blockB.style.width=wB+'px';
-
-  // Point OUT de A sur la timeline (en px)
-  const outCueA=d._outOf(d.tracks.indexOf(tA));
-  const outPctA=outCueA/durA;
-  const xOutA=Math.round(2/100*tlW + wA*outPctA);
-
-  // Calcul du décalage temporel entre OUT de A et début de B
-  const xStartB=xB;
-  const overlapPx=xOutA-xStartB; // positif = B commence avant OUT de A (superposition)
-  const overlapSec=overlapPx/scale;
-
-  if(olLabel)olLabel.textContent=(overlapSec>0.5?'+':(overlapSec<-0.5?'':''))+Math.round(overlapSec)+'s';
-  if(olLabel)olLabel.style.color=Math.abs(overlapSec)<1?'#00c8a0':overlapSec>0?'#f07800':'#5a8090';
-
-  // Ligne de jonction OUT A → START B
-  if(join){
-    if(Math.abs(overlapPx)>4){
-      join.style.display='block';
-      const joinX=Math.min(xOutA,xStartB);
-      join.style.left=joinX+'px';
-      join.style.borderLeft='2px dashed rgba(240,120,0,.5)';
-    } else {
-      join.style.display='none';
-    }
+  if(subtitle)subtitle.textContent=tracks.map(t=>t.title).join(' → ');
+  const delta=_mixBOffset||0;
+  if(olLabel){
+    const msg=Math.abs(delta)<0.5?'Enchaînement direct':delta>0?'Silence +'+delta.toFixed(1)+'s':'Superposition '+delta.toFixed(1)+'s';
+    olLabel.textContent=msg;
+    olLabel.style.color=Math.abs(delta)<0.5?'#00c8a0':delta>0?'#5a8090':'#f07800';
   }
-
-  // Marquer le point OUT sur le bloc A
-  const outMarker=blockA?blockA.querySelector('.mix-block-out'):null;
-  if(outMarker)outMarker.style.left=(outPctA*100).toFixed(1)+'%';
-
-  if(infoA)infoA.textContent='A OUT: '+fmtMs(outCueA);
-  if(infoB)infoB.textContent='B START: '+fmtMs(d._startOf(d.tracks.indexOf(tB)));
-
-  const snapMsg=Math.abs(overlapSec)<0.5?'✓ Enchaînement direct au point OUT':
-    overlapSec>0?'⚠ Superposition de '+Math.round(overlapSec)+'s':
-    'Silence de '+Math.round(-overlapSec)+'s';
-  if(status){status.className='mix-status'+(Math.abs(overlapSec)<0.5?' active':' warn');status.textContent=snapMsg;}
-
-  // Dessiner les waveforms dans les blocs
-  _mixDrawBlock('mix-cv-a',tA,d,true);
-  _mixDrawBlock('mix-cv-b',tB,d,false);
-
-  // Mise à jour labels
-  const lblA=document.getElementById('mix-lbl-a');
-  const lblB=document.getElementById('mix-lbl-b');
-  if(lblA)lblA.textContent=tA?tA.title:'—';
-  if(lblB)lblB.textContent=tB?tB.title:'—';
-
-  // Ruler
-  _mixDrawRuler(durA+durB+10);
+  const snapMsg=tracks.length>=2?(Math.abs(delta)<0.5?'✓ Enchaînement au point NEXT de A':(delta>0?'Silence entre A et B':'Superposition A+B')):'—';
+  if(status){status.className='mix-status'+(tracks.length>=2?' active':'');status.textContent=snapMsg;}
+  _mixDrawTimeline(tracks,d);
 }
+
+let _mixBOffset=0,_mixDragTL=false,_mixDragStartX=0,_mixDragStartOff=0;
+
+function _mixDrawTimeline(tracks,d){
+  const tl=document.getElementById('mix-timeline');if(!tl)return;
+  const W=tl.offsetWidth||700,H=tl.offsetHeight||140;
+  let cv=document.getElementById('mix-tl-cv');
+  if(!cv){
+    cv=document.createElement('canvas');cv.id='mix-tl-cv';
+    cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1;';
+    tl.appendChild(cv);_mixBindDrag(tl,cv);
+  }
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#030509';ctx.fillRect(0,0,W,H);
+  if(!tracks||!tracks.length){
+    ctx.fillStyle='#1a2a40';ctx.font='11px monospace';ctx.textAlign='center';
+    ctx.fillText('Aucune piste chargée',W/2,H/2);return;
+  }
+  let totalDur=0;
+  tracks.forEach((t,i)=>{const idx=d.tracks.indexOf(t);totalDur+=(d._endOf(idx)-d._startOf(idx));});
+  if(tracks.length>=2)totalDur+=Math.max(0,_mixBOffset);
+  totalDur=Math.max(totalDur,10);
+  const RH=20,PAD=8,TRACK_H=Math.floor((H-RH-PAD)/Math.min(tracks.length,4));
+  const scale=(W-PAD*2)/totalDur;
+  // Règle
+  ctx.fillStyle='#050810';ctx.fillRect(0,0,W,RH);
+  ctx.fillStyle='#0d1828';ctx.fillRect(0,RH-1,W,1);
+  const stepSec=totalDur<60?5:totalDur<300?15:30;
+  ctx.font='8px monospace';ctx.textAlign='center';
+  for(let s=0;s<=totalDur+stepSec;s+=stepSec){
+    const x=PAD+Math.round(s*scale);if(x>W)break;
+    ctx.fillStyle='#1e2a40';ctx.fillRect(x,RH-5,1,5);
+    ctx.fillStyle='#2a4060';ctx.fillText(fmtMs(s),x,RH-6);
+  }
+  const COLORS=['rgba(200,30,30,.15)','rgba(0,120,200,.15)','rgba(0,160,80,.12)','rgba(160,80,200,.12)'];
+  const BORDERS=['rgba(200,40,40,.6)','rgba(0,160,240,.6)','rgba(0,200,100,.5)','rgba(160,100,240,.5)'];
+  const WV_COLORS=['#cc3030','#0090d0','#00b860','#a060d0'];
+  let cursorX=PAD;
+  tracks.forEach((t,i)=>{
+    const trackIdx=d.tracks.indexOf(t);
+    const dur=d.durs[trackIdx]||1;
+    const startSec=d._startOf(trackIdx),endSec=d._endOf(trackIdx);
+    const outSec=d._outOf(trackIdx),introSec=d._introOf(trackIdx);
+    const playDur=endSec-startSec;
+    let blockX=cursorX;
+    if(i===1&&tracks.length>=2){
+      const prevIdx=d.tracks.indexOf(tracks[0]);
+      const nextA=d._outOf(prevIdx)-d._startOf(prevIdx);
+      blockX=PAD+Math.round((nextA+Math.max(0,_mixBOffset))*scale);
+    }
+    const blockW=Math.max(4,Math.round(playDur*scale));
+    const y=RH+PAD+i*TRACK_H,bH=Math.max(20,TRACK_H-4);
+    ctx.fillStyle=COLORS[i%4];ctx.fillRect(blockX,y,blockW,bH);
+    ctx.strokeStyle=BORDERS[i%4];ctx.lineWidth=1;ctx.strokeRect(blockX+.5,y+.5,blockW-1,bH-1);
+    const data=WV_DATA_CACHE[t.file];
+    if(data){
+      const s0=Math.floor(startSec/dur*data.length),s1=Math.floor(endSec/dur*data.length);
+      const seg=Math.max(1,s1-s0),step=Math.max(1,Math.floor(seg/blockW));
+      ctx.fillStyle=WV_COLORS[i%4];
+      for(let px=0;px<blockW;px++){
+        const base=s0+Math.floor(px/blockW*seg);let mn=0,mx=0;
+        for(let j=0;j<step;j++){const v=data[base+j]||0;if(v<mn)mn=v;if(v>mx)mx=v;}
+        const amp=Math.max(Math.abs(mn),Math.abs(mx));if(amp<0.003)continue;
+        const cy=y+bH/2,h=Math.max(1,amp*bH*.8);
+        ctx.fillRect(blockX+px,cy-h/2,1,h);
+      }
+    } else {drawWaveform(document.createElement('canvas'),t.file).then(()=>_mixDrawTimeline(tracks,d));}
+    if(introSec!=null&&introSec>startSec){
+      const introW=Math.round((introSec-startSec)*scale);
+      const g=ctx.createLinearGradient(blockX,0,blockX+introW,0);
+      g.addColorStop(0,'rgba(255,220,0,.3)');g.addColorStop(1,'rgba(255,210,0,.04)');
+      ctx.fillStyle=g;ctx.fillRect(blockX,y,introW,bH);
+    }
+    const mkr=(sec,clr,lbl)=>{
+      const x=blockX+Math.round((sec-startSec)*scale);
+      if(x<blockX||x>blockX+blockW)return;
+      ctx.fillStyle=clr;ctx.fillRect(x,y,2,bH);
+      if(lbl){ctx.fillStyle=clr;ctx.font='700 8px monospace';ctx.textAlign='left';ctx.fillText(lbl,x+2,y+bH-3);}
+    };
+    mkr(startSec,'rgba(0,200,255,.9)','▶');
+    if(introSec!=null)mkr(introSec,'rgba(255,220,0,.95)','I');
+    mkr(outSec,'rgba(240,120,0,.9)','N');
+    mkr(endSec,'rgba(220,40,40,.9)','E');
+    ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='700 10px monospace';ctx.textAlign='left';
+    let ttl=t.title;const maxW=blockW-8;
+    while(ctx.measureText(ttl).width>maxW&&ttl.length>4)ttl=ttl.slice(0,-1);
+    if(ttl!==t.title)ttl+='…';
+    ctx.fillText(ttl,blockX+4,y+12);
+    if(i===0&&tracks.length>=2){
+      const xNext=blockX+Math.round((outSec-startSec)*scale);
+      const xB=PAD+Math.round((outSec-startSec+Math.max(0,_mixBOffset))*scale);
+      if(Math.abs(xB-xNext)>2){
+        ctx.strokeStyle='rgba(240,120,0,.5)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+        ctx.beginPath();ctx.moveTo(xNext,y+bH);ctx.lineTo(xB,y+bH+4);ctx.stroke();ctx.setLineDash([]);
+      }
+    }
+    const audio=d.audios[trackIdx];const pos=audio?audio.currentTime:0;
+    if(audio&&!audio.paused){const playX=blockX+Math.round((pos-startSec)*scale);ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillRect(playX,y,2,bH);}
+    cursorX=blockX+blockW+2;
+  });
+}
+
+function _mixBindDrag(tl,cv){
+  const onDown=(e)=>{_mixDragTL=true;_mixDragStartX=e.touches?e.touches[0].clientX:e.clientX;_mixDragStartOff=_mixBOffset;e.preventDefault();};
+  const onMove=(e)=>{
+    if(!_mixDragTL)return;const d=D[0];if(!d)return;
+    const tracks=d.tracks.filter(t=>!t.isMacro);if(tracks.length<2)return;
+    const clientX=e.touches?e.touches[0].clientX:e.clientX;
+    const W=tl.getBoundingClientRect().width||700;
+    const totalDur=Math.max(10,tracks.reduce((s,t)=>{const idx=d.tracks.indexOf(t);return s+(d._endOf(idx)-d._startOf(idx));},0)+20);
+    const scale=(W-16)/totalDur;
+    _mixBOffset=Math.max(-20,Math.min(60,_mixDragStartOff+(clientX-_mixDragStartX)/scale));
+    _mixRender();
+  };
+  const onUp=()=>{_mixDragTL=false;};
+  cv.addEventListener('mousedown',onDown,{passive:false});
+  cv.addEventListener('touchstart',onDown,{passive:false});
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('touchmove',onMove,{passive:false});
+  document.addEventListener('mouseup',onUp);
+  document.addEventListener('touchend',onUp);
+}
+
 
 function _mixDrawBlock(cvId,t,d,isA){
   const cv=document.getElementById(cvId);if(!cv)return;
