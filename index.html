@@ -2033,23 +2033,29 @@ class Diffuser{
     if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
 
     const inCue  = this._inOf(i);
+    // Utiliser audio.duration si durs[i] pas encore chargé
+    const realDur = audio.duration && !isNaN(audio.duration) ? audio.duration : (this.durs[i]||0);
+    if(realDur > 0 && (!this.durs[i] || this.durs[i] !== realDur)){
+      this.durs[i] = realDur;
+      if(this.tracks[i] && (this.tracks[i].outCue===null||this.tracks[i].outCue===undefined))
+        this.tracks[i].outCue = realDur;
+    }
     const outCue = this._outOf(i);
-    const dur    = this.durs[i] || 0;
-    const chainDelay = Math.max(0, outCue - inCue); // délai avant d'enchaîner
+    const chainDelay = Math.max(0, outCue - inCue);
 
     audio.currentTime = inCue;
 
-    // Au point OUT : démarrer la piste suivante (sans couper celle-ci)
+    // Au point NEXT : enchaîner si autoNext activé
     this._outTimer = setTimeout(()=>{
       if(token !== this._playToken || !this.playing) return;
-      // La piste i continue de jouer — on avance juste le curseur
       this.ci = 0;
-      this.render(); // met à jour l'UI (la suivante devient active visuellement)
-      if(this.tracks.length > 1){
-        // Lancer la piste suivante (index 1, qui deviendra 0 après suppression de i)
+      this.render();
+      // Vérifier autoNext sur la piste courante
+      const autoOn = (t.autoNext !== false);
+      if(autoOn && this.tracks.length > 1){
         this._startNextAfterChain(i, token);
       }
-      // Si c'est la seule piste, on laisse juste le son finir naturellement
+      // Si autoNext OFF ou piste unique : le son finit naturellement, rien de plus
     }, chainDelay * 1000);
 
     // À la fin naturelle du son : supprimer la piste de la liste
@@ -2079,6 +2085,32 @@ class Diffuser{
       if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
       console.warn('play() error:', e);
     });
+
+    // Si la durée n'était pas encore connue, recalculer le timer dès loadedmetadata
+    if(!realDur || realDur <= 0){
+      const onMeta = ()=>{
+        audio.removeEventListener('loadedmetadata', onMeta);
+        if(token !== this._playToken || !this.playing) return;
+        // Mettre à jour la durée
+        this.durs[i] = audio.duration;
+        if(this.tracks[i] && (this.tracks[i].outCue===null||this.tracks[i].outCue===undefined))
+          this.tracks[i].outCue = audio.duration;
+        // Recalculer et relancer le timer
+        if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
+        const newOut = this._outOf(i);
+        const newIn  = this._inOf(i);
+        const elapsed = audio.currentTime - newIn;
+        const remaining = Math.max(0, (newOut - newIn) - elapsed);
+        const autoOn2 = (t.autoNext !== false);
+        this._outTimer = setTimeout(()=>{
+          if(token !== this._playToken || !this.playing) return;
+          this.ci = 0; this.render();
+          if(autoOn2 && this.tracks.length > 1) this._startNextAfterChain(i, token);
+        }, remaining * 1000);
+        this.render();
+      };
+      audio.addEventListener('loadedmetadata', onMeta);
+    }
   }
 
   // Enchaîne la piste suivante après le point OUT
@@ -2400,10 +2432,33 @@ function pazTick(){
     // Centrer sur nextT
     wantOn=true; wS=Math.max(0,(nextT-ZN)/dur); wE=Math.min(1,(nextT+ZN)/dur); wKey='next';
   }
+  // Appliquer le zoom seulement si l'état cible change
   if(wantOn!==_pazZoom.on||wKey!==_pazZoom.key){
     _pazZoom={on:wantOn,s:wS,e:wE,key:wKey};
-    pazDrawBg(true); pazMarkers();
+    // Démarrer une interpolation douce vers la nouvelle vue
+    _pazZoomAnimate(wantOn?wS:0, wantOn?wE:1, wS, wE);
   }
+}
+
+// ── Zoom animé (interpolation smooth) ──
+let _pazZoomRaf=null;
+function _pazZoomAnimate(sFrom, eFrom, sTo, eTo){
+  const DUR=600; // ms pour la transition
+  const t0=performance.now();
+  const sS=sFrom, eS=eFrom;
+  if(_pazZoomRaf){ cancelAnimationFrame(_pazZoomRaf); _pazZoomRaf=null; }
+  const step=(now)=>{
+    const prog=Math.min(1,(now-t0)/DUR);
+    // Ease in-out cubic
+    const ease=prog<.5?4*prog*prog*prog:1-Math.pow(-2*prog+2,3)/2;
+    const curS=sS+(sTo-sS)*ease;
+    const curE=eS+(eTo-eS)*ease;
+    _pazZoom.s=curS; _pazZoom.e=curE;
+    pazDrawBg(true); pazMarkers();
+    if(prog<1) _pazZoomRaf=requestAnimationFrame(step);
+    else { _pazZoom.s=sTo; _pazZoom.e=eTo; _pazZoomRaf=null; }
+  };
+  _pazZoomRaf=requestAnimationFrame(step);
 }
 
 // ── Marqueurs NEXT / INTRO ──
@@ -2532,10 +2587,20 @@ D[0].render=function(){ _r0(); pazRender(); };
 
 const _s0=D[0]._startTrack.bind(D[0]);
 D[0]._startTrack=function(i){
-  _pazWvFile=null; _pazZoom={on:false,s:0,e:1,key:''};
+  // Reset waveform et zoom pour la nouvelle piste
+  _pazWvFile=null;
+  _pazZoom={on:false,s:0,e:1,key:''};
+  // Heure de lancement
   _pazLaunchTime=nowClock();
   const lEl=document.getElementById('paz-launch');
   if(lEl) lEl.textContent=_pazLaunchTime;
+  // Mettre à jour le titre immédiatement (avant _s0 qui est async)
+  const newT = D[0].tracks[i];
+  const tEl  = document.getElementById('paz-title');
+  if(tEl && newT && !newT.isMacro){
+    tEl.textContent = newT.title;
+    tEl.style.color = '#ffffff';
+  }
   _s0(i);
 };
 
