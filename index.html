@@ -41,8 +41,8 @@
   @keyframes live-pulse{0%,100%{opacity:1;box-shadow:0 0 10px #ff0000;}50%{opacity:.5;box-shadow:0 0 4px #ff0000;}}
   /* Barre de progression full rouge quand en lecture */
   .diff-progress-fill{background:#cc0000!important;transition:width .08s linear;}
-  .table.is-radio tbody tr.row-active{background:#1a0000!important;border-left:4px solid #ff0000!important;border-top:1px solid #880000!important;border-bottom:1px solid #880000!important;}
-  .table.is-radio tbody tr.row-active::before{background:#cc0000!important;}
+  /* SLOT ACTIF - nouveau style */
+  .table.is-radio tbody tr.slot-active td{padding:0!important;height:auto!important;}
   /* Marqueur OUT (point d'enchaînement) sur la ligne active */
   .table.is-radio tbody tr.row-active::after{
     content:'';position:absolute;top:0;bottom:0;
@@ -875,57 +875,67 @@ class Diffuser{
       const hhmm=fmt2(st.getHours())+':'+fmt2(st.getMinutes())+':'+fmt2(st.getSeconds());
 
       // ════════════════════════════════════════
-      // SLOT 1 : PISTE ACTIVE
+      // SLOT 1 : PISTE ACTIVE — style broadcast
       // ════════════════════════════════════════
       if(isActive && !isMacro){
-        tr.className='slot-active'+(inIntroPhase?' is-intro':isPost?' is-post':'');
         const rem=inIntroPhase?Math.max(0,introSec-pos):Math.max(0,outSec-pos);
         const cdLabel=inIntroPhase?'INTRO':isPost?'END':'NEXT';
-        const cdColor=inIntroPhase?'#ffe000':isPost?'#f07800':'#ff4040';
+        // Couleurs selon phase
+        const accentClr=inIntroPhase?'#ffe000':isPost?'#f07800':'#e03020';
+        const bgTopClr=inIntroPhase?'#1a1400':isPost?'#1a0c00':'#160000';
+        tr.className='';
         tr.innerHTML=`
-          <td colspan="5" style="padding:0;height:200px;position:relative;overflow:hidden;border-bottom:2px solid ${inIntroPhase?'#ffe000':isPost?'#f07800':'#cc0000'}">
-            <!-- WAVEFORM fond -->
-            <canvas id="${wvId}-bg" width="1400" height="200" style="position:absolute;inset:0;width:100%;height:200px;display:block;z-index:1"></canvas>
-            <!-- Barre de progression -->
-            <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#0a1020;z-index:6">
-              <div id="${wvId}-prog" style="height:100%;width:0%;background:${inIntroPhase?'#ffe000':'#cc2020'};transition:width .05s linear"></div>
+          <td colspan="5" style="padding:0;background:${bgTopClr};border-top:3px solid ${accentClr};border-bottom:1px solid #1a1a1a;">
+
+            <!-- ══ BARRE DE PROGRESSION (top, très visible) ══ -->
+            <div style="height:5px;background:#1a1a1a;position:relative;">
+              <div id="${wvId}-prog" style="position:absolute;left:0;top:0;height:100%;width:0%;background:${accentClr};transition:width .08s linear;"></div>
             </div>
-            <!-- Playhead -->
-            <div id="${wvId}-playhead" style="position:absolute;top:0;bottom:3px;z-index:7;pointer-events:none;left:0%;width:2px;background:rgba(255,255,255,.9);box-shadow:0 0 8px #fff"></div>
-            <!-- Overlay infos — par-dessus la waveform -->
-            <div style="position:absolute;inset:0;z-index:8;display:flex;align-items:stretch;pointer-events:none">
-              <!-- Numéro + horaire -->
-              <div style="width:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.7);border-right:1px solid rgba(255,255,255,.08);flex-shrink:0">
-                <div style="font-size:22px;color:${cdColor};line-height:1">▶</div>
-                <div style="font-family:var(--mono);font-size:8px;color:rgba(200,200,200,.4);margin-top:4px">${hhmm.slice(0,5)}</div>
+
+            <!-- ══ LIGNE PRINCIPALE ══ -->
+            <div style="display:flex;align-items:stretch;min-height:52px;">
+
+              <!-- Statut + numéro -->
+              <div style="width:52px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:${accentClr};gap:2px;">
+                <span style="font-size:20px;color:#000;line-height:1">▶</span>
+                <span style="font-family:var(--mono);font-size:8px;color:rgba(0,0,0,.6);letter-spacing:1px">${hhmm.slice(0,5)}</span>
               </div>
-              <!-- Titre + cues + boutons -->
-              <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 14px;min-width:0;pointer-events:all">
-                <div style="font-family:var(--display);font-size:${inIntroPhase?'26':'30'}px;font-weight:700;color:${inIntroPhase?'#ffe060':'#ffffff'};letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 12px rgba(0,0,0,.95);line-height:1.15">${t.title}</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
+
+              <!-- Titre + artiste -->
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 14px;min-width:0;pointer-events:all;">
+                <div style="font-family:var(--display);font-size:22px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1;">${t.title}</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
                   ${delBtn}
-                  <button onclick="wvModalOpen('${wvId}',${this.idx},${i})" style="background:rgba(0,0,0,.6);border:1px solid #2a3a50;color:#5a8090;font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px;pointer-events:all">✎ EDIT</button>
-                  <span style="font-family:var(--mono);font-size:9px;background:rgba(0,40,60,.7);border:1px solid rgba(0,200,255,.3);color:#00c8ff;padding:2px 7px;border-radius:2px">START ${fmtMs(startSec)}</span>
-                  ${hasIntro?`<span style="font-family:var(--mono);font-size:9px;background:rgba(40,30,0,.7);border:1px solid rgba(255,220,0,.4);color:#ffe000;padding:2px 7px;border-radius:2px">INTRO ${fmtMs(introSec)}</span>`:''}
-                  <span style="font-family:var(--mono);font-size:9px;background:rgba(40,0,40,.7);border:1px solid rgba(200,80,255,.4);color:#f07800;padding:2px 7px;border-radius:2px">NEXT ${fmtMs(outSec)}</span>
-                  <span style="font-family:var(--mono);font-size:9px;background:rgba(40,0,0,.7);border:1px solid rgba(200,40,40,.4);color:#ff5050;padding:2px 7px;border-radius:2px">END ${fmtMs(endSec)}</span>
+                  <button onclick="wvModalOpen('${wvId}',${this.idx},${i})" style="background:#0d1420;border:1px solid #1e3040;color:#4a7090;font-family:var(--mono);font-size:8px;padding:1px 7px;border-radius:2px;cursor:pointer;letter-spacing:1px;">✎ EDIT</button>
+                  <span style="font-family:var(--mono);font-size:9px;color:#00c8ff;opacity:.7">▶${fmtMs(startSec)}</span>
+                  ${hasIntro?`<span style="font-family:var(--mono);font-size:9px;color:#ffe000;background:#1a1400;padding:1px 6px;border-radius:2px;border:1px solid #3a3000;">I ${fmtMs(introSec)}</span>`:''}
+                  <span style="font-family:var(--mono);font-size:9px;color:#f07800;background:#1a0c00;padding:1px 6px;border-radius:2px;border:1px solid #3a2000;">N ${fmtMs(outSec)}</span>
+                  <span style="font-family:var(--mono);font-size:9px;color:#888;">E ${fmtMs(endSec)}</span>
                 </div>
               </div>
-              <!-- Compteur -->
-              <div style="width:140px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding-right:14px;background:rgba(0,0,0,.65);border-left:1px solid rgba(255,255,255,.06);flex-shrink:0;pointer-events:none">
-                <div style="font-family:var(--mono);font-size:8px;color:rgba(200,200,200,.4);letter-spacing:2px;margin-bottom:4px">${cdLabel}</div>
-                <div id="${this.ids.body}-cd-${i}" style="font-family:var(--mono);font-size:38px;font-weight:700;color:${cdColor};letter-spacing:1px;line-height:1;text-shadow:0 0 20px ${cdColor}60">${fmtMs(rem)}</div>
-                <div id="${this.ids.body}-cd-sub-${i}" style="font-family:var(--mono);font-size:8px;color:rgba(200,200,200,.3);letter-spacing:2px;margin-top:3px">${fmtMs(endSec-pos>0?endSec-pos:0)}</div>
+
+              <!-- Compteur principal — très lisible -->
+              <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 18px;background:#0a0a0a;border-left:1px solid #1a1a1a;min-width:130px;">
+                <span style="font-family:var(--mono);font-size:8px;letter-spacing:3px;color:${accentClr};text-transform:uppercase;margin-bottom:2px;">${cdLabel}</span>
+                <span id="${this.ids.body}-cd-${i}" style="font-family:'Share Tech Mono',monospace;font-size:36px;font-weight:400;color:${accentClr};letter-spacing:2px;line-height:1;">${fmtMs(rem)}</span>
+                <span id="${this.ids.body}-cd-sub-${i}" style="font-family:var(--mono);font-size:9px;color:#444;margin-top:2px;">${fmtFull(Math.max(0,endSec-pos))}</span>
               </div>
+            </div>
+
+            <!-- ══ WAVEFORM — pleine largeur, hauteur fixe ══ -->
+            <div style="position:relative;height:72px;background:#060810;overflow:hidden;">
+              <canvas id="${wvId}-bg" width="1400" height="72" style="position:absolute;inset:0;width:100%;height:72px;display:block;opacity:.85;"></canvas>
+              <div id="${wvId}-playhead" style="position:absolute;top:0;bottom:0;width:2px;background:#fff;opacity:.9;box-shadow:0 0 6px #fff;z-index:3;pointer-events:none;left:0;"></div>
+              <!-- Label phase en overlay -->
+              <div style="position:absolute;top:4px;right:8px;font-family:var(--mono);font-size:8px;color:${accentClr};opacity:.6;letter-spacing:2px;z-index:4;">${inIntroPhase?'⬤ INTRO':isPost?'⬤ POST-OUT':'⬤ LIVE'}</div>
             </div>
           </td>`;
         tbody.appendChild(tr);
         // Dessin waveform initial
         const bgCv=document.getElementById(wvId+'-bg');
         if(bgCv&&this.durs[i]>0){
-          bgCv.width=1400;bgCv.height=200;
+          bgCv.width=1400;bgCv.height=72;
           const _drawSlot1=(el)=>{
-            // Vue START→END complète au démarrage — tick() zoome ensuite
             drawWaveformFromData(el,WV_DATA_CACHE[t.file],startSec/dur,endSec/dur);
             const W2=el.width,H2=el.height;const ctx2=el.getContext('2d');
             const rng=endSec-startSec||0.001;
@@ -1043,11 +1053,15 @@ class Diffuser{
             <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${isImmediate?'#00cc50':'#2a4a60'};letter-spacing:1px">${fmtMs(this._playDur(i))}</div>
             <button id="prev-btn-${this.idx}-${i}" onclick="event.stopPropagation();previewPlay(${this.idx},${i})" style="background:transparent;border:1px solid #0d1a24;color:#2a3a48;font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:2px;cursor:pointer;margin-top:3px;width:100%;transition:all .12s" onmouseover="this.style.color='var(--cyan)';this.style.borderColor='var(--cyan-dim)'" onmouseout="this.style.color='#2a3a48';this.style.borderColor='#0d1a24'" title="Pré-écoute">▷</button>
           </td>
-          <!-- Bouton NEXT -->
-          <td style="width:52px;vertical-align:middle;padding:0;background:${chainOn?'linear-gradient(180deg,#180e00,#0e0800)':'#070810'};border-left:1px solid ${chainOn?'#f07800':'#0d1424'}">
-            <div onclick="event.stopPropagation();toggleChain(${this.idx},${i})" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:4px 0">
-              <span style="font-size:16px;color:${chainOn?'#ff8800':'#1a2030'};text-shadow:${chainOn?'0 0 10px rgba(255,140,0,.6)':'none'};transition:all .15s">▶</span>
-              <span style="font-family:var(--mono);font-size:8px;letter-spacing:2px;color:${chainOn?'#f07800':'#1a2030'};font-weight:700;transition:color .15s">NEXT</span>
+          <!-- Bouton NEXT — très visible -->
+          <td style="width:56px;vertical-align:middle;padding:0;">
+            <div onclick="event.stopPropagation();toggleChain(${this.idx},${i})"
+              style="height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;
+                     background:${chainOn?'#f07800':'#0e0e12'};
+                     border-left:2px solid ${chainOn?'#ff9020':'#1a1a24'};
+                     transition:all .12s;">
+              <span style="font-size:${chainOn?'18':'14'}px;color:${chainOn?'#fff':'#333'};line-height:1;transition:all .12s;">${chainOn?'▶▶':'▶'}</span>
+              <span style="font-family:var(--mono);font-size:7px;letter-spacing:2px;color:${chainOn?'#fff':'#333'};font-weight:700;">NEXT</span>
             </div>
           </td>`;
         tbody.appendChild(tr);
@@ -1210,7 +1224,7 @@ class Diffuser{
 
       if(t._wvZone!==zoneLabel){
         t._wvZone=zoneLabel;
-        bgCvLive.width=1400;bgCvLive.height=200;
+        bgCvLive.width=1400;bgCvLive.height=72;
         drawWaveformFromData(bgCvLive,data,zStart,zEnd);
         const W=bgCvLive.width,H=bgCvLive.height;
         const ctx2=bgCvLive.getContext('2d');
