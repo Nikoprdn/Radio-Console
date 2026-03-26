@@ -17,20 +17,21 @@
     --yellow:#f5c400; --orange:#f07800; --red:#e03020;
     --txt:#ddeeff; --txt-dim:#5a7090; --txt-mute:#3a5070;
   }
-  html,body{background:var(--bg)!important;min-height:100vh;}
-  .navbar.is-console{background:var(--s1);border-bottom:1px solid var(--border);}
+  html{background:var(--bg)!important;height:100%;margin:0;overflow:hidden;}
+body{background:var(--bg)!important;display:flex;flex-direction:column;height:100vh;overflow:hidden;margin:0;}
+  .navbar.is-console{background:var(--s1);border-bottom:1px solid var(--border);min-height:44px;}
   .navbar-brand .navbar-item{font-family:var(--display);font-size:20px;font-weight:700;color:var(--cyan);letter-spacing:2px;}
   .navbar-end .navbar-item{font-family:var(--mono);font-size:11px;color:var(--txt-dim);}
   .clock-display{font-family:var(--mono);font-size:22px;color:var(--cyan);letter-spacing:3px;}
-  .section.is-console{padding:1rem;background:var(--bg);}
+  .section.is-console{padding:0;background:var(--bg);flex:1;display:flex;flex-direction:column;min-height:0;}
   .card.is-dark-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;box-shadow:none;}
-  .card.is-dark-card .card-header{background:var(--s2);border-bottom:1px solid var(--border);box-shadow:none;border-radius:8px 8px 0 0;}
+  .card.is-dark-card .card-header{background:var(--s2);border-bottom:1px solid var(--border);box-shadow:none;border-radius:0;flex-shrink:0;}
   .card.is-dark-card .card-header-title{color:var(--txt);font-family:var(--display);font-size:15px;letter-spacing:1px;padding:.6rem 1rem;}
   .card.is-dark-card .card-content{padding:0;flex:1;overflow-y:auto;}
-  .card.is-dark-card .card-footer{background:var(--s3);border-top:1px solid var(--border);border-radius:0 0 8px 8px;padding:.6rem 1rem;gap:1rem;}
+  .card.is-dark-card .card-footer{background:var(--s3);border-top:1px solid var(--border);border-radius:0;padding:.6rem 1rem;gap:1rem;flex-shrink:0;}
   .card.is-dark-card .card-footer-item{color:var(--txt-dim);font-family:var(--mono);font-size:11px;border:none;padding:0;justify-content:flex-start;}
   .diff-badge{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;padding:2px 10px;border-radius:4px;}
-  .notification.is-onair{background:var(--s2);border:1px solid var(--border);border-top:none;border-radius:0;padding:.5rem 1rem;margin:0;display:flex;align-items:center;justify-content:space-between;transition:background .2s,border-color .2s;}
+  .notification.is-onair{background:var(--s2);border:1px solid var(--border);border-top:none;border-radius:0;padding:.5rem 1rem;margin:0;display:flex;align-items:center;justify-content:space-between;transition:background .2s,border-color .2s;flex-shrink:0;}
 
   /* ── État EN DIRECT ── */
   .diff-card-header.is-live{
@@ -66,7 +67,7 @@
   .timer-box .label-txt{font-family:var(--mono);font-size:8px;color:var(--txt-dim);letter-spacing:1px;text-transform:uppercase;display:block;}
   .timer-box .val-txt{font-family:var(--mono);font-size:15px;letter-spacing:1px;line-height:1;display:block;}
   .table.is-radio{background:transparent;width:100%;}
-  .table.is-radio thead th{background:var(--s3);color:var(--txt-mute);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;border-color:var(--border)!important;padding:8px 14px;font-weight:400;}
+  .table.is-radio thead th{background:var(--s3);color:var(--txt-mute);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;border-color:var(--border)!important;padding:8px 14px;font-weight:400;position:sticky;top:0;z-index:3;}
   .table.is-radio tbody tr{border-bottom:1px solid var(--border);cursor:pointer;position:relative;overflow:hidden;}
   .table.is-radio tbody tr:hover td{background:#0e1830;}
   .table.is-radio tbody td{border-color:var(--border)!important;color:var(--txt-dim);padding:0 14px;height:64px;vertical-align:middle;white-space:nowrap;font-size:13px;}
@@ -146,7 +147,7 @@
   .cell-wv{padding:4px 8px!important;vertical-align:middle!important;}
   .cell-bar{width:5px;padding:0!important;}
   .color-bar{height:56px;width:5px;display:block;}
-  .progress.is-elapsed{height:3px;margin:0;border-radius:0;background:var(--border);}
+  .progress.is-elapsed{height:4px;margin:0;border-radius:0;background:var(--border);}
   .progress.is-elapsed::-webkit-progress-value{background:var(--red);transition:width .1s linear;}
   .progress.is-elapsed::-moz-progress-bar{background:var(--red);}
   .console-sep{height:24px;background:#060b16;border-top:1px solid #0d1830;border-bottom:1px solid #0d1830;display:flex;align-items:center;padding:0 1rem;gap:1rem;}
@@ -167,7 +168,7 @@
   .tag{font-family:var(--mono)!important;font-size:10px!important;letter-spacing:1px!important;border-radius:2px!important;}
 
   /* ── Zone dépôt (additive) ── */
-  .file-drop-zone{border:1px dashed var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;transition:border-color .15s,background .15s;text-align:center;margin:6px 10px;}
+  .file-drop-zone{border:1px dashed var(--border);border-radius:0;padding:5px 10px;cursor:pointer;transition:border-color .15s,background .15s;text-align:center;margin:0;border-left:none;border-right:none;}
   .file-drop-zone:hover,.file-drop-zone.drag-over{border-color:var(--cyan-dim);background:#0a1830;}
   .file-drop-zone input[type=file]{display:none;}
   .fdz-row{display:flex;align-items:center;justify-content:center;gap:8px;}
@@ -391,8 +392,9 @@
   .vu-section{
     background:#060b16;
     border-top:2px solid var(--border);
-    padding:.6rem 1rem;
-    position:sticky;bottom:0;z-index:10;
+    padding:.5rem 1rem;
+    flex-shrink:0;
+    z-index:10;
   }
 
   /* Grille : col gauche (diffuseurs) + col droite (départs) */
@@ -470,7 +472,7 @@
   .tab-btn:hover { color:var(--txt-dim); }
   .tab-btn.active { color:var(--cyan); border-bottom-color:var(--cyan); }
   .tab-panel { display:none; }
-  .tab-panel.active { display:block; }
+  .tab-panel.active { display:flex; flex-direction:column; flex:1; min-height:0; }
 
   /* ── Module Rendez-vous ── */
   .rdv-section {
@@ -1011,6 +1013,286 @@
   .mod-journal-line.absence .mod-journal-txt{color:#ff6060;}
   .mod-journal-line.reprise  .mod-journal-txt{color:#00d96a;}
   .mod-journal-line .mod-journal-time{color:#3a5070;font-size:9px;flex-shrink:0;}
+
+  /* ══ NOUVEAU LAYOUT SIMPLIFIÉ ══ */
+
+  /* Header compact */
+  .diff-card-header { min-height: 44px; }
+  .card.is-dark-card .card-header-title { font-size: 18px; letter-spacing: 2px; }
+
+  /* Zone active — grand player */
+  .player-active-zone {
+    display: flex;
+    align-items: stretch;
+    background: #080a10;
+    border-left: 4px solid var(--red);
+    border-bottom: 2px solid #3a0808;
+    min-height: 110px;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .player-active-zone.empty {
+    min-height: 80px;
+    border-color: var(--border);
+    border-left-color: var(--border);
+    background: var(--s1);
+  }
+
+  /* Canvas waveform plein fond */
+  .paz-wv-bg {
+    position: absolute; inset: 0; z-index: 0;
+    width: 100%; height: 100%;
+    opacity: 0.45; pointer-events: none;
+  }
+
+  /* Progression rouge */
+  .paz-progress-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background: linear-gradient(90deg, rgba(60,5,5,.85) 0%, rgba(30,3,3,.6) 100%);
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform .1s linear;
+  }
+
+  /* Colonne gauche : timecode */
+  .paz-left {
+    width: 110px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border-right: 1px solid #2a1010;
+    padding: 0 10px;
+    position: relative; z-index: 2;
+  }
+  .paz-horaire {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--cyan-dim);
+    letter-spacing: 1px;
+  }
+  .paz-timecode {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 700;
+    color: #ff3030;
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .paz-timecode.idle { color: var(--cyan); }
+
+  /* Zone centrale : titre + waveform + IN/OUT */
+  .paz-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 10px 14px;
+    gap: 6px;
+    position: relative; z-index: 2;
+    overflow: hidden;
+    min-width: 0;
+  }
+  .paz-title {
+    font-family: var(--display);
+    font-size: 30px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 2px 12px rgba(0,0,0,.9);
+  }
+  .paz-title.idle {
+    font-size: 18px;
+    color: var(--txt-dim);
+    letter-spacing: 3px;
+    font-family: var(--mono);
+  }
+  .paz-cues {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: rgba(0,212,240,.6);
+    letter-spacing: 1px;
+  }
+  /* Mini waveform interactive dans la zone active */
+  .paz-wv-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .paz-wv-wrap {
+    flex: 1;
+    position: relative;
+    height: 44px;
+    cursor: crosshair;
+    user-select: none;
+    border-radius: 3px;
+  }
+  .paz-wv-canvas { display: block; width: 100%; height: 44px; border-radius: 3px; }
+
+  /* Colonne droite : décompte + flèche */
+  .paz-right {
+    width: 140px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-left: 1px solid #2a1010;
+    padding: 0 12px;
+    position: relative; z-index: 2;
+  }
+  .paz-countdown {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: #ff3030;
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .paz-countdown.idle { color: var(--cyan); font-size: 22px; }
+  .paz-dur-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--txt-mute);
+    letter-spacing: 1px;
+  }
+  .paz-next-btn {
+    background: transparent;
+    border: 1px solid #3a1010;
+    border-radius: 4px;
+    color: var(--orange);
+    font-size: 18px;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .12s;
+  }
+  .paz-next-btn:hover { border-color: var(--orange); background: #1a0800; }
+
+  /* ── LISTE des pistes suivantes ── */
+  .playlist-list {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .playlist-list::-webkit-scrollbar { width: 4px; }
+  .playlist-list::-webkit-scrollbar-track { background: var(--bg); }
+  .playlist-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .pl-row {
+    display: flex;
+    align-items: center;
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: background .1s;
+  }
+  .pl-row:hover { background: #0e1830; }
+  .pl-row.is-next { background: #071408; border-left: 3px solid var(--green-dk); }
+  .pl-row.is-macro { border-left: 3px solid var(--yellow); background: #0a0e00; }
+
+  .pl-row-num {
+    width: 44px;
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--txt-mute);
+    text-align: center;
+  }
+  .pl-row.is-next .pl-row-num { color: var(--green); }
+
+  .pl-row-time {
+    width: 90px;
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--cyan-dim);
+    letter-spacing: 1px;
+  }
+
+  .pl-row-title {
+    flex: 1;
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--txt);
+    letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .pl-row.is-next .pl-row-title { color: #40d870; }
+  .pl-row.is-macro .pl-row-title { color: var(--yellow); font-size: 14px; }
+
+  .pl-row-dur {
+    width: 80px;
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #7a9ab8;
+    text-align: right;
+    padding-right: 10px;
+  }
+  .pl-row-cd {
+    width: 90px;
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: #7a9ab8;
+    text-align: right;
+    padding-right: 14px;
+  }
+  .pl-row.is-next .pl-row-cd { color: #40d870; }
+
+  .pl-row-bar {
+    width: 5px;
+    flex-shrink: 0;
+    align-self: stretch;
+  }
+
+  .pl-row-del {
+    background: none; border: none;
+    color: #2a3040; cursor: pointer;
+    font-size: 12px; padding: 0 8px;
+    flex-shrink: 0;
+    transition: color .1s;
+  }
+  .pl-row-del:hover { color: var(--red); }
+
+  /* Thead sticky simplifié */
+  .playlist-thead {
+    display: flex;
+    align-items: center;
+    height: 28px;
+    background: var(--s3);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .pl-th {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--txt-mute);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Masquer l'ancienne table */
+  .card-content table.is-radio { display: none !important; }
+
+
+  .paz-countdown.warning { color: var(--yellow) !important; }
+  .paz-countdown.urgent  { color: var(--red) !important; animation: blink .4s step-start infinite; }
+
 </style>
 </head>
 <body>
@@ -1183,9 +1465,9 @@
 </div>
 
 <!-- Panneau Diffusion -->
-<div id="tab-diffusion" class="tab-panel active">
-<section class="section is-console">
-<div class="card is-dark-card">
+<div id="tab-diffusion" class="tab-panel active" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+<section class="section is-console" style="padding:0;flex:1;display:flex;flex-direction:column;min-height:0;">
+<div class="card is-dark-card" style="flex:1;display:flex;flex-direction:column;min-height:0;border-radius:0;border-left:none;border-right:none;border-top:none;">
   <div class="card-header diff-card-header" id="diff-header-0" style="display:flex;align-items:stretch">
     <div style="display:flex;align-items:center;padding:0 1rem;border-right:1px solid #1e3060">
       <span class="tag diff-badge" style="background:#1a2a00;color:#f5c400;border:1px solid #3a4a00">DIFF A</span>
@@ -1238,23 +1520,57 @@
       <span class="fdz-count" id="fdz1-count">Aucun fichier</span>
     </div>
   </div>
-  <div class="card-content" style="flex:1;overflow-y:auto;">
-    <table class="table is-radio is-fullwidth is-narrow">
-      <thead><tr>
-        <th style="width:40px">#</th>
-        <th style="width:88px">Horaire</th>
-        <th style="width:200px">Titre</th>
-        <th>Waveform · IN / OUT</th>
-        <th style="width:72px;text-align:right">Durée</th>
-        <th style="width:96px;text-align:right;padding-right:14px">Décompte</th>
-        <th style="width:5px"></th>
-      </tr></thead>
-      <tbody id="c1-body"></tbody>
-    </table>
+  <!-- ══ ZONE PLAYER ACTIVE ══ -->
+  <div class="player-active-zone empty" id="paz-0">
+    <canvas class="paz-wv-bg" id="paz-wv-bg-0"></canvas>
+    <div class="paz-progress-bg" id="paz-prog-0"></div>
+    <!-- Colonne gauche : horaire + timecode restant -->
+    <div class="paz-left">
+      <span class="paz-horaire" id="paz-horaire-0">--:--:--</span>
+      <span class="paz-timecode idle" id="paz-tc-0">--:--:--</span>
+    </div>
+    <!-- Centre : titre + waveform mini -->
+    <div class="paz-center">
+      <div class="paz-title idle" id="paz-title-0">AUCUNE PISTE</div>
+      <div class="paz-cues" id="paz-cues-0"></div>
+      <div class="paz-wv-row" id="paz-wv-row-0" style="display:none">
+        <div class="paz-wv-wrap" id="paz-wv-wrap-0">
+          <canvas class="paz-wv-canvas" id="paz-wv-0" width="800" height="44"></canvas>
+          <div class="wv-pre"  id="paz-wv-pre-0"></div>
+          <div class="wv-post" id="paz-wv-post-0"></div>
+          <div class="wv-playhead" id="paz-wv-ph-0"></div>
+          <div class="wv-handle wv-handle-in"  id="paz-wv-in-0"  data-label="IN"></div>
+          <div class="wv-handle wv-handle-out" id="paz-wv-out-0" data-label="OUT"></div>
+        </div>
+        <button class="wv-edit-btn" id="paz-edit-0" style="position:relative;bottom:auto;right:auto" title="Éditer IN/OUT">✎</button>
+      </div>
+    </div>
+    <!-- Colonne droite : décompte + next -->
+    <div class="paz-right">
+      <span class="paz-dur-label">RESTANT</span>
+      <span class="paz-countdown idle" id="paz-cd-0">--:--:--</span>
+      <button class="paz-next-btn" onclick="D[0].nextTrackForced()" title="Piste suivante">↓</button>
+    </div>
   </div>
-  <div class="card-footer">
-    <span class="card-footer-item">Durée écoulée&nbsp;<strong id="c1-micros" style="color:#f07800;font-family:var(--mono)">00:00</strong></span>
-    <span class="card-footer-item" style="margin-left:auto;justify-content:flex-end">Total&nbsp;<strong id="c1-total" style="color:#ddeeff;font-family:var(--mono);font-size:24px;letter-spacing:2px">00:00:00</strong>&nbsp;<span id="c1-suffix" style="color:#00d4f0;font-family:var(--display);font-size:16px;font-weight:700">A</span></span>
+
+  <!-- ══ LISTE PLAYLIST ══ -->
+  <div class="playlist-thead">
+    <div class="pl-th" style="width:44px;text-align:center">#</div>
+    <div class="pl-th" style="width:90px;padding-left:4px">Horaire</div>
+    <div class="pl-th" style="flex:1;padding-left:4px">Titre</div>
+    <div class="pl-th" style="width:80px;text-align:right">Durée</div>
+    <div class="pl-th" style="width:90px;text-align:right;padding-right:14px">Décompte</div>
+    <div style="width:5px"></div>
+    <div style="width:28px"></div>
+  </div>
+  <div class="playlist-list" id="paz-list-0"></div>
+
+  <!-- footer masqué mais IDs conservés pour le JS -->
+  <div style="display:none">
+    <span id="c1-micros">00:00</span>
+    <span id="c1-total">00:00:00</span>
+    <span id="c1-suffix">A</span>
+    <tbody id="c1-body"></tbody>
   </div>
   <div class="vu-strip" id="vu-strip-d0"><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#00d96a"></div><div class="vu-strip-bar" style="background:#f5c400"></div><div class="vu-strip-bar" style="background:#f5c400"></div><div class="vu-strip-bar" style="background:#f5c400"></div><div class="vu-strip-bar" style="background:#e03020"></div><div class="vu-strip-bar" style="background:#e03020"></div></div>
   <!-- Popup rendez-vous DIFF A -->
@@ -2142,6 +2458,205 @@ class Diffuser{
 
 const D=CONFIGS.map((cfg,i)=>new Diffuser(cfg,i));
 
+// ══════════════════════════════════════════════════════════════
+// PLAYER ACTIVE ZONE — moteur d'affichage simplifié
+// ══════════════════════════════════════════════════════════════
+
+function pazRender(diffIdx) {
+  const d = D[diffIdx]; if (!d) return;
+  const paz = document.getElementById('paz-' + diffIdx); if (!paz) return;
+
+  const isPlaying = d.playing;
+  const ci = d.ci;
+  const track = d.tracks[ci];
+  const now = new Date();
+
+  // ── Zone active ──
+  paz.classList.toggle('empty', !track || !isPlaying);
+
+  // Titre
+  const titleEl = document.getElementById('paz-title-' + diffIdx);
+  if (titleEl) {
+    if (track) {
+      titleEl.textContent = track.title;
+      titleEl.classList.toggle('idle', !isPlaying);
+    } else {
+      titleEl.textContent = 'AUCUNE PISTE';
+      titleEl.classList.add('idle');
+    }
+  }
+
+  // Horaire de départ de la piste active
+  const horaireEl = document.getElementById('paz-horaire-' + diffIdx);
+  if (horaireEl && track && isPlaying) {
+    horaireEl.textContent = fmt2(now.getHours())+':'+fmt2(now.getMinutes())+':'+fmt2(now.getSeconds());
+  } else if (horaireEl) {
+    horaireEl.textContent = '--:--:--';
+  }
+
+  // Cues
+  const cuesEl = document.getElementById('paz-cues-' + diffIdx);
+  if (cuesEl && track && isPlaying) {
+    cuesEl.textContent = 'IN ' + fmtMs(d._inOf(ci)) + '  ·  OUT ' + fmtMs(d._outOf(ci));
+  } else if (cuesEl) { cuesEl.textContent = ''; }
+
+  // Waveform mini
+  const wvRow = document.getElementById('paz-wv-row-' + diffIdx);
+  if (wvRow) wvRow.style.display = (track && isPlaying) ? 'flex' : 'none';
+  if (track && isPlaying) {
+    const cv = document.getElementById('paz-wv-' + diffIdx);
+    if (cv && d.durs[ci] > 0 && !cv._loaded) {
+      cv._loaded = true; cv.width = 800; cv.height = 44;
+      drawWaveform(cv, track.file);
+    }
+    // Bind edit btn
+    const editBtn = document.getElementById('paz-edit-' + diffIdx);
+    if (editBtn) editBtn.onclick = () => wvModalOpen('paz-wv-' + diffIdx, diffIdx, ci);
+    // Poignées waveform mini
+    const wvId = 'paz-wv-' + diffIdx;
+    d._bindHandles(wvId, ci);
+  }
+
+  // Waveform fond
+  const bgCv = document.getElementById('paz-wv-bg-' + diffIdx);
+  if (bgCv && track && isPlaying && d.durs[ci] > 0) {
+    if (!bgCv._loaded) {
+      bgCv._loaded = true; bgCv.width = 1200; bgCv.height = 120;
+      if (WV_DATA_CACHE[track.file]) drawWaveformBg(bgCv, WV_DATA_CACHE[track.file]);
+      else drawWaveform(document.createElement('canvas'), track.file).then(() => {
+        if (WV_DATA_CACHE[track.file]) { bgCv.width=1200;bgCv.height=120; drawWaveformBg(bgCv, WV_DATA_CACHE[track.file]); }
+      });
+    }
+  } else if (bgCv && (!track || !isPlaying)) { bgCv._loaded = false; }
+
+  // ── LISTE des pistes suivantes ──
+  pazRenderList(diffIdx);
+}
+
+function pazRenderList(diffIdx) {
+  const d = D[diffIdx]; if (!d) return;
+  const list = document.getElementById('paz-list-' + diffIdx); if (!list) return;
+
+  const now = new Date(); let cur = new Date(now);
+  const starts = d.tracks.map((_, i) => {
+    const t = new Date(cur);
+    cur = new Date(cur.getTime() + d._playDur(i) * 1000);
+    return t;
+  });
+
+  list.innerHTML = '';
+  d.tracks.forEach((t, i) => {
+    const isActive = i === d.ci && d.playing;
+    if (isActive) return; // piste active = affichée en PAZ, pas dans la liste
+    const isNext = i === d.ci + (d.playing ? 1 : 0) && !isActive;
+    const st = starts[i];
+    const hhmm = fmt2(st.getHours()) + ':' + fmt2(st.getMinutes()) + ':' + fmt2(st.getSeconds());
+
+    const row = document.createElement('div');
+    row.className = 'pl-row' + (isNext ? ' is-next' : '') + (t.isMacro ? ' is-macro' : '');
+    row.onclick = () => d.jumpTo(i);
+
+    const audio = d.audios[i];
+    const rem = d._playDur(i);
+    const cdTxt = fmtFull(rem);
+
+    if (t.isMacro) {
+      row.innerHTML = `
+        <div class="pl-row-num" style="color:var(--yellow)">⚡</div>
+        <div class="pl-row-time" style="color:var(--yellow);font-size:10px">MACRO</div>
+        <div class="pl-row-title">${t.title}</div>
+        <div class="pl-row-dur" style="color:var(--txt-mute)">—</div>
+        <div class="pl-row-cd" style="color:var(--yellow)">ACTION</div>
+        <div class="pl-row-bar" style="background:#6a5a00"></div>
+        <button class="pl-row-del" onclick="event.stopPropagation();diffRemoveTrack(${diffIdx},${i})">✕</button>`;
+    } else {
+      row.innerHTML = `
+        <div class="pl-row-num">${i + 1}</div>
+        <div class="pl-row-time">${hhmm}</div>
+        <div class="pl-row-title" title="${t.title}">${t.title}</div>
+        <div class="pl-row-dur">${fmtFull(d.durs[i] || 0)}</div>
+        <div class="pl-row-cd" id="paz-row-cd-${diffIdx}-${i}">${cdTxt}</div>
+        <div class="pl-row-bar" style="background:${t.color}"></div>
+        <button class="pl-row-del" onclick="event.stopPropagation();diffRemoveTrack(${diffIdx},${i})">✕</button>`;
+    }
+    list.appendChild(row);
+  });
+
+  if (!d.tracks.length) {
+    list.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--txt-mute);letter-spacing:2px;padding:1.5rem;text-align:center">— Glisse des fichiers audio —</div>';
+  }
+}
+
+// Patch render() pour appeler pazRender en plus
+const _origRender0 = D[0].render.bind(D[0]);
+D[0].render = function() {
+  _origRender0();
+  pazRender(0);
+};
+
+// Méthode nextTrackForced
+D[0].nextTrackForced = function() {
+  if (this.tracks.length === 0) return;
+  if (this.playing) {
+    this.stopAll();
+    this.ci = Math.min(this.ci + 1, this.tracks.length - 1);
+    this.togglePlay();
+  } else {
+    this.ci = Math.min(this.ci + 1, this.tracks.length - 1);
+    this.render();
+  }
+};
+
+// Tick PAZ : mise à jour timecode + décompte + progression
+function pazTick() {
+  const d = D[0]; if (!d || !d.playing) {
+    const tcEl = document.getElementById('paz-tc-0');
+    const cdEl = document.getElementById('paz-cd-0');
+    if (tcEl) { tcEl.textContent = '--:--:--'; tcEl.className = 'paz-timecode idle'; }
+    if (cdEl) { cdEl.textContent = '--:--:--'; cdEl.className = 'paz-countdown idle'; }
+    const prog = document.getElementById('paz-prog-0');
+    if (prog) prog.style.transform = 'scaleX(0)';
+    return;
+  }
+  const ci = d.ci;
+  const audio = d.audios[ci]; if (!audio) return;
+  const pos = audio.currentTime;
+  const inT = d._inOf(ci);
+  const outT = d._outOf(ci);
+  const dur = outT - inT;
+  const elapsed = Math.max(0, pos - inT);
+  const rem = Math.max(0, outT - pos);
+
+  // Timecode gauche = temps écoulé
+  const tcEl = document.getElementById('paz-tc-0');
+  if (tcEl) { tcEl.textContent = fmtFull(elapsed); tcEl.className = 'paz-timecode'; }
+
+  // Décompte droite = restant
+  const cdEl = document.getElementById('paz-cd-0');
+  if (cdEl) {
+    cdEl.textContent = fmtFull(rem);
+    cdEl.className = 'paz-countdown' + (rem < 10 ? ' urgent' : rem < 30 ? ' warning' : '');
+  }
+
+  // Barre de progression
+  const prog = document.getElementById('paz-prog-0');
+  if (prog && dur > 0) prog.style.transform = 'scaleX(' + (elapsed / dur).toFixed(4) + ')';
+
+  // Playhead mini waveform
+  const cv = document.getElementById('paz-wv-0');
+  if (cv && d.durs[ci] > 0) {
+    const ph = document.getElementById('paz-wv-ph-0');
+    if (ph) {
+      ph.style.display = 'block';
+      ph.style.left = (pos / d.durs[ci] * 100).toFixed(2) + '%';
+    }
+  }
+}
+
+// Init PAZ au démarrage
+setTimeout(()=>{ pazRender(0); }, 100);
+
+
 // Supprimer une piste d'un diffuseur
 function diffRemoveTrack(diffIdx, trackIdx){
   const d=D[diffIdx];
@@ -2618,7 +3133,7 @@ document.addEventListener('click',function initBipOnce(){
   document.removeEventListener('click',initBipOnce);
 },{once:true});
 
-setInterval(()=>{document.getElementById('global-clock').textContent=nowClock();D.forEach(d=>d.tick());rdvTick();},80);
+setInterval(()=>{document.getElementById('global-clock').textContent=nowClock();D.forEach(d=>d.tick());rdvTick();pazTick();},80);
 
 // ══════════════════════════════════════
 // ONGLETS
