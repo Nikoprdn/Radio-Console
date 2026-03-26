@@ -1280,8 +1280,8 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
         <span id="paz-cd-lbl" style="font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;">NEXT</span>
         <span id="paz-cd" style="font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:2px;line-height:1;color:var(--cyan);">--:--</span>
         <div style="display:flex;gap:6px;margin-top:2px;">
-          <button id="paz-auto-btn" onclick="pazToggleAuto()" title="Activer/désactiver enchaînement"
-            style="background:rgba(0,0,0,.4);border:1px solid rgba(60,60,80,.5);border-radius:2px;color:#3a4050;font-family:var(--mono);font-size:9px;padding:3px 8px;cursor:pointer;letter-spacing:1px;transition:all .15s;">⛓ AUTO</button>
+          <button id="paz-auto-btn" onclick="pazToggleAuto()" title="Enchaînement automatique ON/OFF"
+            style="background:rgba(40,15,0,.5);border:1px solid rgba(240,120,0,.5);border-radius:2px;color:var(--orange);font-family:var(--mono);font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:1px;transition:all .15s;font-weight:700;">▶ NEXT</button>
           <button onclick="openEditModal()" title="Éditer les points"
             style="background:rgba(20,10,40,.5);border:1px solid rgba(100,70,180,.4);border-radius:2px;color:#7060a0;font-family:var(--mono);font-size:9px;padding:3px 8px;cursor:pointer;letter-spacing:1px;transition:all .15s;" onmouseover="this.style.color='#9b6de5';this.style.borderColor='#9b6de5'" onmouseout="this.style.color='#7060a0';this.style.borderColor='rgba(100,70,180,.4)'">✦ EDIT</button>
         </div>
@@ -1513,13 +1513,14 @@ function handleFiles(files,idx){
     file:URL.createObjectURL(f),
     title:f.name.replace(/\.[^/.]+$/,''),
     color:COLORS[(existing.length+i)%COLORS.length],
-    inCue:0, outCue:null  // null = fin naturelle
+    inCue:0, outCue:null
   }));
-  // AJOUT sans effacer les existants
   CONFIGS[idx].tracks=[...existing,...newTracks];
   const total=CONFIGS[idx].tracks.length;
   document.getElementById(CONFIGS[idx].fdzCount).textContent=total+' fichier'+(total>1?'s':'');
   D[idx].addTracks(newTracks);
+  // Pour DIFF A : mettre à jour la liste et le titre immédiatement
+  if(idx===0){ pazRenderList(); const tEl=document.getElementById('paz-title'); const t=D[0].tracks[D[0].ci]; if(tEl&&t&&!t.isMacro){tEl.textContent=t.title;tEl.style.color='rgba(200,220,255,.6)';} }
 }
 function handleDrop(ev,idx){ev.preventDefault();document.getElementById('fdz'+(idx+1)).classList.remove('drag-over');handleFiles(ev.dataTransfer.files,idx);}
 
@@ -2470,7 +2471,10 @@ function pazRenderList(){
       const titleCol=isAct?'color:#ff6060':isNxt?'color:#40d870':'color:var(--txt)';
       const numCol=isAct?'color:var(--red)':isNxt?'color:var(--green)':'color:var(--txt-mute)';
       // icône autoNext
-      const aIcon=`<span onclick="event.stopPropagation();pazToggleAutoFor(${i})" title="${autoOn?'Enchaînement ON':'Enchaînement OFF'}" style="margin-right:5px;cursor:pointer;font-size:10px;opacity:${autoOn?1:.25};user-select:none;">⛓</span>`;
+      // Badge NEXT par piste (cliquable)
+      const nextColor=autoOn?'var(--orange)':'#3a4050';
+      const nextOpacity=autoOn?'1':'.35';
+      const aIcon=`<span onclick="event.stopPropagation();pazToggleAutoFor(${i})" title="${autoOn?'Enchaînement ON — cliquer pour désactiver':'Enchaînement OFF — cliquer pour activer'}" style="margin-right:6px;cursor:pointer;font-family:var(--mono);font-size:9px;font-weight:700;color:${nextColor};opacity:${nextOpacity};user-select:none;border:1px solid currentColor;border-radius:2px;padding:1px 5px;letter-spacing:1px;transition:all .15s;">NEXT</span>`;
       inner.innerHTML=`<div style="width:44px;flex-shrink:0;font-family:var(--mono);font-size:13px;${numCol};text-align:center;">${isAct?'▶':(i+1)}</div><div style="width:88px;flex-shrink:0;font-family:var(--mono);font-size:11px;color:var(--cyan-dim);padding-left:4px;">${hhmm}</div><div style="flex:1;font-family:var(--display);font-size:17px;font-weight:700;${titleCol};letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${aIcon}${t.title}</div><div style="width:72px;flex-shrink:0;font-family:var(--mono);font-size:11px;color:#7a9ab8;text-align:right;">${dur}</div><div style="width:90px;flex-shrink:0;font-family:var(--mono);font-size:13px;${cdCol};text-align:right;padding-right:12px;" ${cdId}>${cd}</div><div style="width:5px;flex-shrink:0;background:${t.color};align-self:stretch;"></div><button onclick="event.stopPropagation();openEditModal(${i})" style="width:26px;flex-shrink:0;background:none;border:none;color:#4a3a70;cursor:pointer;font-size:11px;padding:0;text-align:center;transition:color .1s;" onmouseover="this.style.color='#9b6de5'" onmouseout="this.style.color='#4a3a70'" title="Éditer les points">✦</button><button onclick="event.stopPropagation();diffRemoveTrack(0,${i})" style="width:26px;flex-shrink:0;background:none;border:none;color:#2a3040;cursor:pointer;font-size:12px;padding:0;text-align:center;" onmouseover="this.style.color='#e03020'" onmouseout="this.style.color='#2a3040'">✕</button>`;
     }
     row.appendChild(inner);
@@ -2506,11 +2510,19 @@ function _pazUpdateAutoBtn(){
   const on=t?(t.autoNext!==false):_pazAutoNext;
   const btn=document.getElementById('paz-auto-btn'); if(!btn) return;
   if(on){
-    btn.textContent='⛓ AUTO'; btn.style.color='#00d96a';
-    btn.style.borderColor='rgba(0,217,106,.5)'; btn.style.background='rgba(0,40,10,.4)';
+    // ON : orange vif — enchaînement activé
+    btn.textContent='▶ NEXT';
+    btn.style.color='var(--orange)';
+    btn.style.borderColor='rgba(240,120,0,.7)';
+    btn.style.background='rgba(50,18,0,.6)';
+    btn.style.opacity='1';
   } else {
-    btn.textContent='⛓ AUTO'; btn.style.color='#3a4050';
-    btn.style.borderColor='rgba(60,60,80,.4)'; btn.style.background='rgba(0,0,0,.4)';
+    // OFF : gris — enchaînement désactivé
+    btn.textContent='▶ NEXT';
+    btn.style.color='#3a4050';
+    btn.style.borderColor='rgba(50,50,60,.4)';
+    btn.style.background='rgba(0,0,0,.3)';
+    btn.style.opacity='.5';
   }
 }
 
@@ -2531,6 +2543,9 @@ const _add0=D[0].addTracks.bind(D[0]);
 D[0].addTracks=function(newTracks){
   _pazWvFile=null;
   _add0(newTracks);
+  // Afficher la liste immédiatement (sans attendre loadedmetadata)
+  pazRenderList();
+  // Puis mettre à jour titre + waveform une fois les métadonnées chargées
   setTimeout(()=>{ pazRender(); },80);
 };
 
