@@ -2087,72 +2087,106 @@ class Diffuser{
     }
   }
 
-  // Enchaîne la piste suivante après le point OUT
+  // Enchaîne la piste suivante — simplifié : délégue à _startTrack
   _startNextAfterChain(currentIdx, token){
     if(token !== this._playToken || !this.playing) return;
     if(this.tracks.length < 2) return;
-    // La piste suivante est à l'index 1 (la 0 est encore en train de jouer)
+
     const next = this.tracks[1];
     if(!next) return;
-    // Si la prochaine piste est une macro : l'exécuter et sauter à la suivante
+
+    // Macro : exécuter et continuer
     if(next.isMacro){
       if(typeof fireMacroTrack==='function') fireMacroTrack(next.macroKey, this.idx);
-      this.tracks.splice(1,1);
-      this.durs.splice(1,1);
-      this.audios.splice(1,1);
-      this._updateFdzCount();
-      this.render();
-      // Reprendre la chaîne sur la nouvelle position 1
+      this.tracks.splice(1,1); this.durs.splice(1,1); this.audios.splice(1,1);
+      this._updateFdzCount(); this.render();
       if(this.tracks.length > 1) this._startNextAfterChain(currentIdx, token);
       return;
     }
+
+    // Incrémenter le token AVANT de lancer la suivante
+    // (invalide tous les timers précédents)
+    const newToken = ++this._playToken;
+
+    // Supprimer la piste 0 APRÈS avoir décidé d'enchaîner
+    // (la piste 0 continue à jouer jusqu'à sa fin naturelle via onended)
+    // La suivante devient la piste 0 dans la liste UI, mais audio 1 joue vraiment
+    // → on la lance via _startTrack sur l'index 0 APRÈS avoir retiré la piste 0 de la liste
+    // NON : on garde la piste 0, on la laisse finir, et on lance l'index 1 directement.
+    // Simplifié : on simule un _startTrack sur la piste à l'index 1 de façon directe.
+
     const nextAudio = this.audios[1];
     if(!nextAudio) return;
 
-    const nextToken = ++this._playToken;
     nextAudio.onended = null;
     if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
+    nextAudio.currentTime = this._inOf(1);
 
-    const nextIn   = this._inOf(1);
-    const nextOut  = this._outOf(1);
-    const nextDur  = this.durs[1] || 0;
-    const nextChain = Math.max(0, nextOut - nextIn);
-
-    nextAudio.currentTime = nextIn;
-
-    // Timer OUT pour la piste suivante
-    this._outTimer = setTimeout(()=>{
-      if(nextToken !== this._playToken || !this.playing) return;
-      this.ci = 0;
-      this.render();
-      if(this.tracks.length > 1){
-        this._startNextAfterChain(1, nextToken);
-      }
-    }, nextChain * 1000);
-
-    // À la fin naturelle, supprimer
+    // onended naturelle de la piste suivante
     nextAudio.onended = ()=>{
       nextAudio.onended = null;
       if(!this.playing) return;
       const idx = this.tracks.indexOf(next);
       if(idx !== -1){
         if(next.file?.startsWith('blob:')) URL.revokeObjectURL(next.file);
-        this.tracks.splice(idx, 1);
-        this.durs.splice(idx, 1);
-        this.audios.splice(idx, 1);
+        this.tracks.splice(idx,1); this.durs.splice(idx,1); this.audios.splice(idx,1);
       }
-      this.ci = 0;
-      this._updateFdzCount();
-      if(!this.tracks.length && !this.audios.some(a=>a&&!a.paused)){
-        this.playing = false;
-      }
+      this.ci=0; this._updateFdzCount();
+      if(!this.tracks.length && !this.audios.some(a=>a&&!a.paused)) this.playing=false;
       this.render();
     };
 
-    nextAudio.play().catch(e=>{
-      nextAudio.onended = null;
-      console.warn('play() next error:', e);
-    });
+    // Armer le timer d'enchaînement de la suivante
+    const armNext = ()=>{
+      if(newToken!==this._playToken||!this.playing) return;
+      const inN  = this._inOf(1);
+      const outN = this._outOf(1);
+      const elap = Math.max(0, nextAudio.currentTime - inN);
+      const rem  = Math.max(0, (outN - inN) - elap);
+      if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
+      this._outTimer = setTimeout(()=>{
+        if(newToken!==this._playToken||!this.playing) return;
+        this.ci=0; this.render();
+        // Vérifier autoNext de la piste suivante
+        if(next.autoNext!==false && this.tracks.length>1){
+          this._startNextAfterChain(1, newToken);
+        }
+      }, rem*1000);
+    };
+
+    nextAudio.play()
+      .then(()=>{
+        // Durée connue après play()
+        if(this.durs[1]>0){ armNext(); }
+        else {
+          const onM=()=>{
+            nextAudio.removeEventListener('loadedmetadata',onM);
+            if(newToken!==this._playToken||!this.playing) return;
+            this.durs[1]=nextAudio.duration||0;
+            if(next.outCue===null||next.outCue===undefined) next.outCue=nextAudio.duration;
+            this.render(); armNext();
+          };
+          if(nextAudio.duration&&!isNaN(nextAudio.duration)&&nextAudio.duration>0){
+            this.durs[1]=nextAudio.duration;
+            if(next.outCue===null||next.outCue===undefined) next.outCue=nextAudio.duration;
+            armNext();
+          } else {
+            nextAudio.addEventListener('loadedmetadata',onM);
+            // Fallback si loadedmetadata déjà passé
+            setTimeout(()=>{
+              if(nextAudio.duration&&!isNaN(nextAudio.duration)&&newToken===this._playToken){
+                nextAudio.removeEventListener('loadedmetadata',onM);
+                this.durs[1]=nextAudio.duration;
+                if(next.outCue===null||next.outCue===undefined) next.outCue=nextAudio.duration;
+                armNext();
+              }
+            },500);
+          }
+        }
+      })
+      .catch(e=>{ nextAudio.onended=null; console.warn('play() next:',e); });
+
+    this.ci=0; this.render();
   }
 
   // Mettre à jour le compteur de fichiers dans la dropzone
@@ -2244,8 +2278,14 @@ function pazDrawBg(force){
 
   const bg  = document.getElementById('paz-bg'); if(!bg) return;
   const paz = document.getElementById('paz');    if(!paz) return;
-  const W   = paz.offsetWidth||900;
-  const H   = paz.offsetHeight||150;
+  // S'assurer que le canvas a les bonnes dimensions (layout peut être 0 au démarrage)
+  const W   = Math.max(paz.offsetWidth, paz.getBoundingClientRect().width, 200)||900;
+  const H   = Math.max(paz.offsetHeight, paz.getBoundingClientRect().height, 100)||150;
+  if(W < 10 || H < 10){
+    // Layout pas encore calculé — réessayer au prochain frame
+    requestAnimationFrame(()=>{ _pazWvFile=null; pazDrawBg(true); });
+    return;
+  }
   bg.width=W; bg.height=H;
   _pazWvFile = t.file;
 
