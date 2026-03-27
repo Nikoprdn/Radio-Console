@@ -1680,11 +1680,20 @@ class Diffuser{
         const tr=this.tracks[idx]; if(!tr) return;
         this.durs[idx]=a.duration||0;
         if(tr.outCue==null) tr.outCue=a.duration;
+        // Décoder la waveform en arrière-plan AVANT render() pour remplir le cache
+        const fileUrl=this.tracks[idx].file;
+        const diffIdx=this.idx;
+        drawWaveform(document.createElement('canvas'), fileUrl).then(()=>{
+          // Cache rempli : mettre à jour le vrai canvas s'il existe dans le DOM
+          const cv=document.getElementById(`wv-${diffIdx}-${idx}`);
+          if(cv && WV_DATA_CACHE[fileUrl]){
+            cv.width=800; cv.height=80;
+            drawWaveformFromData(cv, WV_DATA_CACHE[fileUrl], 0, 1);
+          }
+          // Waveform fond PAZ si c'est la piste en tête
+          if(diffIdx===0 && idx===this.ci){ _pazWvFile=null; pazDrawBg(false); }
+        });
         this.render();
-        // Waveform fond PAZ si c'est la piste en tête
-        if(this.idx===0 && idx===this.ci){ _pazWvFile=null; pazDrawBg(false); }
-        const cv=document.getElementById(`wv-${this.idx}-${idx}`);
-        if(cv){cv.width=800;cv.height=80;drawWaveform(cv,this.tracks[idx].file);}
       });
       this.audios[idx]=a;
     });
@@ -1698,7 +1707,7 @@ class Diffuser{
 
   _effectiveDur(i){return this.durs[i]||0;}
   _inOf(i){return Math.max(0,this.tracks[i]?.inCue||0);}
-  _outOf(i){const t=this.tracks[i]; if(!t)return 0; return t.outCue!==null?t.outCue:this.durs[i]||0;}
+  _outOf(i){const t=this.tracks[i]; if(!t)return 0; if(t.nextCue!=null) return t.nextCue; return t.outCue!=null?t.outCue:this.durs[i]||0;}
   _playDur(i){return Math.max(0,this._outOf(i)-this._inOf(i));}
 
   render(){
@@ -1796,9 +1805,13 @@ class Diffuser{
           <td class="cell-bar"><span class="color-bar" style="background:${t.color};height:96px"></span></td>`;
         tbody.appendChild(tr);
         this._bindHandles(wvId,i);
-        // Waveform mini (interactive)
+        // Waveform mini (interactive) — depuis le cache si dispo, sinon décodage
         const cv=document.getElementById(wvId);
-        if(cv&&this.durs[i]>0){cv.width=800;cv.height=80;drawWaveform(cv,t.file);}
+        if(cv&&this.durs[i]>0){
+          cv.width=800;cv.height=80;
+          if(WV_DATA_CACHE[t.file]) drawWaveformFromData(cv,WV_DATA_CACHE[t.file],0,1);
+          else drawWaveform(cv,t.file);
+        }
         // Waveform fond (grande, pleine ligne)
         const bgCv=document.getElementById(wvId+'-bg');
         if(bgCv&&this.durs[i]>0){
@@ -1838,7 +1851,11 @@ class Diffuser{
         tbody.appendChild(tr);
         this._bindHandles(wvId,i);
         const cv=document.getElementById(wvId);
-        if(cv&&this.durs[i]>0){cv.width=800;cv.height=80;drawWaveform(cv,t.file);}
+        if(cv&&this.durs[i]>0){
+          cv.width=800;cv.height=80;
+          if(WV_DATA_CACHE[t.file]) drawWaveformFromData(cv,WV_DATA_CACHE[t.file],0,1);
+          else drawWaveform(cv,t.file);
+        }
       }
     });
 
@@ -2074,8 +2091,8 @@ class Diffuser{
       if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
       this._outTimer = setTimeout(()=>{
         if(tok !== this._playToken || !this.playing) return;
-        // Enchaîner si autoNext activé ET piste suivante disponible
-        if(t.autoNext !== false && this.tracks.length > 1){
+        // Enchaîner si autoNext global activé ET piste suivante disponible
+        if(this.auto && t.autoNext !== false && this.tracks.length > 1){
           // Supprimer la piste courante de la liste (sans arrêter son audio)
           const pos = this.tracks.indexOf(t);
           if(pos !== -1){
