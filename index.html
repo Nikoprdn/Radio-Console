@@ -1513,14 +1513,23 @@ function handleFiles(files,idx){
     file:URL.createObjectURL(f),
     title:f.name.replace(/\.[^/.]+$/,''),
     color:COLORS[(existing.length+i)%COLORS.length],
-    inCue:0, outCue:null
+    inCue:0, outCue:null, autoNext:true
   }));
   CONFIGS[idx].tracks=[...existing,...newTracks];
   const total=CONFIGS[idx].tracks.length;
-  document.getElementById(CONFIGS[idx].fdzCount).textContent=total+' fichier'+(total>1?'s':'');
+  const fdzEl=document.getElementById(CONFIGS[idx].fdzCount);
+  if(fdzEl) fdzEl.textContent=total+' fichier'+(total>1?'s':'');
+  // Ajouter dans le diffuseur
   D[idx].addTracks(newTracks);
-  // Pour DIFF A : mettre à jour la liste et le titre immédiatement
-  if(idx===0){ pazRenderList(); const tEl=document.getElementById('paz-title'); const t=D[0].tracks[D[0].ci]; if(tEl&&t&&!t.isMacro){tEl.textContent=t.title;tEl.style.color='rgba(200,220,255,.6)';} }
+  // Pour DIFF A (idx=0) : affichage immédiat sans attendre loadedmetadata
+  if(idx===0){
+    const tEl=document.getElementById('paz-title');
+    const t0=D[0].tracks[D[0].ci]||D[0].tracks[0];
+    if(tEl&&t0&&!t0.isMacro){ tEl.textContent=t0.title; tEl.style.color='rgba(200,220,255,.6)'; }
+    pazRenderList();
+    // Lancer le décodage waveform en arrière-plan
+    requestAnimationFrame(()=>pazDrawBg(true));
+  }
 }
 function handleDrop(ev,idx){ev.preventDefault();document.getElementById('fdz'+(idx+1)).classList.remove('drag-over');handleFiles(ev.dataTransfer.files,idx);}
 
@@ -1664,17 +1673,18 @@ class Diffuser{
       const idx=offset+i;
       const a=new Audio();
       a.src=this.tracks[idx].file;
+      // Précharger les métadonnées
+      a.preload='metadata';
       a.addEventListener('loadedmetadata',()=>{
+        const tr=this.tracks[idx]; if(!tr) return;
         this.durs[idx]=a.duration||0;
-        if(this.tracks[idx] && (this.tracks[idx].outCue===null||this.tracks[idx].outCue===undefined))
-          this.tracks[idx].outCue=a.duration;
-        this.render(); // met à jour la durée dans la liste
+        if(tr.outCue==null) tr.outCue=a.duration;
+        this.render();
         // Waveform fond PAZ si c'est la piste en tête
         if(this.idx===0 && idx===this.ci){ _pazWvFile=null; pazDrawBg(false); }
         const cv=document.getElementById(`wv-${this.idx}-${idx}`);
         if(cv){cv.width=800;cv.height=80;drawWaveform(cv,this.tracks[idx].file);}
       });
-      // !! PAS de addEventListener('ended') — géré par audio.onended + token dans _startTrack
       this.audios[idx]=a;
     });
     this.render();
@@ -2004,189 +2014,108 @@ class Diffuser{
     document.getElementById(this.ids.micros).textContent = fmtSec(pos-inCue);
   }
 
-  // Lance la piste i
-  _startTrack(i){
-    const t=this.tracks[i];
-    if(!t) return;
+  // ──────────────────────────────────────────────────────────────
+  // Lance la piste à l'index idx dans this.tracks
+  // Approche simple : un seul token global, un seul timer.
+  // L'enchaînement se fait par suppression de la piste 0 puis
+  // appel récursif à _startTrack(0).
+  // ──────────────────────────────────────────────────────────────
+  _startTrack(idx){
+    const t = this.tracks[idx];
+    if(!t){ this.playing=false; this.render(); return; }
 
     // ── MACRO ──
     if(t.isMacro){
-      if(typeof fireMacroTrack==='function') fireMacroTrack(t.macroKey, this.idx);
-      this.tracks.splice(i,1); this.durs.splice(i,1); this.audios.splice(i,1);
+      if(typeof fireMacroTrack==='function') fireMacroTrack(t.macroKey,this.idx);
+      this.tracks.splice(idx,1); this.durs.splice(idx,1); this.audios.splice(idx,1);
       this.ci=0; this._updateFdzCount();
-      if(this.playing){ if(this.tracks.length) this._startTrack(0); else this.playing=false; }
+      if(this.playing && this.tracks.length) this._startTrack(0);
+      else this.playing=false;
       this.render(); return;
     }
 
-    const audio=this.audios[i];
-    if(!audio) return;
+    const audio = this.audios[idx];
+    if(!audio){ this.playing=false; this.render(); return; }
 
-    const token=++this._playToken;
-    audio.onended=null;
+    // Annuler tout timer précédent
     if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
+    // Token unique pour cette session de lecture
+    const tok = ++this._playToken;
 
-    // ── Fonction qui pose le timer d'enchaînement ──
-    const armTimer = ()=>{
-      if(token!==this._playToken||!this.playing) return;
-      const inCue  = this._inOf(i);
-      const outCue = this._outOf(i);   // nextCue si défini, sinon outCue/durée
+    // Positionner au point START
+    const inCue = this._inOf(idx);
+    try{ audio.currentTime = inCue; }catch(e){}
+
+    // ── Quand le son finit naturellement : supprimer et s'arrêter ──
+    audio.onended = ()=>{
+      audio.onended = null;
+      if(tok !== this._playToken) return; // déjà remplacé
+      // Supprimer la piste
+      const pos = this.tracks.indexOf(t);
+      if(pos !== -1){
+        this.tracks.splice(pos,1); this.durs.splice(pos,1); this.audios.splice(pos,1);
+      }
+      this.ci=0; this._updateFdzCount();
+      if(!this.tracks.length) this.playing=false;
+      this.render();
+    };
+
+    // ── Lancer la lecture ──
+    audio.play().catch(e=>{ console.warn('play error:',e); });
+
+    // ── Armer le timer d'enchaînement au point NEXT ──
+    // Attend que la durée soit connue si nécessaire
+    const arm = ()=>{
+      if(tok !== this._playToken || !this.playing) return;
+      const outCue = this._outOf(idx); // nextCue ou outCue ou durée
       const elapsed = Math.max(0, audio.currentTime - inCue);
-      const remaining = Math.max(0, (outCue - inCue) - elapsed);
+      const delay   = Math.max(0, (outCue - inCue) - elapsed);
       if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
       this._outTimer = setTimeout(()=>{
-        if(token!==this._playToken||!this.playing) return;
-        this.ci=0; this.render();
-        if(t.autoNext!==false && this.tracks.length>1){
-          this._startNextAfterChain(i, token);
-        }
-      }, remaining*1000);
-    };
-
-    // ── Mettre à jour la durée si déjà connue ──
-    if(audio.duration && !isNaN(audio.duration) && audio.duration>0){
-      this.durs[i]=audio.duration;
-      if(t.outCue===null||t.outCue===undefined) t.outCue=audio.duration;
-    }
-
-    audio.currentTime = this._inOf(i);
-
-    // ── onended : supprimer la piste quand elle finit naturellement ──
-    audio.onended=()=>{
-      audio.onended=null;
-      if(!this.playing) return;
-      const idx=this.tracks.indexOf(t);
-      if(idx!==-1){
-        if(t.file?.startsWith('blob:')) URL.revokeObjectURL(t.file);
-        this.tracks.splice(idx,1); this.durs.splice(idx,1); this.audios.splice(idx,1);
-      }
-      this.ci=0; this._updateFdzCount();
-      if(!this.tracks.length && !this.audios.some(a=>a&&!a.paused)) this.playing=false;
-      this.render();
-    };
-
-    audio.play().catch(e=>{
-      audio.onended=null;
-      if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
-      console.warn('play() error:',e);
-    });
-
-    // ── Poser le timer : si durée connue → immédiat, sinon attendre loadedmetadata ──
-    if(this.durs[i]>0){
-      armTimer();
-    } else {
-      // Durée inconnue : attendre loadedmetadata puis armer
-      const onMeta=()=>{
-        audio.removeEventListener('loadedmetadata',onMeta);
-        if(token!==this._playToken||!this.playing) return;
-        this.durs[i]=audio.duration||0;
-        if(t.outCue===null||t.outCue===undefined) t.outCue=audio.duration;
-        this.render();
-        armTimer();
-      };
-      audio.addEventListener('loadedmetadata',onMeta);
-    }
-  }
-
-  // Enchaîne la piste suivante — simplifié : délégue à _startTrack
-  _startNextAfterChain(currentIdx, token){
-    if(token !== this._playToken || !this.playing) return;
-    if(this.tracks.length < 2) return;
-
-    const next = this.tracks[1];
-    if(!next) return;
-
-    // Macro : exécuter et continuer
-    if(next.isMacro){
-      if(typeof fireMacroTrack==='function') fireMacroTrack(next.macroKey, this.idx);
-      this.tracks.splice(1,1); this.durs.splice(1,1); this.audios.splice(1,1);
-      this._updateFdzCount(); this.render();
-      if(this.tracks.length > 1) this._startNextAfterChain(currentIdx, token);
-      return;
-    }
-
-    // Incrémenter le token AVANT de lancer la suivante
-    // (invalide tous les timers précédents)
-    const newToken = ++this._playToken;
-
-    // Supprimer la piste 0 APRÈS avoir décidé d'enchaîner
-    // (la piste 0 continue à jouer jusqu'à sa fin naturelle via onended)
-    // La suivante devient la piste 0 dans la liste UI, mais audio 1 joue vraiment
-    // → on la lance via _startTrack sur l'index 0 APRÈS avoir retiré la piste 0 de la liste
-    // NON : on garde la piste 0, on la laisse finir, et on lance l'index 1 directement.
-    // Simplifié : on simule un _startTrack sur la piste à l'index 1 de façon directe.
-
-    const nextAudio = this.audios[1];
-    if(!nextAudio) return;
-
-    nextAudio.onended = null;
-    if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
-    nextAudio.currentTime = this._inOf(1);
-
-    // onended naturelle de la piste suivante
-    nextAudio.onended = ()=>{
-      nextAudio.onended = null;
-      if(!this.playing) return;
-      const idx = this.tracks.indexOf(next);
-      if(idx !== -1){
-        if(next.file?.startsWith('blob:')) URL.revokeObjectURL(next.file);
-        this.tracks.splice(idx,1); this.durs.splice(idx,1); this.audios.splice(idx,1);
-      }
-      this.ci=0; this._updateFdzCount();
-      if(!this.tracks.length && !this.audios.some(a=>a&&!a.paused)) this.playing=false;
-      this.render();
-    };
-
-    // Armer le timer d'enchaînement de la suivante
-    const armNext = ()=>{
-      if(newToken!==this._playToken||!this.playing) return;
-      const inN  = this._inOf(1);
-      const outN = this._outOf(1);
-      const elap = Math.max(0, nextAudio.currentTime - inN);
-      const rem  = Math.max(0, (outN - inN) - elap);
-      if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
-      this._outTimer = setTimeout(()=>{
-        if(newToken!==this._playToken||!this.playing) return;
-        this.ci=0; this.render();
-        // Vérifier autoNext de la piste suivante
-        if(next.autoNext!==false && this.tracks.length>1){
-          this._startNextAfterChain(1, newToken);
-        }
-      }, rem*1000);
-    };
-
-    nextAudio.play()
-      .then(()=>{
-        // Durée connue après play()
-        if(this.durs[1]>0){ armNext(); }
-        else {
-          const onM=()=>{
-            nextAudio.removeEventListener('loadedmetadata',onM);
-            if(newToken!==this._playToken||!this.playing) return;
-            this.durs[1]=nextAudio.duration||0;
-            if(next.outCue===null||next.outCue===undefined) next.outCue=nextAudio.duration;
-            this.render(); armNext();
-          };
-          if(nextAudio.duration&&!isNaN(nextAudio.duration)&&nextAudio.duration>0){
-            this.durs[1]=nextAudio.duration;
-            if(next.outCue===null||next.outCue===undefined) next.outCue=nextAudio.duration;
-            armNext();
-          } else {
-            nextAudio.addEventListener('loadedmetadata',onM);
-            // Fallback si loadedmetadata déjà passé
-            setTimeout(()=>{
-              if(nextAudio.duration&&!isNaN(nextAudio.duration)&&newToken===this._playToken){
-                nextAudio.removeEventListener('loadedmetadata',onM);
-                this.durs[1]=nextAudio.duration;
-                if(next.outCue===null||next.outCue===undefined) next.outCue=nextAudio.duration;
-                armNext();
-              }
-            },500);
+        if(tok !== this._playToken || !this.playing) return;
+        // Enchaîner si autoNext activé ET piste suivante disponible
+        if(t.autoNext !== false && this.tracks.length > 1){
+          // Supprimer la piste courante de la liste (sans arrêter son audio)
+          const pos = this.tracks.indexOf(t);
+          if(pos !== -1){
+            this.tracks.splice(pos,1); this.durs.splice(pos,1); this.audios.splice(pos,1);
+            this._updateFdzCount();
           }
+          this.ci=0;
+          // Lancer la nouvelle piste 0 (token déjà incrémenté dans _startTrack)
+          this._startTrack(0);
+        } else {
+          // Pas d'enchaînement : juste mettre à jour l'UI
+          this.render();
         }
-      })
-      .catch(e=>{ nextAudio.onended=null; console.warn('play() next:',e); });
+      }, delay * 1000);
+    };
 
-    this.ci=0; this.render();
+    // Si durée déjà connue : armer immédiatement
+    if(this.durs[idx] > 0){
+      arm();
+    } else {
+      // Sinon attendre loadedmetadata
+      const onMeta = ()=>{
+        audio.removeEventListener('loadedmetadata', onMeta);
+        if(tok !== this._playToken || !this.playing) return;
+        const dur = audio.duration || 0;
+        this.durs[idx] = dur;
+        if(t.outCue == null) t.outCue = dur;
+        arm();
+        this.render(); // met à jour la durée dans la liste
+      };
+      audio.addEventListener('loadedmetadata', onMeta);
+      // Sécurité : si audio.duration déjà dispo (chrome le fait parfois avant loadedmetadata)
+      if(audio.duration && !isNaN(audio.duration) && audio.duration > 0){
+        audio.removeEventListener('loadedmetadata', onMeta);
+        this.durs[idx] = audio.duration;
+        if(t.outCue == null) t.outCue = audio.duration;
+        arm();
+      }
+    }
+
+    this.render();
   }
 
   // Mettre à jour le compteur de fichiers dans la dropzone
@@ -2622,14 +2551,9 @@ const _add0=D[0].addTracks.bind(D[0]);
 D[0].addTracks=function(newTracks){
   _pazWvFile=null;
   _add0(newTracks);
-  // 1. Titre immédiat
-  const d2=D[0]; const t0=d2.tracks[d2.ci]||d2.tracks[0];
-  const tEl=document.getElementById('paz-title');
-  if(tEl && t0 && !t0.isMacro){ tEl.textContent=t0.title; tEl.style.color='rgba(200,220,255,.6)'; }
-  // 2. Liste immédiate (DOM pur, synchrone)
+  // Rafraîchir la liste (handleFiles s'en occupe déjà pour idx=0,
+  // mais ce patch sert aussi aux playlists et autres appels)
   pazRenderList();
-  // 3. Waveform en arrière-plan (async, ne bloque rien)
-  requestAnimationFrame(()=>{ pazDrawBg(false); });
 };
 
 // Patch autoNext dans _startTrack original
