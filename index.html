@@ -1293,7 +1293,7 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
 
       <!-- En-tête PLAYLIST + zone drop -->
       <div style="flex-shrink:0;display:flex;align-items:stretch;background:var(--s2);border-bottom:1px solid var(--border);">
-        <div style="padding:0 14px;display:flex;align-items:center;border-right:1px solid var(--border);">
+        <div style="padding:0 14px;display:flex;align-items:center;border-right:1px solid var(--border);flex-shrink:0;">
           <span style="font-family:var(--display);font-size:12px;font-weight:700;color:var(--txt-dim);letter-spacing:2px;">PLAYLIST</span>
         </div>
         <!-- Drop zone intégrée dans la barre -->
@@ -1302,13 +1302,13 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
           ondragover="event.preventDefault();this.classList.add('drag-over')"
           ondragleave="this.classList.remove('drag-over')"
           ondrop="handleDrop(event,0)"
-          style="flex:1;margin:0;border:none;border-radius:0;padding:4px 14px;display:flex;align-items:center;">
+          style="flex:1;margin:0;border:none;border-radius:0;padding:10px 20px;display:flex;align-items:center;min-height:52px;cursor:pointer;">
           <input type="file" id="fi1" multiple accept="audio/*" onchange="handleFiles(this.files,0)">
-          <div class="fdz-row" style="width:100%;justify-content:flex-start;gap:10px;">
-            <span class="fdz-icon" style="font-size:14px;">⊕</span>
-            <span class="fdz-text">Glisser des fichiers audio ici · ou cliquer pour parcourir</span>
-            <span class="fdz-add-badge">+ AJOUTER</span>
-            <span class="fdz-count" id="fdz1-count" style="margin-left:auto;">Aucun fichier</span>
+          <div class="fdz-row" style="width:100%;justify-content:flex-start;gap:12px;">
+            <span style="font-size:20px;color:var(--cyan-dim);">⊕</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--txt-dim);letter-spacing:1px;">Glisser des fichiers audio ici · ou cliquer pour parcourir</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--green);background:#052210;border:1px solid var(--green-dk);border-radius:3px;padding:2px 10px;letter-spacing:1px;">+ AJOUTER</span>
+            <span id="fdz1-count" style="font-family:var(--mono);font-size:10px;color:var(--cyan);margin-left:auto;">Aucun fichier</span>
           </div>
         </div>
       </div>
@@ -1359,11 +1359,13 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
 </div><!-- /tab-diffusion -->
 
 <!-- ══ ONGLET CARTWALL ══ -->
-<div id="tab-cartwall" class="tab-panel" style="background:var(--bg);padding:12px;gap:10px;">
+<div id="tab-cartwall" class="tab-panel" style="background:var(--bg);padding:12px;gap:10px;overflow:hidden;">
 
-  <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--txt-mute);letter-spacing:3px;flex-shrink:0;">CARTWALL — 16 CASES · 1 clic = play/stop · clic droit = supprimer</div>
+  <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--txt-mute);letter-spacing:3px;flex-shrink:0;padding-bottom:2px;">
+    CARTWALL <span style="color:var(--border);font-size:9px;letter-spacing:2px;">· 1 clic = play/stop · clic droit = options</span>
+  </div>
 
-  <div id="cw-grid" style="display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:8px;flex:1;min-height:0;"></div>
+  <div id="cw-grid" style="display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:8px;flex:1;min-height:0;overflow:hidden;"></div>
 
 </div><!-- /tab-cartwall -->
 
@@ -4581,6 +4583,9 @@ function plInit(){
 }
 plInit();
 
+// Initialiser le cartwall au chargement (les cases existent dès le départ)
+cwInit();
+
 // ══════════════════════════════════════════════════════════════
 // NAVIGATION ONGLETS
 // ══════════════════════════════════════════════════════════════
@@ -4598,7 +4603,6 @@ function switchTab(name){
   const btn = document.getElementById('tab-btn-'+name);
   if(btn) btn.classList.add('active');
   if(name==='diffusion'){ requestAnimationFrame(()=>{ _pazWvFile=null; pazDrawBg(true); }); }
-  if(name==='cartwall' && !window._cwInited){ cwInit(); window._cwInited=true; }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -4618,6 +4622,8 @@ function cwBuildLoaded(i){ const c=cwCells[i]; return `<div class="cw-num">${Str
 function cwInit(){
   const grid = document.getElementById('cw-grid'); if(!grid) return;
   grid.innerHTML = '';
+  // Vider le tableau pour éviter les doublons si cwInit est rappelé
+  cwCells.length = 0;
 
   // Injecter les styles cartwall si pas encore fait
   if(!document.getElementById('cw-style')){
@@ -4631,18 +4637,18 @@ function cwInit(){
       .cw-cell.loaded:hover{border-color:var(--cyan);background:#0c1830;}
       .cw-cell.playing{background:#0e0408;border-color:var(--red);box-shadow:0 0 12px rgba(224,48,32,.2),inset 0 0 20px rgba(224,48,32,.05);}
       .cw-cell.drag-over{border-color:var(--cyan)!important;background:#0a1e30!important;border-style:solid!important;}
-      .cw-progress{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--border);}
-      .cw-progress-bar{height:100%;width:0%;background:var(--red);border-radius:0 2px 2px 0;}
+      .cw-progress{position:absolute;bottom:0;left:0;right:0;height:4px;background:var(--border);}
+      .cw-progress-bar{height:100%;width:0%;background:var(--red);border-radius:0 2px 2px 0;transition:width .1s linear;}
       .cw-num{position:absolute;top:5px;left:7px;font-family:var(--mono);font-size:9px;color:var(--txt-mute);}
       .cw-cell.playing .cw-num{color:var(--red);}
       .cw-play-indicator{position:absolute;top:5px;right:7px;font-size:8px;color:var(--red);display:none;letter-spacing:1px;font-family:var(--mono);}
       .cw-cell.playing .cw-play-indicator{display:block;animation:blink .6s step-start infinite;}
       .cw-title{font-family:var(--display);font-size:15px;font-weight:700;color:var(--txt);letter-spacing:1px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;padding:0 4px;line-height:1.2;}
       .cw-cell.playing .cw-title{color:#ff8080;}
-      .cw-timing{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--cyan);letter-spacing:1px;line-height:1;text-shadow:0 0 10px rgba(0,212,240,.3);}
+      .cw-timing{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--cyan);letter-spacing:1px;line-height:1;text-shadow:0 0 10px rgba(0,212,240,.3);}
       .cw-cell.playing .cw-timing{color:var(--red);text-shadow:0 0 10px rgba(224,48,32,.4);}
       .cw-dur{font-family:var(--mono);font-size:8px;color:var(--txt-mute);}
-      .cw-empty-icon{font-size:20px;color:#1a2840;transition:color .12s;}
+      .cw-empty-icon{font-size:22px;color:#1a2840;transition:color .12s;}
       .cw-cell.empty:hover .cw-empty-icon{color:var(--cyan);}
       .cw-empty-lbl{font-family:var(--mono);font-size:8px;color:#1a2840;letter-spacing:2px;text-transform:uppercase;transition:color .12s;}
       .cw-cell.empty:hover .cw-empty-lbl{color:var(--txt-mute);}
