@@ -1187,7 +1187,10 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
 </nav>
 
 <!-- Barre d'onglets principale -->
-<div class="tab-bar" style="display:none"></div>
+<div class="tab-bar" style="display:flex;">
+  <button class="tab-btn active" id="tab-btn-diffusion" onclick="switchTab('diffusion')">⬤ DIFFUSION</button>
+  <button class="tab-btn" id="tab-btn-cartwall" onclick="switchTab('cartwall')">▦ CARTWALL</button>
+</div>
 
 <!-- Panneau Diffusion -->
 <div id="tab-diffusion" class="tab-panel active" style="flex:1;display:flex;flex-direction:column;min-height:0;">
@@ -1237,80 +1240,90 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
   </div>
   <progress class="progress is-elapsed" id="c1-progress" value="0" max="100"></progress>
 
-  <div class="card-content">
+  <div class="card-content" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;padding:0;">
 
-    <!-- ══ ZONE ACTIVE ══ -->
-    <div id="paz" style="position:relative;height:160px;flex-shrink:0;overflow:hidden;border-bottom:2px solid var(--border);background:#03050e;">
-      <!-- Waveform fond HD -->
-      <canvas id="paz-bg" style="position:absolute;inset:0;display:block;pointer-events:none;z-index:0;"></canvas>
-      <!-- Progression rouge START→pos -->
-      <div id="paz-red" style="position:absolute;top:0;bottom:0;left:0;width:0;z-index:1;background:linear-gradient(90deg,rgba(160,8,8,.72),rgba(80,3,3,.5));pointer-events:none;"></div>
-      <!-- Zone jaune START→INTRO (fixe) -->
-      <div id="paz-yellow" style="position:absolute;top:0;bottom:0;left:0;width:0;z-index:2;background:linear-gradient(90deg,rgba(190,148,0,.55),rgba(120,90,0,.35));pointer-events:none;display:none;"></div>
-      <!-- Playhead -->
-      <div id="paz-ph" style="position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,200,.8);z-index:5;display:none;pointer-events:none;"></div>
-      <!-- Marqueur NEXT -->
-      <div id="paz-mn" style="position:absolute;top:0;bottom:0;width:2px;background:#00d96a;z-index:4;display:none;pointer-events:none;">
-        <span style="position:absolute;bottom:4px;left:4px;font-family:var(--mono);font-size:8px;color:#00d96a;background:rgba(0,0,0,.8);padding:1px 4px;border-radius:2px;white-space:nowrap;">NEXT</span>
-      </div>
-      <!-- Marqueur INTRO -->
-      <div id="paz-mi" style="position:absolute;top:0;bottom:0;width:2px;background:#f5c400;z-index:4;display:none;pointer-events:none;">
-        <span style="position:absolute;bottom:18px;left:4px;font-family:var(--mono);font-size:8px;color:#f5c400;background:rgba(0,0,0,.8);padding:1px 4px;border-radius:2px;white-space:nowrap;">INTRO</span>
-      </div>
-      <!-- Mini barre de zoom -->
-      <div id="paz-zoom-bar" style="position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06);display:none;z-index:6;">
-        <div id="paz-zoom-pos" style="position:absolute;height:100%;background:rgba(0,212,240,.4);"></div>
-      </div>
+    <!-- ══ BLOC DIFF : waveform + contrôles (hauteur fixe) ══ -->
+    <div style="flex-shrink:0;">
 
-      <!-- Colonne gauche : heure lancement -->
-      <div style="position:absolute;top:0;bottom:0;left:0;width:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-right:1px solid rgba(255,255,255,.07);padding:0 8px;z-index:6;">
-        <span style="font-family:var(--mono);font-size:9px;color:rgba(0,212,240,.45);letter-spacing:2px;text-transform:uppercase;">LANCÉ À</span>
-        <span id="paz-launch" style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--cyan);letter-spacing:2px;line-height:1;">--:--:--</span>
-      </div>
-
-      <!-- Centre : titre + cues -->
-      <div style="position:absolute;top:0;bottom:0;left:110px;right:260px;display:flex;flex-direction:column;justify-content:center;padding:12px 18px;gap:6px;z-index:6;overflow:hidden;">
-        <div id="paz-title" style="font-family:var(--display);font-size:34px;font-weight:700;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 18px rgba(0,0,0,.95);color:rgba(180,200,230,.55);transition:color .2s;">AUCUNE PISTE</div>
-        <div id="paz-cues" style="font-family:var(--mono);font-size:9px;color:rgba(0,212,240,.45);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-      </div>
-
-      <!-- Colonne droite : décompte + boutons -->
-      <div style="position:absolute;top:0;bottom:0;right:0;width:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-left:1px solid rgba(255,255,255,.07);padding:0 18px;z-index:6;">
-        <span id="paz-cd-lbl" style="font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.3);letter-spacing:4px;text-transform:uppercase;">NEXT</span>
-        <span id="paz-cd" style="font-family:var(--mono);font-size:52px;font-weight:700;letter-spacing:0px;line-height:1;color:var(--cyan);text-shadow:0 0 24px rgba(0,212,240,.5);">--:--:--</span>
-        <div style="display:flex;gap:5px;margin-top:6px;">
-          <button id="paz-next-btn" onclick="pazToggleNext()" title="Enchaînement automatique ON/OFF"
-            style="background:rgba(0,40,10,.5);border:1px solid rgba(0,217,106,.5);border-radius:2px;color:var(--green);font-family:var(--mono);font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:2px;transition:all .15s;font-weight:700;">⬥ NEXT</button>
-          <button onclick="openEditModal()" title="Éditer les points"
-            style="background:rgba(20,10,40,.5);border:1px solid rgba(100,70,180,.4);border-radius:2px;color:#7060a0;font-family:var(--mono);font-size:8px;padding:3px 8px;cursor:pointer;letter-spacing:1px;transition:all .15s;" onmouseover="this.style.color='#9b6de5';this.style.borderColor='#9b6de5'" onmouseout="this.style.color='#7060a0';this.style.borderColor='rgba(100,70,180,.4)'">✦ EDIT</button>
+      <!-- Zone active waveform -->
+      <div id="paz" style="position:relative;height:160px;overflow:hidden;border-bottom:2px solid var(--border);background:#03050e;">
+        <!-- Waveform fond HD — uniquement dans la zone centrale -->
+        <canvas id="paz-bg" style="position:absolute;top:0;bottom:0;left:110px;right:260px;display:block;pointer-events:none;z-index:0;width:calc(100% - 370px);"></canvas>
+        <div id="paz-red" style="position:absolute;top:0;bottom:0;left:0;width:0;z-index:1;background:linear-gradient(90deg,rgba(160,8,8,.72),rgba(80,3,3,.5));pointer-events:none;"></div>
+        <div id="paz-yellow" style="position:absolute;top:0;bottom:0;left:0;width:0;z-index:2;background:linear-gradient(90deg,rgba(190,148,0,.55),rgba(120,90,0,.35));pointer-events:none;display:none;"></div>
+        <div id="paz-ph" style="position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,200,.8);z-index:5;display:none;pointer-events:none;"></div>
+        <div id="paz-mn" style="position:absolute;top:0;bottom:0;width:2px;background:#00d96a;z-index:4;display:none;pointer-events:none;">
+          <span style="position:absolute;bottom:4px;left:4px;font-family:var(--mono);font-size:8px;color:#00d96a;background:rgba(0,0,0,.8);padding:1px 4px;border-radius:2px;white-space:nowrap;">NEXT</span>
+        </div>
+        <div id="paz-mi" style="position:absolute;top:0;bottom:0;width:2px;background:#f5c400;z-index:4;display:none;pointer-events:none;">
+          <span style="position:absolute;bottom:18px;left:4px;font-family:var(--mono);font-size:8px;color:#f5c400;background:rgba(0,0,0,.8);padding:1px 4px;border-radius:2px;white-space:nowrap;">INTRO</span>
+        </div>
+        <div id="paz-zoom-bar" style="position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06);display:none;z-index:6;">
+          <div id="paz-zoom-pos" style="position:absolute;height:100%;background:rgba(0,212,240,.4);"></div>
+        </div>
+        <!-- Colonne gauche : heure lancement -->
+        <div style="position:absolute;top:0;bottom:0;left:0;width:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-right:1px solid rgba(255,255,255,.07);padding:0 8px;z-index:6;">
+          <span style="font-family:var(--mono);font-size:9px;color:rgba(0,212,240,.45);letter-spacing:2px;text-transform:uppercase;">LANCÉ À</span>
+          <span id="paz-launch" style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--cyan);letter-spacing:2px;line-height:1;">--:--:--</span>
+        </div>
+        <!-- Centre : titre + cues -->
+        <div style="position:absolute;top:0;bottom:0;left:110px;right:260px;display:flex;flex-direction:column;justify-content:center;padding:12px 18px;gap:6px;z-index:6;overflow:hidden;">
+          <div id="paz-title" style="font-family:var(--display);font-size:34px;font-weight:700;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 18px rgba(0,0,0,.95);color:rgba(180,200,230,.55);transition:color .2s;">AUCUNE PISTE</div>
+          <div id="paz-cues" style="font-family:var(--mono);font-size:9px;color:rgba(0,212,240,.45);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        </div>
+        <!-- Colonne droite : décompte + boutons -->
+        <div style="position:absolute;top:0;bottom:0;right:0;width:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-left:1px solid rgba(255,255,255,.07);padding:0 18px;z-index:6;">
+          <span id="paz-cd-lbl" style="font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.3);letter-spacing:4px;text-transform:uppercase;">NEXT</span>
+          <span id="paz-cd" style="font-family:var(--mono);font-size:52px;font-weight:700;letter-spacing:0px;line-height:1;color:var(--cyan);text-shadow:0 0 24px rgba(0,212,240,.5);">--:--:--</span>
+          <div style="display:flex;gap:5px;margin-top:6px;">
+            <button id="paz-next-btn" onclick="pazToggleNext()" style="background:rgba(0,40,10,.5);border:1px solid rgba(0,217,106,.5);border-radius:2px;color:var(--green);font-family:var(--mono);font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:2px;transition:all .15s;font-weight:700;">⬥ NEXT</button>
+            <button onclick="openEditModal()" style="background:rgba(20,10,40,.5);border:1px solid rgba(100,70,180,.4);border-radius:2px;color:#7060a0;font-family:var(--mono);font-size:8px;padding:3px 8px;cursor:pointer;letter-spacing:1px;transition:all .15s;" onmouseover="this.style.color='#9b6de5';this.style.borderColor='#9b6de5'" onmouseout="this.style.color='#7060a0';this.style.borderColor='rgba(100,70,180,.4)'">✦ EDIT</button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- ══ ZONE DROP ══ -->
-    <div class="file-drop-zone" id="fdz1" onclick="document.getElementById('fi1').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event,0)" style="margin:0;border:none;border-bottom:1px dashed var(--border);border-radius:0;padding:5px 14px;flex-shrink:0;">
-      <input type="file" id="fi1" multiple accept="audio/*" onchange="handleFiles(this.files,0)">
-      <div class="fdz-row">
-        <span class="fdz-icon">⊕</span>
-        <span class="fdz-text">Glisser des fichiers audio · ou cliquer</span>
-        <span class="fdz-add-badge">+ AJOUTER</span>
-        <span class="fdz-count" id="fdz1-count">Aucun fichier</span>
+    </div><!-- /bloc DIFF -->
+
+    <!-- ══ BLOC PLAYLIST : prend tout le reste, scrollable ══ -->
+    <div style="flex:1;display:flex;flex-direction:column;min-height:0;background:var(--bg);border-top:2px solid var(--border);">
+
+      <!-- En-tête PLAYLIST + zone drop -->
+      <div style="flex-shrink:0;display:flex;align-items:stretch;background:var(--s2);border-bottom:1px solid var(--border);">
+        <div style="padding:0 14px;display:flex;align-items:center;border-right:1px solid var(--border);">
+          <span style="font-family:var(--display);font-size:12px;font-weight:700;color:var(--txt-dim);letter-spacing:2px;">PLAYLIST</span>
+        </div>
+        <!-- Drop zone intégrée dans la barre -->
+        <div class="file-drop-zone" id="fdz1"
+          onclick="document.getElementById('fi1').click()"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="handleDrop(event,0)"
+          style="flex:1;margin:0;border:none;border-radius:0;padding:4px 14px;display:flex;align-items:center;">
+          <input type="file" id="fi1" multiple accept="audio/*" onchange="handleFiles(this.files,0)">
+          <div class="fdz-row" style="width:100%;justify-content:flex-start;gap:10px;">
+            <span class="fdz-icon" style="font-size:14px;">⊕</span>
+            <span class="fdz-text">Glisser des fichiers audio ici · ou cliquer pour parcourir</span>
+            <span class="fdz-add-badge">+ AJOUTER</span>
+            <span class="fdz-count" id="fdz1-count" style="margin-left:auto;">Aucun fichier</span>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- ══ EN-TÊTES COLONNES ══ -->
-    <div style="display:flex;align-items:center;height:26px;background:var(--s3);border-bottom:1px solid var(--border);flex-shrink:0;">
-      <div style="width:44px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;text-align:center;">#</div>
-      <div style="width:88px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;padding-left:4px;">HORAIRE</div>
-      <div style="flex:1;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;padding-left:4px;">TITRE</div>
-      <div style="width:72px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;text-align:right;">DURÉE</div>
-      <div style="width:90px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;text-align:right;padding-right:12px;">DÉCOMPTE</div>
-      <div style="width:5px;flex-shrink:0;"></div>
-      <div style="width:54px;flex-shrink:0;"></div>
-    </div>
+      <!-- En-têtes colonnes -->
+      <div style="display:flex;align-items:center;height:24px;background:var(--s3);border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div style="width:40px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;text-align:center;">#</div>
+        <div style="width:80px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;padding-left:6px;">HORAIRE</div>
+        <div style="width:70px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;padding-left:4px;">NEXT</div>
+        <div style="flex:1;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;padding-left:4px;">TITRE</div>
+        <div style="width:72px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;text-align:right;">DURÉE</div>
+        <div style="width:88px;flex-shrink:0;font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;text-align:right;padding-right:10px;">DÉCOMPTE</div>
+        <div style="width:58px;flex-shrink:0;"></div>
+      </div>
 
-    <!-- ══ LISTE PLAYLIST ══ -->
-    <div id="paz-list" style="flex:1;overflow-y:auto;min-height:0;"></div>
+      <!-- Liste scrollable -->
+      <div id="paz-list" style="flex:1;overflow-y:auto;min-height:0;"></div>
+
+    </div><!-- /bloc PLAYLIST -->
 
     <!-- IDs fantômes pour compatibilité -->
     <div style="display:none">
@@ -1340,6 +1353,15 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
 
 </section>
 </div><!-- /tab-diffusion -->
+
+<!-- ══ ONGLET CARTWALL ══ -->
+<div id="tab-cartwall" class="tab-panel" style="flex:1;display:none;flex-direction:column;min-height:0;background:var(--bg);padding:12px;gap:10px;overflow:hidden;">
+
+  <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--txt-mute);letter-spacing:3px;flex-shrink:0;">CARTWALL — 16 CASES · 1 clic = play/stop · clic droit = supprimer</div>
+
+  <div id="cw-grid" style="display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:8px;flex:1;min-height:0;"></div>
+
+</div><!-- /tab-cartwall -->
 
 
 <!-- VU MÈTRES STICKY : DIFF 1 + DIFF 2 — toujours visible -->
@@ -2216,11 +2238,11 @@ function pazDrawBg(force){
 
   const bg  = document.getElementById('paz-bg'); if(!bg) return;
   const paz = document.getElementById('paz');    if(!paz) return;
-  // S'assurer que le canvas a les bonnes dimensions (layout peut être 0 au démarrage)
-  const W   = Math.max(paz.offsetWidth, paz.getBoundingClientRect().width, 200)||900;
-  const H   = Math.max(paz.offsetHeight, paz.getBoundingClientRect().height, 100)||150;
+  // Mesurer la zone centrale seule (entre col gauche 110px et countdown 260px)
+  const pazW = Math.max(paz.getBoundingClientRect().width, 200);
+  const W = Math.max(Math.round(pazW - 370), 100); // 110 + 260 = 370px de colonnes fixes
+  const H = Math.max(paz.getBoundingClientRect().height, paz.offsetHeight, 100) || 160;
   if(W < 10 || H < 10){
-    // Layout pas encore calculé — réessayer au prochain frame
     requestAnimationFrame(()=>{ _pazWvFile=null; pazDrawBg(true); });
     return;
   }
@@ -4554,6 +4576,171 @@ function plInit(){
   plRender();
 }
 plInit();
+
+// ══════════════════════════════════════════════════════════════
+// NAVIGATION ONGLETS
+// ══════════════════════════════════════════════════════════════
+function switchTab(name){
+  // Cacher tous les panneaux
+  document.querySelectorAll('.tab-panel').forEach(p=>{ p.style.display='none'; p.classList.remove('active'); });
+  // Désactiver tous les boutons
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  // Afficher le bon panneau
+  const panel = document.getElementById('tab-'+name);
+  if(panel){ panel.style.display='flex'; panel.classList.add('active'); }
+  const btn = document.getElementById('tab-btn-'+name);
+  if(btn) btn.classList.add('active');
+  // Si on revient sur diffusion, redessiner la waveform
+  if(name==='diffusion'){ requestAnimationFrame(()=>{ _pazWvFile=null; pazDrawBg(true); }); }
+  // Si on ouvre le cartwall la première fois, initialiser
+  if(name==='cartwall' && !window._cwInited){ cwInit(); window._cwInited=true; }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CARTWALL
+// ══════════════════════════════════════════════════════════════
+const CW_COUNT = 16;
+const cwCells  = []; // { el, audio, file, title, dur, playing, raf }
+let   cwCtxTarget = null;
+
+const cwFmt2 = n => String(Math.floor(Math.max(0,n))).padStart(2,'0');
+const cwFmtTime = s => { s=Math.max(0,s||0); return cwFmt2(Math.floor(s/60))+':'+(s%60<10?'0':'')+s.toFixed(1); };
+const cwFmtDur  = s => { s=Math.max(0,Math.round(s||0)); return cwFmt2(Math.floor(s/60))+':'+cwFmt2(s%60); };
+
+function cwBuildEmpty(i){ return `<div class="cw-num">${String(i+1).padStart(2,'0')}</div><div class="cw-empty-icon">⊕</div><div class="cw-empty-lbl">Glisser un son</div><div class="cw-progress"><div class="cw-progress-bar" id="cwp-${i}"></div></div>`; }
+function cwBuildLoaded(i){ const c=cwCells[i]; return `<div class="cw-num">${String(i+1).padStart(2,'0')}</div><div class="cw-play-indicator" id="cwpi-${i}">● AIR</div><div class="cw-title">${c.title}</div><div class="cw-timing" id="cwt-${i}">${cwFmtDur(c.dur)}</div><div class="cw-dur">${cwFmtDur(c.dur)}</div><div class="cw-progress"><div class="cw-progress-bar" id="cwp-${i}"></div></div>`; }
+
+function cwInit(){
+  const grid = document.getElementById('cw-grid'); if(!grid) return;
+  grid.innerHTML = '';
+
+  // Injecter les styles cartwall si pas encore fait
+  if(!document.getElementById('cw-style')){
+    const st=document.createElement('style');
+    st.id='cw-style';
+    st.textContent=`
+      .cw-cell{background:var(--s1);border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .12s,background .1s;user-select:none;padding:8px 6px;}
+      .cw-cell.empty{border-style:dashed;border-color:#1a2840;}
+      .cw-cell.empty:hover{border-color:var(--cyan);background:#0a1428;}
+      .cw-cell.loaded{border-color:#1e3a60;}
+      .cw-cell.loaded:hover{border-color:var(--cyan);background:#0c1830;}
+      .cw-cell.playing{background:#0e0408;border-color:var(--red);box-shadow:0 0 12px rgba(224,48,32,.2),inset 0 0 20px rgba(224,48,32,.05);}
+      .cw-cell.drag-over{border-color:var(--cyan)!important;background:#0a1e30!important;border-style:solid!important;}
+      .cw-progress{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--border);}
+      .cw-progress-bar{height:100%;width:0%;background:var(--red);border-radius:0 2px 2px 0;}
+      .cw-num{position:absolute;top:5px;left:7px;font-family:var(--mono);font-size:9px;color:var(--txt-mute);}
+      .cw-cell.playing .cw-num{color:var(--red);}
+      .cw-play-indicator{position:absolute;top:5px;right:7px;font-size:8px;color:var(--red);display:none;letter-spacing:1px;font-family:var(--mono);}
+      .cw-cell.playing .cw-play-indicator{display:block;animation:blink .6s step-start infinite;}
+      .cw-title{font-family:var(--display);font-size:15px;font-weight:700;color:var(--txt);letter-spacing:1px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;padding:0 4px;line-height:1.2;}
+      .cw-cell.playing .cw-title{color:#ff8080;}
+      .cw-timing{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--cyan);letter-spacing:1px;line-height:1;text-shadow:0 0 10px rgba(0,212,240,.3);}
+      .cw-cell.playing .cw-timing{color:var(--red);text-shadow:0 0 10px rgba(224,48,32,.4);}
+      .cw-dur{font-family:var(--mono);font-size:8px;color:var(--txt-mute);}
+      .cw-empty-icon{font-size:20px;color:#1a2840;transition:color .12s;}
+      .cw-cell.empty:hover .cw-empty-icon{color:var(--cyan);}
+      .cw-empty-lbl{font-family:var(--mono);font-size:8px;color:#1a2840;letter-spacing:2px;text-transform:uppercase;transition:color .12s;}
+      .cw-cell.empty:hover .cw-empty-lbl{color:var(--txt-mute);}
+      #cw-ctx{display:none;position:fixed;background:#02040e;border:1px solid var(--border);border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.6);z-index:9999;min-width:160px;overflow:hidden;}
+      #cw-ctx.open{display:block;}
+      .cw-ctx-item{padding:9px 14px;font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--txt-dim);cursor:pointer;border-bottom:1px solid #0a1428;transition:background .08s,color .08s;}
+      .cw-ctx-item:last-child{border-bottom:none;}
+      .cw-ctx-item:hover{background:#0a1830;color:var(--txt);}
+      .cw-ctx-item.danger:hover{background:#200808;color:var(--red);}
+    `;
+    document.head.appendChild(st);
+  }
+
+  // Context menu DOM
+  if(!document.getElementById('cw-ctx')){
+    const ctx=document.createElement('div'); ctx.id='cw-ctx';
+    ctx.innerHTML='<div class="cw-ctx-item" id="cw-ctx-load">⊕ Charger un son</div><div class="cw-ctx-item danger" id="cw-ctx-del">✕ Supprimer le son</div>';
+    document.body.appendChild(ctx);
+    document.getElementById('cw-ctx-load').onclick=()=>{ if(cwCtxTarget!==null) cwOpenPicker(cwCtxTarget); ctx.classList.remove('open'); };
+    document.getElementById('cw-ctx-del').onclick=()=>{ if(cwCtxTarget!==null) cwDelete(cwCtxTarget); ctx.classList.remove('open'); };
+    document.addEventListener('click', e=>{ if(!ctx.contains(e.target)) ctx.classList.remove('open'); });
+  }
+
+  // File input global cartwall
+  if(!document.getElementById('cw-file-input')){
+    const inp=document.createElement('input'); inp.type='file'; inp.id='cw-file-input'; inp.accept='audio/*'; inp.style.display='none';
+    document.body.appendChild(inp);
+    inp.addEventListener('change',()=>{ if(window._cwPickerTarget!==null && inp.files[0]){ cwLoad(window._cwPickerTarget, inp.files[0]); window._cwPickerTarget=null; } });
+  }
+
+  for(let i=0;i<CW_COUNT;i++){
+    const c={ idx:i, el:null, audio:null, file:null, title:null, dur:0, playing:false, raf:null };
+    const el=document.createElement('div');
+    el.className='cw-cell empty'; el.dataset.idx=i;
+    el.innerHTML=cwBuildEmpty(i);
+    cwBindCell(el, c, i);
+    grid.appendChild(el);
+    c.el=el; cwCells.push(c);
+  }
+}
+
+function cwBindCell(el, c, i){
+  el.addEventListener('dragover', e=>{ e.preventDefault(); el.classList.add('drag-over'); });
+  el.addEventListener('dragleave', ()=>el.classList.remove('drag-over'));
+  el.addEventListener('drop', e=>{ e.preventDefault(); el.classList.remove('drag-over'); const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('audio/')) cwLoad(i,f); });
+  el.addEventListener('click', e=>{ if(e.button!==0) return; if(c.audio) cwToggle(i); else cwOpenPicker(i); });
+  el.addEventListener('contextmenu', e=>{ e.preventDefault(); cwShowCtx(i,e.clientX,e.clientY); });
+}
+
+function cwLoad(idx, file){
+  const c=cwCells[idx];
+  if(c.audio){ c.audio.pause(); c.audio=null; }
+  if(c.raf){ cancelAnimationFrame(c.raf); c.raf=null; }
+  if(c.file&&c.file.startsWith('blob:')) URL.revokeObjectURL(c.file);
+  c.file=URL.createObjectURL(file); c.title=file.name.replace(/\.[^/.]+$/,''); c.playing=false;
+  const a=new Audio(c.file); a.preload='metadata'; c.audio=a;
+  a.addEventListener('loadedmetadata',()=>{ c.dur=a.duration||0; c.el.className='cw-cell loaded'; c.el.innerHTML=cwBuildLoaded(idx); cwBindCell(c.el,c,idx); });
+  a.addEventListener('ended',()=>{ c.playing=false; c.el.classList.remove('playing'); c.el.classList.add('loaded'); if(c.raf){cancelAnimationFrame(c.raf);c.raf=null;} a.currentTime=0; cwUpdateTiming(idx); });
+}
+
+function cwToggle(idx){
+  const c=cwCells[idx]; if(!c.audio) return;
+  if(c.playing){
+    c.audio.pause(); c.audio.currentTime=0; c.playing=false;
+    c.el.classList.remove('playing'); c.el.classList.add('loaded');
+    if(c.raf){cancelAnimationFrame(c.raf);c.raf=null;} cwUpdateTiming(idx);
+  } else {
+    c.audio.currentTime=0; c.audio.play().catch(()=>{});
+    c.playing=true; c.el.classList.add('playing'); c.el.classList.remove('loaded');
+    cwStartRaf(idx);
+  }
+}
+
+function cwStartRaf(idx){
+  const c=cwCells[idx]; if(c.raf) cancelAnimationFrame(c.raf);
+  const tick=()=>{ if(!c.playing||!c.audio) return; cwUpdateTiming(idx); c.raf=requestAnimationFrame(tick); };
+  c.raf=requestAnimationFrame(tick);
+}
+
+function cwUpdateTiming(idx){
+  const c=cwCells[idx]; if(!c.audio) return;
+  const pos=c.audio.currentTime, dur=c.dur||0, rem=Math.max(0,dur-pos);
+  const tEl=document.getElementById('cwt-'+idx); if(tEl) tEl.textContent=cwFmtTime(c.playing?rem:dur);
+  const pEl=document.getElementById('cwp-'+idx); if(pEl) pEl.style.width=dur>0?((pos/dur)*100).toFixed(2)+'%':'0%';
+}
+
+function cwDelete(idx){
+  const c=cwCells[idx];
+  if(c.audio){c.audio.pause();c.audio=null;}
+  if(c.raf){cancelAnimationFrame(c.raf);c.raf=null;}
+  if(c.file&&c.file.startsWith('blob:')) URL.revokeObjectURL(c.file);
+  c.file=null; c.title=null; c.dur=0; c.playing=false;
+  c.el.className='cw-cell empty'; c.el.innerHTML=cwBuildEmpty(idx); cwBindCell(c.el,c,idx);
+}
+
+function cwOpenPicker(idx){ window._cwPickerTarget=idx; const inp=document.getElementById('cw-file-input'); if(inp){inp.value='';inp.click();} }
+
+function cwShowCtx(idx,x,y){
+  cwCtxTarget=idx; const ctx=document.getElementById('cw-ctx'); if(!ctx) return;
+  const del=document.getElementById('cw-ctx-del'); if(del) del.style.display=cwCells[idx].audio?'block':'none';
+  ctx.style.left=Math.min(x,window.innerWidth-180)+'px'; ctx.style.top=Math.min(y,window.innerHeight-100)+'px';
+  ctx.classList.add('open');
+}
 
 </script>
 <!-- ══ MODAL ÉDITEUR DE POINTS ══ -->
