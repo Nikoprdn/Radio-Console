@@ -1215,7 +1215,6 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
       <button class="button is-danger is-small is-outlined"  onclick="D[0].stopAll()">■ STOP</button>
       <button class="button is-dark is-small" onclick="D[0].prevTrack()">|◀</button>
       <button class="button is-dark is-small" onclick="D[0].nextTrack()">▶|</button>
-      <button class="button is-auto is-small" id="auto-btn-0" onclick="D[0].toggleAuto()">AUTO</button>
       <div class="macro-dropdown-wrap">
         <button class="macro-dropdown-btn" id="mdrop-btn-0" onclick="toggleMacroMenu(0)">⚡ MACRO ▾</button>
         <div class="macro-dropdown-menu" id="mdrop-menu-0">
@@ -1280,8 +1279,8 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
         <span id="paz-cd-lbl" style="font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;">NEXT</span>
         <span id="paz-cd" style="font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:2px;line-height:1;color:var(--cyan);">--:--</span>
         <div style="display:flex;gap:6px;margin-top:2px;">
-          <button id="paz-auto-btn" onclick="pazToggleAuto()" title="Enchaînement automatique ON/OFF"
-            style="background:rgba(40,15,0,.5);border:1px solid rgba(240,120,0,.5);border-radius:2px;color:var(--orange);font-family:var(--mono);font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:1px;transition:all .15s;font-weight:700;">▶ NEXT</button>
+          <button id="paz-next-btn" onclick="pazToggleNext()" title="Enchaînement automatique ON/OFF"
+            style="background:rgba(0,40,10,.5);border:1px solid rgba(0,217,106,.5);border-radius:2px;color:var(--green);font-family:var(--mono);font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:2px;transition:all .15s;font-weight:700;">⬥ NEXT</button>
           <button onclick="openEditModal()" title="Éditer les points"
             style="background:rgba(20,10,40,.5);border:1px solid rgba(100,70,180,.4);border-radius:2px;color:#7060a0;font-family:var(--mono);font-size:9px;padding:3px 8px;cursor:pointer;letter-spacing:1px;transition:all .15s;" onmouseover="this.style.color='#9b6de5';this.style.borderColor='#9b6de5'" onmouseout="this.style.color='#7060a0';this.style.borderColor='rgba(100,70,180,.4)'">✦ EDIT</button>
         </div>
@@ -1521,12 +1520,16 @@ function handleFiles(files,idx){
   if(fdzEl) fdzEl.textContent=total+' fichier'+(total>1?'s':'');
   // Ajouter dans le diffuseur
   D[idx].addTracks(newTracks);
-  // Pour DIFF A (idx=0) : affichage immédiat sans attendre loadedmetadata
+  // Pour DIFF A (idx=0) : affichage immédiat du titre sans attendre loadedmetadata
   if(idx===0){
     const tEl=document.getElementById('paz-title');
     const t0=D[0].tracks[D[0].ci]||D[0].tracks[0];
-    if(tEl&&t0&&!t0.isMacro){ tEl.textContent=t0.title; tEl.style.color='rgba(200,220,255,.6)'; }
+    if(tEl&&t0&&!t0.isMacro){
+      tEl.textContent=t0.title;
+      tEl.style.color=D[0].playing?'#ffffff':'rgba(200,220,255,.6)';
+    }
     pazRenderList();
+    _pazUpdateNextBtn();
     // Lancer le décodage waveform en arrière-plan
     requestAnimationFrame(()=>pazDrawBg(true));
   }
@@ -1863,8 +1866,6 @@ class Diffuser{
     let tot=0;this.tracks.forEach((_,i)=>tot+=this._playDur(i));
     document.getElementById(this.ids.total).textContent=fmtFull(tot);
     document.getElementById(this.ids.suffix).textContent=this.playing?'EN DIRECT':'A';
-    const btn=document.getElementById(this.cfg.autoBtn);
-    if(btn)btn.classList.toggle('active',this.auto);
     // Nom de la piste en lecture dans la barre is-onair
     const trackNameEl=document.getElementById('onair-track-'+this.idx);
     if(trackNameEl){
@@ -2091,8 +2092,8 @@ class Diffuser{
       if(this._outTimer){ clearTimeout(this._outTimer); this._outTimer=null; }
       this._outTimer = setTimeout(()=>{
         if(tok !== this._playToken || !this.playing) return;
-        // Enchaîner si autoNext global activé ET piste suivante disponible
-        if(this.auto && t.autoNext !== false && this.tracks.length > 1){
+        // Enchaîner si NEXT global activé ET piste suivante disponible
+        if(this.auto && this.tracks.length > 1){
           // Supprimer la piste courante de la liste (sans arrêter son audio)
           const pos = this.tracks.indexOf(t);
           if(pos !== -1){
@@ -2180,11 +2181,7 @@ class Diffuser{
     this.render();
   }
 
-  toggleAuto(){
-    this.auto=!this.auto;
-    const btn=document.getElementById(this.cfg.autoBtn);
-    if(btn)btn.classList.toggle('active',this.auto);
-  }
+  toggleAuto(){ /* supprimé — le NEXT global est géré par pazToggleNext() */ }
 
   nextTrack(){} // désactivé — lecture séquentielle auto
   prevTrack(){} // désactivé — lecture séquentielle auto
@@ -2204,7 +2201,6 @@ const D=CONFIGS.map((cfg,i)=>new Diffuser(cfg,i));
 // ── Variables d'état ──
 let _pazWvFile    = null;
 let _pazLaunchTime = null;
-let _pazAutoNext  = true;
 let _pazZoom      = { on:false, s:0, e:1, key:'' };
 
 // ── Accesseurs cues ──
@@ -2332,7 +2328,7 @@ function pazRender(){
   pazDrawBg(false);
   pazMarkers();
   pazRenderList();
-  _pazUpdateAutoBtn();
+  _pazUpdateNextBtn();
 }
 
 // ── pazTick — 80ms ──
@@ -2459,7 +2455,6 @@ function pazRenderList(){
     const isAct=i===d.ci&&d.playing, isNxt=i===d.ci+(d.playing?1:0)&&!isAct;
     const st=starts[i];
     const hhmm=fmt2(st.getHours())+':'+fmt2(st.getMinutes())+':'+fmt2(st.getSeconds());
-    const autoOn=t.autoNext!==false;
 
     const row=document.createElement('div');
     row.style.cssText=`display:flex;align-items:center;height:52px;border-bottom:1px solid var(--border);cursor:pointer;position:relative;overflow:hidden;transition:background .08s;${isAct?'background:#0e0408;border-left:3px solid var(--red);':isNxt?'background:#071408;border-left:3px solid var(--green-dk);':''}`;
@@ -2486,12 +2481,7 @@ function pazRenderList(){
       const cdCol=isAct?'color:#ff4040':'color:#7a9ab8';
       const titleCol=isAct?'color:#ff6060':isNxt?'color:#40d870':'color:var(--txt)';
       const numCol=isAct?'color:var(--red)':isNxt?'color:var(--green)':'color:var(--txt-mute)';
-      // icône autoNext
-      // Badge NEXT par piste (cliquable)
-      const nextColor=autoOn?'var(--orange)':'#3a4050';
-      const nextOpacity=autoOn?'1':'.35';
-      const aIcon=`<span onclick="event.stopPropagation();pazToggleAutoFor(${i})" title="${autoOn?'Enchaînement ON — cliquer pour désactiver':'Enchaînement OFF — cliquer pour activer'}" style="margin-right:6px;cursor:pointer;font-family:var(--mono);font-size:9px;font-weight:700;color:${nextColor};opacity:${nextOpacity};user-select:none;border:1px solid currentColor;border-radius:2px;padding:1px 5px;letter-spacing:1px;transition:all .15s;">NEXT</span>`;
-      inner.innerHTML=`<div style="width:44px;flex-shrink:0;font-family:var(--mono);font-size:13px;${numCol};text-align:center;">${isAct?'▶':(i+1)}</div><div style="width:88px;flex-shrink:0;font-family:var(--mono);font-size:11px;color:var(--cyan-dim);padding-left:4px;">${hhmm}</div><div style="flex:1;font-family:var(--display);font-size:17px;font-weight:700;${titleCol};letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${aIcon}${t.title}</div><div style="width:72px;flex-shrink:0;font-family:var(--mono);font-size:11px;color:#7a9ab8;text-align:right;">${dur}</div><div style="width:90px;flex-shrink:0;font-family:var(--mono);font-size:13px;${cdCol};text-align:right;padding-right:12px;" ${cdId}>${cd}</div><div style="width:5px;flex-shrink:0;background:${t.color};align-self:stretch;"></div><button onclick="event.stopPropagation();openEditModal(${i})" style="width:26px;flex-shrink:0;background:none;border:none;color:#4a3a70;cursor:pointer;font-size:11px;padding:0;text-align:center;transition:color .1s;" onmouseover="this.style.color='#9b6de5'" onmouseout="this.style.color='#4a3a70'" title="Éditer les points">✦</button><button onclick="event.stopPropagation();diffRemoveTrack(0,${i})" style="width:26px;flex-shrink:0;background:none;border:none;color:#2a3040;cursor:pointer;font-size:12px;padding:0;text-align:center;" onmouseover="this.style.color='#e03020'" onmouseout="this.style.color='#2a3040'">✕</button>`;
+      inner.innerHTML=`<div style="width:44px;flex-shrink:0;font-family:var(--mono);font-size:13px;${numCol};text-align:center;">${isAct?'▶':(i+1)}</div><div style="width:88px;flex-shrink:0;font-family:var(--mono);font-size:11px;color:var(--cyan-dim);padding-left:4px;">${hhmm}</div><div style="flex:1;font-family:var(--display);font-size:17px;font-weight:700;${titleCol};letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${t.title}</div><div style="width:72px;flex-shrink:0;font-family:var(--mono);font-size:11px;color:#7a9ab8;text-align:right;">${dur}</div><div style="width:90px;flex-shrink:0;font-family:var(--mono);font-size:13px;${cdCol};text-align:right;padding-right:12px;" ${cdId}>${cd}</div><div style="width:5px;flex-shrink:0;background:${t.color};align-self:stretch;"></div><button onclick="event.stopPropagation();openEditModal(${i})" style="width:26px;flex-shrink:0;background:none;border:none;color:#4a3a70;cursor:pointer;font-size:11px;padding:0;text-align:center;transition:color .1s;" onmouseover="this.style.color='#9b6de5'" onmouseout="this.style.color='#4a3a70'" title="Éditer les points">✦</button><button onclick="event.stopPropagation();diffRemoveTrack(0,${i})" style="width:26px;flex-shrink:0;background:none;border:none;color:#2a3040;cursor:pointer;font-size:12px;padding:0;text-align:center;" onmouseover="this.style.color='#e03020'" onmouseout="this.style.color='#2a3040'">✕</button>`;
     }
     row.appendChild(inner);
     list.appendChild(row);
@@ -2509,38 +2499,41 @@ function pazUpdateRowProg(){
   if(prog) prog.style.transform='scaleX('+ratio.toFixed(4)+')';
 }
 
-// ── AUTO NEXT toggle ──
-function pazToggleAuto(){
-  const t=pazT(); if(!t) return;
-  t.autoNext=(t.autoNext===false)?true:false;
-  _pazUpdateAutoBtn(); pazRenderList();
-}
-function pazToggleAutoFor(idx){
-  const t=D[0].tracks[idx]; if(!t) return;
-  t.autoNext=(t.autoNext===false)?true:false;
-  if(idx===D[0].ci) _pazUpdateAutoBtn();
+// ── AUTO NEXT — état global du diffuseur ──
+// _pazNextOn = true  → enchaînement auto quand le point NEXT est atteint
+// _pazNextOn = false → enchaînement manuel uniquement (PLAY à la main)
+let _pazNextOn = false;
+
+function pazToggleNext(){
+  _pazNextOn = !_pazNextOn;
+  // Synchroniser avec this.auto du Diffuser (utilisé dans _startTrack)
+  D[0].auto = _pazNextOn;
+  _pazUpdateNextBtn();
   pazRenderList();
 }
-function _pazUpdateAutoBtn(){
-  const t=pazT();
-  const on=t?(t.autoNext!==false):_pazAutoNext;
-  const btn=document.getElementById('paz-auto-btn'); if(!btn) return;
-  if(on){
-    // ON : orange vif — enchaînement activé
-    btn.textContent='▶ NEXT';
-    btn.style.color='var(--orange)';
-    btn.style.borderColor='rgba(240,120,0,.7)';
-    btn.style.background='rgba(50,18,0,.6)';
-    btn.style.opacity='1';
+
+function _pazUpdateNextBtn(){
+  const btn = document.getElementById('paz-next-btn'); if(!btn) return;
+  if(_pazNextOn){
+    btn.textContent = '⬥ NEXT ON';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.background = 'rgba(0,80,20,.55)';
+    btn.style.opacity = '1';
+    btn.style.boxShadow = '0 0 6px rgba(0,217,106,.3)';
   } else {
-    // OFF : gris — enchaînement désactivé
-    btn.textContent='▶ NEXT';
-    btn.style.color='#3a4050';
-    btn.style.borderColor='rgba(50,50,60,.4)';
-    btn.style.background='rgba(0,0,0,.3)';
-    btn.style.opacity='.5';
+    btn.textContent = '⬥ NEXT';
+    btn.style.color = '#3a4a3a';
+    btn.style.borderColor = 'rgba(40,60,40,.5)';
+    btn.style.background = 'rgba(0,10,4,.4)';
+    btn.style.opacity = '.6';
+    btn.style.boxShadow = 'none';
   }
 }
+
+// Supprimer l'ancienne fonction pazToggleAuto et pazToggleAutoFor — remplacées
+function pazToggleAuto(){ pazToggleNext(); } // compat
+function pazToggleAutoFor(){ /* supprimé */ }
 
 // ── Patches D[0] ──
 const _r0=D[0].render.bind(D[0]);
@@ -2593,6 +2586,9 @@ D[0]._outOf=function(i){
 
 // Redimensionner la waveform si la fenêtre change
 window.addEventListener('resize',()=>{ _pazWvFile=null; pazDrawBg(true); });
+
+// Initialiser l'état du bouton NEXT au démarrage
+_pazUpdateNextBtn();
 
 // ── RAF dédié au playhead (60fps, indépendant du setInterval 80ms) ──
 (function pazPhRaf(){
