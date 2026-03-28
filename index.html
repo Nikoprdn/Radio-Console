@@ -1193,7 +1193,6 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
 <!-- Barre d'onglets principale -->
 <div class="tab-bar" style="display:flex;">
   <button class="tab-btn active" id="tab-btn-diffusion" onclick="switchTab('diffusion')">⬤ DIFFUSION</button>
-  <button class="tab-btn" id="tab-btn-cartwall" onclick="switchTab('cartwall')">▦ CARTWALL</button>
   <button class="tab-btn" id="tab-btn-diff2" onclick="switchTab('diff2')">⬡ DIFF 2</button>
 </div>
 
@@ -1327,6 +1326,15 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
       <!-- Liste scrollable — hauteur min garantie -->
       <div id="paz-list" style="flex:1;overflow-y:auto;min-height:100px;"></div>
 
+      <!-- ══ CARTWALL 16 CASES — directement dans la diffusion ══ -->
+      <div style="flex-shrink:0;background:var(--s1);border-top:2px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 14px;background:var(--s2);border-bottom:1px solid var(--border);">
+          <span style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--txt-mute);letter-spacing:3px;">CARTWALL</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--txt-mute);letter-spacing:1px;">1 clic = play/stop · clic droit = options</span>
+        </div>
+        <div id="cw-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;padding:8px;"></div>
+      </div>
+
     </div><!-- /bloc PLAYLIST -->
 
     <!-- IDs fantômes pour compatibilité -->
@@ -1357,18 +1365,6 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
 
 </section>
 </div><!-- /tab-diffusion -->
-
-<!-- ══ ONGLET CARTWALL ══ -->
-<div id="tab-cartwall" class="tab-panel" style="background:var(--bg);padding:10px;gap:8px;overflow:hidden;">
-
-  <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--txt-mute);letter-spacing:3px;flex-shrink:0;">
-    CARTWALL <span style="color:#1e3060;font-size:9px;letter-spacing:2px;">· 1 clic = play/stop · clic droit = options</span>
-  </div>
-
-  <!-- Grille 4×4 avec hauteurs de ligne automatiques -->
-  <div id="cw-grid" style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,minmax(80px,1fr));gap:8px;min-height:0;overflow:hidden;"></div>
-
-</div><!-- /tab-cartwall -->
 
 <!-- ══ ONGLET DIFF 2 ══ -->
 <div id="tab-diff2" class="tab-panel" style="background:var(--bg);overflow:hidden;flex-direction:column;">
@@ -2615,9 +2611,17 @@ function pazRenderList(){
 
     const editBtn = ti >= 0 ? `<button onclick="event.stopPropagation();openEditModal(${ti})" style="width:24px;background:none;border:none;color:#4a3a70;cursor:pointer;font-size:11px;padding:0;transition:color .1s;" onmouseover="this.style.color='#9b6de5'" onmouseout="this.style.color='#4a3a70'" title="Éditer">✦</button>` : '';
     const delBtn  = ti >= 0 ? `<button onclick="event.stopPropagation();diffRemoveTrack(0,${ti})" style="width:24px;background:none;border:none;color:#2a3040;cursor:pointer;font-size:12px;padding:0;transition:color .1s;" onmouseover="this.style.color='#e03020'" onmouseout="this.style.color='#2a3040'">✕</button>` : '';
-    const jumpFn  = ti >= 0 ? `D[0].jumpTo(${ti})` : '';
 
-    html += `<div onclick="${jumpFn}" style="display:flex;align-items:center;height:48px;border-bottom:1px solid #0d1428;cursor:pointer;${bgCss}position:relative;" ${isPlay ? 'id="paz-row-active"' : ''}>
+    // Drag & drop pour réordonner — pas de clic pour lancer
+    const dragAttrs = ti >= 0 && !isPlay
+      ? `draggable="true"
+         ondragstart="plDragStart(event,${ti})"
+         ondragover="event.preventDefault();this.style.background='#0a1a2a'"
+         ondragleave="this.style.background=''"
+         ondrop="event.preventDefault();this.style.background='';plDragDrop(event,${ti})"`
+      : '';
+
+    html += `<div ${dragAttrs} style="display:flex;align-items:center;height:48px;border-bottom:1px solid #0d1428;cursor:${ti>=0&&!isPlay?'grab':'default'};${bgCss}position:relative;user-select:none;" ${isPlay ? 'id="paz-row-active"' : ''}>
       ${isPlay ? '<div id="paz-row-prog" style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(120,6,6,.65),rgba(60,2,2,.45));transform-origin:left;transform:scaleX(0);pointer-events:none;z-index:0;"></div>' : ''}
       <div style="position:relative;z-index:1;display:flex;align-items:center;width:100%;">
         <div style="width:40px;flex-shrink:0;text-align:center;font-family:var(--mono);font-size:13px;${numCol};">${numTxt}</div>
@@ -2633,6 +2637,47 @@ function pazRenderList(){
   });
 
   list.innerHTML = html;
+}
+
+// ── Réordonnancement par drag & drop dans la playlist ──
+let _plDragIdx = null;
+
+function plDragStart(e, fromIdx){
+  _plDragIdx = fromIdx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(fromIdx));
+}
+
+function plDragDrop(e, toIdx){
+  e.preventDefault();
+  if(_plDragIdx === null || _plDragIdx === toIdx) return;
+  const d = D[0];
+  // Déplacer dans tracks, durs, audios, allTracks
+  const moveArr = (arr, from, to) => {
+    const item = arr.splice(from, 1)[0];
+    arr.splice(to, 0, item);
+  };
+  moveArr(d.tracks, _plDragIdx, toIdx);
+  moveArr(d.durs,   _plDragIdx, toIdx);
+  moveArr(d.audios, _plDragIdx, toIdx);
+  // Synchroniser allTracks (seulement les pending/playing)
+  const activeInAll = d.allTracks.filter(t => t._status !== 'done');
+  const fromT = activeInAll[_plDragIdx];
+  const toT   = activeInAll[toIdx];
+  if(fromT && toT){
+    const ai = d.allTracks.indexOf(fromT);
+    const bi = d.allTracks.indexOf(toT);
+    if(ai !== -1 && bi !== -1){
+      d.allTracks.splice(ai, 1);
+      d.allTracks.splice(bi, 0, fromT);
+    }
+  }
+  // Ajuster ci si nécessaire
+  if(d.ci === _plDragIdx) d.ci = toIdx;
+  else if(_plDragIdx < d.ci && toIdx >= d.ci) d.ci--;
+  else if(_plDragIdx > d.ci && toIdx <= d.ci) d.ci++;
+  _plDragIdx = null;
+  pazRenderList();
 }
 
 // ── Barre de progression dans la liste ──
@@ -4848,7 +4893,7 @@ function cwInit(){
     const st=document.createElement('style');
     st.id='cw-style';
     st.textContent=`
-      .cw-cell{background:var(--s1);border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .12s,background .1s;user-select:none;padding:8px 6px;min-height:80px;}
+      .cw-cell{background:var(--s1);border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .12s,background .1s;user-select:none;padding:6px 4px;min-height:70px;}
       .cw-cell.empty{border-style:dashed;border-color:#1a2840;}
       .cw-cell.empty:hover{border-color:var(--cyan);background:#0a1428;}
       .cw-cell.loaded{border-color:#1e3a60;}
