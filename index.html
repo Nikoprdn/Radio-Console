@@ -1167,6 +1167,10 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
     </a>
   </div>
   <div class="navbar-end">
+    <div class="navbar-item" style="gap:8px;display:flex;align-items:center;">
+      <a href="https://nikoprdn.github.io/Diff2/" target="_blank" style="font-family:var(--mono);font-size:10px;color:var(--txt-mute);letter-spacing:1px;text-decoration:none;padding:3px 10px;border:1px solid var(--border);border-radius:2px;transition:all .15s;" onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--txt-mute)'">⬡ DIFF 2</a>
+      <a href="https://nikoprdn.github.io/Radio-Console/" target="_blank" style="font-family:var(--mono);font-size:10px;color:var(--txt-mute);letter-spacing:1px;text-decoration:none;padding:3px 10px;border:1px solid var(--border);border-radius:2px;transition:all .15s;" onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--txt-mute)'">⬡ CONSOLE</a>
+    </div>
     <div class="navbar-item">
       <div class="listen-mode-wrap">
         <span class="listen-mode-label">Écoute</span>
@@ -1542,25 +1546,48 @@ function handleFiles(files,idx){
   const total=CONFIGS[idx].tracks.length;
   const fdzEl=document.getElementById(CONFIGS[idx].fdzCount);
   if(fdzEl) fdzEl.textContent=total+' fichier'+(total>1?'s':'');
-  // Ajouter dans le diffuseur (appelle déjà le patch addTracks qui fait pazRenderList)
-  D[idx].addTracks(newTracks);
-  // Pour DIFF A : forcer titre + liste après que les pistes sont bien intégrées
+
+  // Peupler allTracks et tracks DIRECTEMENT (sans passer par addTracks qui appelle render interne)
+  const d=D[idx];
+  const offset=d.tracks.length;
+  d.tracks.push(...newTracks);
+  d.durs.push(...newTracks.map(()=>0));
+  newTracks.forEach(t=>{ t._status='pending'; d.allTracks.push(t); });
+
+  // Créer les Audio() et charger les métadonnées
+  newTracks.forEach((_,i)=>{
+    const trackIdx=offset+i;
+    const a=new Audio();
+    a.src=d.tracks[trackIdx].file;
+    a.preload='metadata';
+    a.addEventListener('loadedmetadata',()=>{
+      const tr=d.tracks[trackIdx]; if(!tr) return;
+      d.durs[trackIdx]=a.duration||0;
+      if(tr.outCue==null) tr.outCue=a.duration;
+      // Décoder waveform en arrière-plan
+      const fileUrl=tr.file;
+      drawWaveform(document.createElement('canvas'), fileUrl).then(()=>{
+        if(idx===0 && trackIdx===d.ci){ _pazWvFile=null; pazDrawBg(false); }
+      });
+      pazRenderList(); // mise à jour de la durée dans la liste
+    });
+    d.audios[trackIdx]=a;
+  });
+
+  // Mise à jour UI immédiate — pas de RAF, pas de délai
   if(idx===0){
-    // Double rAF : garantit que allTracks est peuplé avant le rendu
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      const tEl=document.getElementById('paz-title');
-      const t0=D[0].tracks[D[0].ci]||D[0].tracks[0]||D[0].allTracks[0];
-      if(tEl&&t0&&!t0.isMacro){
-        tEl.textContent=t0.title;
-        tEl.style.color=D[0].playing?'#ffffff':'rgba(200,220,255,.6)';
-      }
-      pazRenderList();
-      _pazUpdateNextBtn();
-      pazDrawBg(true);
-    }));
+    const tEl=document.getElementById('paz-title');
+    const t0=d.allTracks.find(t=>!t.isMacro);
+    if(tEl && t0){
+      tEl.textContent=t0.title;
+      tEl.style.color=d.playing?'#ffffff':'rgba(200,220,255,.6)';
+    }
+    _pazUpdateNextBtn();
+    pazRenderList();           // SYNCHRONE — liste mise à jour immédiatement
+    requestAnimationFrame(()=>pazDrawBg(true));
   }
 }
-function handleDrop(ev,idx){ev.preventDefault();document.getElementById('fdz'+(idx+1)).classList.remove('drag-over');handleFiles(ev.dataTransfer.files,idx);}
+function handleDrop(ev,idx){ev.preventDefault();handleFiles(ev.dataTransfer.files,idx);}
 
 // ── Dessin waveform ──
 const WV_DATA_CACHE={}; // file → Float32Array (cache pour zoom)
@@ -2472,12 +2499,55 @@ function pazRenderList(){
     return;
   }
 
+  // ── Calcul des horaires en temps réel ──
+  // Base : si en lecture, utilise la position actuelle pour le #1
+  // Sinon : heure actuelle
+  const now = new Date();
+  let cursor = new Date(now); // horaire de départ du prochain élément
+  const schedules = []; // horaire calculé pour chaque piste allTracks
+
+  // Si en lecture, la piste 0 (playing) a déjà commencé — son prochain horaire est dans le futur
+  const playingTrack = d.allTracks.find(t=>t._status==='playing');
+  if(playingTrack && d.playing){
+    const ti = d.tracks.indexOf(playingTrack);
+    const audio = ti>=0 ? d.audios[ti] : null;
+    const inCue = playingTrack.inCue||0;
+    const nextCue = playingTrack.nextCue!=null ? playingTrack.nextCue
+                  : (playingTrack.outCue!=null ? playingTrack.outCue : (d.durs[ti]||0));
+    const elapsed = audio ? Math.max(0, audio.currentTime - inCue) : 0;
+    const remaining = Math.max(0, nextCue - inCue - elapsed);
+    // La piste playing se termine dans `remaining` secondes
+    cursor = new Date(now.getTime() + remaining*1000);
+  }
+
+  d.allTracks.forEach((t, i) => {
+    const isDone = t._status==='done';
+    const isPlay = t._status==='playing';
+    if(isDone || isPlay){
+      schedules.push(isPlay ? now : null); // playing = maintenant, done = passé
+    } else {
+      schedules.push(new Date(cursor));
+      // Calculer la durée de cette piste pour avancer le curseur
+      const ti = d.tracks.indexOf(t);
+      const inCue = t.inCue||0;
+      const nextCue = t.nextCue!=null ? t.nextCue
+                    : (t.outCue!=null ? t.outCue : (ti>=0 ? d.durs[ti]||0 : 0));
+      const dur = Math.max(0, nextCue - inCue);
+      cursor = new Date(cursor.getTime() + dur*1000);
+    }
+  });
+
+  const fmtHHMMSS = d => {
+    if(!d) return '—:—:—';
+    return fmt2(d.getHours())+':'+fmt2(d.getMinutes())+':'+fmt2(d.getSeconds());
+  };
+
   // Construire le HTML en une seule passe
   let html = '';
   all.forEach((t, i) => {
     const isDone   = t._status === 'done';
     const isPlay   = t._status === 'playing';
-    const ti       = d.tracks.indexOf(t); // index dans tracks actifs (-1 si done)
+    const ti       = d.tracks.indexOf(t);
     const isNext   = !isDone && !isPlay && d.playing && ti === 1;
     const durSec   = ti >= 0 ? (d.durs[ti] || 0) : 0;
     const outCue   = t.outCue != null ? t.outCue : durSec;
@@ -2486,6 +2556,7 @@ function pazRenderList(){
     const durStr   = fmtFull(durSec);
     const cdStr    = fmtFull(playDur);
     const nOn      = t.autoNext !== false;
+    const schedStr = fmtHHMMSS(schedules[i]);
 
     if(isDone){
       html += `<div style="display:flex;align-items:center;height:40px;border-bottom:1px solid #0a0f1a;opacity:.3;filter:saturate(0.2);">
@@ -2495,7 +2566,7 @@ function pazRenderList(){
         <div style="flex:1;font-family:var(--display);font-size:15px;font-weight:700;color:#4a5060;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:line-through;padding:0 8px;">${t.title}</div>
         <div style="width:72px;flex-shrink:0;font-family:var(--mono);font-size:11px;color:#3a4050;text-align:right;">${durStr}</div>
         <div style="width:88px;flex-shrink:0;font-family:var(--mono);font-size:11px;color:#3a4050;text-align:right;padding-right:10px;">—</div>
-        <div style="width:58px;flex-shrink:0;"></div>
+        <div style="width:52px;flex-shrink:0;"></div>
         <div style="width:5px;flex-shrink:0;background:${t.color};align-self:stretch;opacity:.2;"></div>
       </div>`;
       return;
@@ -2509,6 +2580,7 @@ function pazRenderList(){
     const titleCol = isPlay ? 'color:#ff7070' : isNext ? 'color:#50e880' : 'color:#ddeeff';
     const cdId   = isPlay ? 'id="paz-row-cd-active"' : '';
     const cdCol  = isPlay ? 'color:#ff4040' : 'color:#6a8aaa';
+    const schedCol = isPlay ? 'color:#ff7070' : 'color:#3a8aaa';
 
     const nBadgeColor  = nOn ? '#00d96a' : '#2a3a2a';
     const nBadgeBg     = nOn ? 'rgba(0,60,15,.6)' : 'rgba(0,0,0,.2)';
@@ -2525,7 +2597,7 @@ function pazRenderList(){
       ${isPlay ? '<div id="paz-row-prog" style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(120,6,6,.65),rgba(60,2,2,.45));transform-origin:left;transform:scaleX(0);pointer-events:none;z-index:0;"></div>' : ''}
       <div style="position:relative;z-index:1;display:flex;align-items:center;width:100%;">
         <div style="width:40px;flex-shrink:0;text-align:center;font-family:var(--mono);font-size:13px;${numCol};">${numTxt}</div>
-        <div style="width:80px;flex-shrink:0;font-family:var(--mono);font-size:10px;color:#3a6080;padding-left:6px;">—:—:—</div>
+        <div style="width:80px;flex-shrink:0;font-family:var(--mono);font-size:10px;${schedCol};padding-left:6px;letter-spacing:.5px;">${schedStr}</div>
         <div style="width:60px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">${nBadge}</div>
         <div style="flex:1;font-family:var(--display);font-size:17px;font-weight:700;${titleCol};letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;padding:0 8px;">${t.title}</div>
         <div style="width:72px;flex-shrink:0;font-family:var(--mono);font-size:11px;color:#5a7a9a;text-align:right;">${durStr}</div>
@@ -2801,6 +2873,28 @@ _pazUpdateNextBtn();
   const cdR=document.getElementById('paz-row-cd-active');
   if(cdR) cdR.textContent=fmtFull(Math.max(0,targetCue2-pos));
 })();
+
+// ── BroadcastChannel : partage l'état ON AIR avec Diff2 ──
+const _bc = (()=>{ try{ return new BroadcastChannel('radio_onair'); }catch(e){ return null; } })();
+function _broadcastState(){
+  const d=D[0];
+  const state={
+    playing: d.playing,
+    title: d.playing && d.tracks[d.ci] ? d.tracks[d.ci].title : null,
+    ts: Date.now()
+  };
+  if(_bc) _bc.postMessage(state);
+  try{ localStorage.setItem('radio_onair', JSON.stringify(state)); }catch(e){}
+}
+// Émettre à chaque changement d'état
+const _origTogglePlay = Diffuser.prototype.togglePlay;
+setInterval(_broadcastState, 2000); // heartbeat toutes les 2s
+// Patch stopAll pour émettre
+const _origStopAll0 = D[0].stopAll.bind(D[0]);
+D[0].stopAll = function(){ _origStopAll0(); _broadcastState(); };
+
+// Rafraîchir les horaires de la playlist toutes les secondes
+setInterval(()=>{ if(D[0].allTracks.length) pazRenderList(); }, 1000);
 
 // Init
 setTimeout(()=>{ pazRender(); },200);
