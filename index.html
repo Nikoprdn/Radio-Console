@@ -24,7 +24,7 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
   .navbar-end .navbar-item{font-family:var(--mono);font-size:11px;color:var(--txt-dim);}
   .clock-display{font-family:var(--mono);font-size:22px;color:var(--cyan);letter-spacing:3px;}
   .section.is-console{padding:0;background:var(--bg);flex:1;display:flex;flex-direction:column;min-height:0;}
-  .card.is-dark-card{background:var(--s1);border:1px solid var(--border);border-radius:0;box-shadow:none;flex:1;display:flex;flex-direction:column;min-height:0;}
+  .card.is-dark-card{background:var(--s1);border:1px solid var(--border);border-radius:0;box-shadow:none;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
   .card.is-dark-card .card-header{background:var(--s2);border-bottom:1px solid var(--border);box-shadow:none;border-radius:0;flex-shrink:0;}
   .card.is-dark-card .card-header-title{color:var(--txt);font-family:var(--display);font-size:15px;letter-spacing:1px;padding:.6rem 1rem;}
   .card.is-dark-card .card-content{padding:0;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
@@ -471,8 +471,8 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
   }
   .tab-btn:hover { color:var(--txt-dim); }
   .tab-btn.active { color:var(--cyan); border-bottom-color:var(--cyan); }
-  .tab-panel{display:none;}
-  .tab-panel.active{display:flex;flex-direction:column;flex:1;min-height:0;}
+  .tab-panel{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
+  .tab-panel.active{display:flex;}
 
   /* ── Module Rendez-vous ── */
   .rdv-section {
@@ -1193,8 +1193,8 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
 </div>
 
 <!-- Panneau Diffusion -->
-<div id="tab-diffusion" class="tab-panel active" style="flex:1;display:flex;flex-direction:column;min-height:0;">
-<section class="section is-console" style="padding:0;">
+<div id="tab-diffusion" class="tab-panel active" style="overflow:hidden;">
+<section class="section is-console" style="padding:0;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
 
 <div class="card is-dark-card">
   <div class="card-header diff-card-header" id="diff-header-0" style="display:flex;align-items:stretch">
@@ -1249,17 +1249,21 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
       <div id="paz" style="position:relative;height:160px;overflow:hidden;border-bottom:2px solid var(--border);background:#03050e;">
         <!-- Waveform fond HD — uniquement dans la zone centrale -->
         <canvas id="paz-bg" style="position:absolute;top:0;bottom:0;left:110px;right:260px;display:block;pointer-events:none;z-index:0;width:calc(100% - 370px);"></canvas>
-        <div id="paz-red" style="position:absolute;top:0;bottom:0;left:0;width:0;z-index:1;background:linear-gradient(90deg,rgba(160,8,8,.72),rgba(80,3,3,.5));pointer-events:none;"></div>
-        <div id="paz-yellow" style="position:absolute;top:0;bottom:0;left:0;width:0;z-index:2;background:linear-gradient(90deg,rgba(190,148,0,.55),rgba(120,90,0,.35));pointer-events:none;display:none;"></div>
-        <div id="paz-ph" style="position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,200,.8);z-index:5;display:none;pointer-events:none;"></div>
-        <div id="paz-mn" style="position:absolute;top:0;bottom:0;width:2px;background:#00d96a;z-index:4;display:none;pointer-events:none;">
-          <span style="position:absolute;bottom:4px;left:4px;font-family:var(--mono);font-size:8px;color:#00d96a;background:rgba(0,0,0,.8);padding:1px 4px;border-radius:2px;white-space:nowrap;">NEXT</span>
-        </div>
-        <div id="paz-mi" style="position:absolute;top:0;bottom:0;width:2px;background:#f5c400;z-index:4;display:none;pointer-events:none;">
-          <span style="position:absolute;bottom:18px;left:4px;font-family:var(--mono);font-size:8px;color:#f5c400;background:rgba(0,0,0,.8);padding:1px 4px;border-radius:2px;white-space:nowrap;">INTRO</span>
-        </div>
-        <div id="paz-zoom-bar" style="position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06);display:none;z-index:6;">
-          <div id="paz-zoom-pos" style="position:absolute;height:100%;background:rgba(0,212,240,.4);"></div>
+
+        <!-- Tous les overlays dans la zone centrale (left:110px → right:260px) -->
+        <div id="paz-center-zone" style="position:absolute;top:0;bottom:0;left:110px;right:260px;overflow:hidden;pointer-events:none;">
+          <div id="paz-red"    style="position:absolute;top:0;bottom:0;left:0;width:0;z-index:1;background:linear-gradient(90deg,rgba(160,8,8,.72),rgba(80,3,3,.5));"></div>
+          <div id="paz-yellow" style="position:absolute;top:0;bottom:0;left:0;width:0;z-index:2;background:linear-gradient(90deg,rgba(190,148,0,.55),rgba(120,90,0,.35));display:none;"></div>
+          <div id="paz-ph"     style="position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,200,.8);z-index:5;display:none;"></div>
+          <div id="paz-mn"     style="position:absolute;top:0;bottom:0;width:2px;background:#00d96a;z-index:4;display:none;">
+            <span style="position:absolute;bottom:4px;left:4px;font-family:var(--mono);font-size:8px;color:#00d96a;background:rgba(0,0,0,.8);padding:1px 4px;border-radius:2px;white-space:nowrap;">NEXT</span>
+          </div>
+          <div id="paz-mi"     style="position:absolute;top:0;bottom:0;width:2px;background:#f5c400;z-index:4;display:none;">
+            <span style="position:absolute;bottom:18px;left:4px;font-family:var(--mono);font-size:8px;color:#f5c400;background:rgba(0,0,0,.8);padding:1px 4px;border-radius:2px;white-space:nowrap;">INTRO</span>
+          </div>
+          <div id="paz-zoom-bar" style="position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06);display:none;z-index:6;">
+            <div id="paz-zoom-pos" style="position:absolute;height:100%;background:rgba(0,212,240,.4);"></div>
+          </div>
         </div>
         <!-- Colonne gauche : heure lancement -->
         <div style="position:absolute;top:0;bottom:0;left:0;width:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-right:1px solid rgba(255,255,255,.07);padding:0 8px;z-index:6;">
@@ -1355,7 +1359,7 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
 </div><!-- /tab-diffusion -->
 
 <!-- ══ ONGLET CARTWALL ══ -->
-<div id="tab-cartwall" class="tab-panel" style="flex:1;display:none;flex-direction:column;min-height:0;background:var(--bg);padding:12px;gap:10px;overflow:hidden;">
+<div id="tab-cartwall" class="tab-panel" style="background:var(--bg);padding:12px;gap:10px;">
 
   <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--txt-mute);letter-spacing:3px;flex-shrink:0;">CARTWALL — 16 CASES · 1 clic = play/stop · clic droit = supprimer</div>
 
@@ -1365,7 +1369,7 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
 
 
 <!-- VU MÈTRES STICKY : DIFF 1 + DIFF 2 — toujours visible -->
-<div class="vu-section">
+<div class="vu-section" style="display:none;">
 
   <!-- VU diffuseurs masqués -->
   <div style="display:none">
@@ -4581,18 +4585,19 @@ plInit();
 // NAVIGATION ONGLETS
 // ══════════════════════════════════════════════════════════════
 function switchTab(name){
-  // Cacher tous les panneaux
-  document.querySelectorAll('.tab-panel').forEach(p=>{ p.style.display='none'; p.classList.remove('active'); });
-  // Désactiver tous les boutons
+  document.querySelectorAll('.tab-panel').forEach(p=>{
+    p.style.display='none';
+    p.classList.remove('active');
+  });
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  // Afficher le bon panneau
   const panel = document.getElementById('tab-'+name);
-  if(panel){ panel.style.display='flex'; panel.classList.add('active'); }
+  if(panel){
+    panel.style.display='flex';
+    panel.classList.add('active');
+  }
   const btn = document.getElementById('tab-btn-'+name);
   if(btn) btn.classList.add('active');
-  // Si on revient sur diffusion, redessiner la waveform
   if(name==='diffusion'){ requestAnimationFrame(()=>{ _pazWvFile=null; pazDrawBg(true); }); }
-  // Si on ouvre le cartwall la première fois, initialiser
   if(name==='cartwall' && !window._cwInited){ cwInit(); window._cwInited=true; }
 }
 
