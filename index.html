@@ -1269,16 +1269,16 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:
       </div>
 
       <!-- Centre : titre + cues -->
-      <div style="position:absolute;top:0;bottom:0;left:110px;right:200px;display:flex;flex-direction:column;justify-content:center;padding:12px 18px;gap:6px;z-index:6;overflow:hidden;">
+      <div style="position:absolute;top:0;bottom:0;left:110px;right:260px;display:flex;flex-direction:column;justify-content:center;padding:12px 18px;gap:6px;z-index:6;overflow:hidden;">
         <div id="paz-title" style="font-family:var(--display);font-size:34px;font-weight:700;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 18px rgba(0,0,0,.95);color:rgba(180,200,230,.55);transition:color .2s;">AUCUNE PISTE</div>
         <div id="paz-cues" style="font-family:var(--mono);font-size:9px;color:rgba(0,212,240,.45);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
       </div>
 
       <!-- Colonne droite : décompte + boutons -->
-      <div style="position:absolute;top:0;bottom:0;right:0;width:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-left:1px solid rgba(255,255,255,.07);padding:0 14px;z-index:6;">
-        <span id="paz-cd-lbl" style="font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.3);letter-spacing:3px;text-transform:uppercase;">NEXT</span>
-        <span id="paz-cd" style="font-family:var(--mono);font-size:40px;font-weight:700;letter-spacing:1px;line-height:1;color:var(--cyan);text-shadow:0 0 16px rgba(0,212,240,.4);">--:--:--</span>
-        <div style="display:flex;gap:5px;margin-top:5px;">
+      <div style="position:absolute;top:0;bottom:0;right:0;width:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-left:1px solid rgba(255,255,255,.07);padding:0 18px;z-index:6;">
+        <span id="paz-cd-lbl" style="font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.3);letter-spacing:4px;text-transform:uppercase;">NEXT</span>
+        <span id="paz-cd" style="font-family:var(--mono);font-size:52px;font-weight:700;letter-spacing:0px;line-height:1;color:var(--cyan);text-shadow:0 0 24px rgba(0,212,240,.5);">--:--:--</span>
+        <div style="display:flex;gap:5px;margin-top:6px;">
           <button id="paz-next-btn" onclick="pazToggleNext()" title="Enchaînement automatique ON/OFF"
             style="background:rgba(0,40,10,.5);border:1px solid rgba(0,217,106,.5);border-radius:2px;color:var(--green);font-family:var(--mono);font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:2px;transition:all .15s;font-weight:700;">⬥ NEXT</button>
           <button onclick="openEditModal()" title="Éditer les points"
@@ -1522,17 +1522,18 @@ function handleFiles(files,idx){
   D[idx].addTracks(newTracks);
   // Pour DIFF A : forcer titre + liste après que les pistes sont bien intégrées
   if(idx===0){
-    requestAnimationFrame(()=>{
+    // Double rAF : garantit que allTracks est peuplé avant le rendu
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
       const tEl=document.getElementById('paz-title');
-      const t0=D[0].tracks[D[0].ci]||D[0].tracks[0];
+      const t0=D[0].tracks[D[0].ci]||D[0].tracks[0]||D[0].allTracks[0];
       if(tEl&&t0&&!t0.isMacro){
         tEl.textContent=t0.title;
         tEl.style.color=D[0].playing?'#ffffff':'rgba(200,220,255,.6)';
       }
       pazRenderList();
       _pazUpdateNextBtn();
-      requestAnimationFrame(()=>pazDrawBg(true));
-    });
+      pazDrawBg(true);
+    }));
   }
 }
 function handleDrop(ev,idx){ev.preventDefault();document.getElementById('fdz'+(idx+1)).classList.remove('drag-over');handleFiles(ev.dataTransfer.files,idx);}
@@ -2485,9 +2486,7 @@ function pazRenderList(){
         : '';
       row.style.cssText=`display:flex;align-items:center;height:52px;border-bottom:1px solid var(--border);cursor:pointer;position:relative;overflow:hidden;transition:background .08s;${bgStyle}`;
       if(isPlay){ row.id='paz-row-active'; }
-      // Trouver l'index dans d.tracks pour jumpTo
-      const trackIdx=d.tracks.indexOf(t);
-      if(trackIdx>=0) row.onclick=()=>d.jumpTo(trackIdx);
+      if(ti>=0) row.onclick=()=>d.jumpTo(ti);
 
       // Barre de progression sur la ligne active
       if(isPlay){
@@ -2502,7 +2501,6 @@ function pazRenderList(){
 
       const st=timeMap.get(t);
       const hhmm=st?fmt2(st.getHours())+':'+fmt2(st.getMinutes())+':'+fmt2(st.getSeconds()):'—:—:—';
-      const ti=d.tracks.indexOf(t);
       const durSec=ti>=0?(d.durs[ti]||0):0;
       const durStr=fmtFull(durSec);
       const inCue=t.inCue||0;
@@ -2694,22 +2692,39 @@ D[0]._startTrack=function(i){
     tEl.textContent = newT.title;
     tEl.style.color = '#ffffff';
   }
+  // Forcer le redessin de la waveform de fond pour la nouvelle piste
+  // (qu'elle soit déjà en cache ou non)
+  requestAnimationFrame(()=>{
+    _pazWvFile=null; // invalider pour forcer le redessin
+    pazDrawBg(true);
+    // Si pas encore en cache, lancer le décodage
+    if(newT && newT.file && !WV_DATA_CACHE[newT.file]){
+      drawWaveform(document.createElement('canvas'), newT.file).then(()=>{
+        if(D[0].tracks[D[0].ci]===newT){ _pazWvFile=null; pazDrawBg(true); }
+      });
+    }
+    pazRenderList();
+  });
   _s0(i);
 };
 
 const _add0=D[0].addTracks.bind(D[0]);
 D[0].addTracks=function(newTracks){
   _pazWvFile=null;
-  _add0(newTracks);
+  _add0(newTracks); // peuple this.tracks ET this.allTracks
   // Titre immédiat dans la PAZ
   const tEl=document.getElementById('paz-title');
   const t0=D[0].tracks[D[0].ci]||D[0].tracks[0];
   if(tEl && t0 && !t0.isMacro){
     tEl.textContent=t0.title;
     tEl.style.color=D[0].playing?'#ffffff':'rgba(200,220,255,.6)';
+  } else if(tEl && D[0].allTracks.length){
+    // Fallback : premier élément de allTracks
+    const first=D[0].allTracks.find(t=>!t.isMacro);
+    if(first){ tEl.textContent=first.title; tEl.style.color='rgba(200,220,255,.6)'; }
   }
   _pazUpdateNextBtn();
-  pazRenderList();
+  pazRenderList(); // appelé APRÈS _add0 → allTracks est garanti peuplé
 };
 
 // Patch _outOf : retourne le point cible selon autoNext de la piste
