@@ -4868,272 +4868,266 @@ function switchTab(name){
 
 
 
-// ════════════════════════════════════════════════════════════════
-// CARTWALL — 6 cases indépendantes, self-contained
-// ════════════════════════════════════════════════════════════════
-(function(){
 
-const N = 6;
-// État de chaque case
-const S = Array.from({length:N}, (_,i)=>({
-  i, audio:null, url:null, title:null, dur:0, playing:false, raf:null,
+// ════════════════════════════════════════════════════════════════
+// CARTWALL — 6 cases autonomes
+// ════════════════════════════════════════════════════════════════
+
+// État des 6 cases
+const CART = Array.from({length:6}, (_,i) => ({
+  i, audio:null, url:null, title:'', dur:0,
+  playing:false, raf:null,
   inCue:0, outCue:null, nextCue:null, introCue:null
 }));
 
-let _ctxIdx = null;
-let _pickIdx = null;
-let _ctxVisible = false;
+let _cartCtxIdx  = null;
+let _cartPickIdx = null;
 
-const fmt2 = n => String(Math.floor(Math.max(0,n))).padStart(2,'0');
-const fmtMs = s => { s=Math.max(0,s||0); const m=Math.floor(s/60),sec=Math.floor(s%60),ms=Math.round((s%1)*10); return fmt2(m)+':'+fmt2(sec)+'.'+ms; };
-const fmtFull = s => { s=Math.max(0,Math.round(s||0)); return fmt2(Math.floor(s/3600))+':'+fmt2(Math.floor((s%3600)/60))+':'+fmt2(s%60); };
-const fmtCd = s => { s=Math.max(0,s||0); return fmt2(Math.floor(s/60))+':'+fmt2(Math.floor(s%60)); };
-
-// ── Rendre une case chargée ──
-function renderLoaded(idx){
-  const s = S[idx];
-  const slot = document.getElementById('cart-'+idx);
-  if(!slot) return;
-  slot.classList.add('loaded');
-  // Corps vide → caché
-  const body = slot.querySelector('.cart-body');
-  if(body) body.style.display='none';
-  // Info → visible
-  const info = slot.querySelector('.cart-info');
-  if(info) info.style.display='flex';
-  // Titre
-  const tEl = document.getElementById('cart-title-'+idx);
-  if(tEl) tEl.textContent = s.title;
-  // Bouton EDIT
-  if(!document.getElementById('cart-edit-'+idx)){
-    const btn = document.createElement('button');
-    btn.className='cart-edit-btn'; btn.id='cart-edit-'+idx;
-    btn.textContent='✦ EDIT';
-    btn.onclick = e=>{ e.stopPropagation(); cartOpenEdit(idx); };
-    slot.appendChild(btn);
-  }
-  updateCd(idx);
-}
+// ── Formatage ──
+const cartFmt2 = n => String(Math.max(0,Math.floor(n))).padStart(2,'0');
+const cartFmtCd = s => {
+  s = Math.max(0, s||0);
+  return cartFmt2(Math.floor(s/60)) + ':' + cartFmt2(Math.floor(s%60));
+};
+const cartFmtMs = s => {
+  s = Math.max(0, s||0);
+  return cartFmt2(Math.floor(s/60)) + ':' + cartFmt2(Math.floor(s%60)) + '.' + Math.round((s%1)*10);
+};
 
 // ── Rendre une case vide ──
-function renderEmpty(idx){
-  const slot = document.getElementById('cart-'+idx);
-  if(!slot) return;
+function cartRenderEmpty(i) {
+  const slot = document.getElementById('cart-'+i); if(!slot) return;
   slot.classList.remove('loaded','playing');
-  const body = slot.querySelector('.cart-body');
-  if(body) body.style.display='flex';
-  const info = slot.querySelector('.cart-info');
-  if(info) info.style.display='none';
-  const btn = document.getElementById('cart-edit-'+idx);
+  slot.querySelector('.cart-body').style.display = 'flex';
+  slot.querySelector('.cart-info').style.display = 'none';
+  const btn = document.getElementById('cart-edit-'+i);
   if(btn) btn.remove();
-  const bar = document.getElementById('cart-bar-'+idx);
-  if(bar) bar.style.width='0%';
-  const cd = document.getElementById('cart-cd-'+idx);
-  if(cd) cd.textContent='--:--';
+  const fill = document.getElementById('cart-bar-'+i);
+  if(fill) fill.style.width = '0%';
+  const cd = document.getElementById('cart-cd-'+i);
+  if(cd) cd.textContent = '--:--';
 }
 
-// ── Charger un fichier ──
-function cartLoad(idx, file){
-  const s = S[idx];
-  cartStop(idx);
-  if(s.url && s.url.startsWith('blob:')) URL.revokeObjectURL(s.url);
-  s.url = URL.createObjectURL(file);
-  s.title = file.name.replace(/\.[^/.]+$/,'');
-  s.dur = 0; s.inCue=0; s.outCue=null; s.nextCue=null; s.introCue=null;
-  // Titre immédiat
-  renderLoaded(idx);
-  // Audio
-  const a = new Audio(s.url);
-  a.preload='metadata'; s.audio=a;
-  a.addEventListener('loadedmetadata',()=>{
-    s.dur = a.duration||0;
-    if(s.outCue==null) s.outCue=s.dur;
-    updateCd(idx);
-    // Décoder waveform en background pour EDIT
-    if(typeof WV_DATA_CACHE!=='undefined' && !WV_DATA_CACHE[s.url]){
-      drawWaveform(document.createElement('canvas'), s.url).catch(()=>{});
-    }
-  });
-  a.addEventListener('ended',()=>{
-    s.playing=false;
-    const slot=document.getElementById('cart-'+idx);
-    if(slot){slot.classList.remove('playing');slot.classList.add('loaded');}
-    if(s.raf){cancelAnimationFrame(s.raf);s.raf=null;}
-    a.currentTime=s.inCue||0;
-    updateCd(idx);
-  });
-}
-
-// ── Play / Stop ──
-function cartStart(idx){
-  const s=S[idx]; if(!s.audio) return;
-  s.audio.currentTime = s.inCue||0;
-  s.audio.play().catch(()=>{});
-  s.playing=true;
-  const slot=document.getElementById('cart-'+idx);
-  if(slot){slot.classList.add('playing');slot.classList.remove('loaded');}
-  (function loop(){
-    if(!s.playing||!s.audio) return;
-    updateCd(idx);
-    // Point de sortie
-    const out = s.outCue!=null?s.outCue:s.dur;
-    if(s.audio.currentTime >= out){
-      cartStop(idx); return;
-    }
-    s.raf=requestAnimationFrame(loop);
-  })();
-}
-
-function cartStop(idx){
-  const s=S[idx];
-  if(s.audio){s.audio.pause(); s.audio.currentTime=s.inCue||0;}
-  s.playing=false;
-  if(s.raf){cancelAnimationFrame(s.raf);s.raf=null;}
-  const slot=document.getElementById('cart-'+idx);
-  if(slot){slot.classList.remove('playing'); if(s.audio) slot.classList.add('loaded');}
-  updateCd(idx);
+// ── Rendre une case chargée ──
+function cartRenderLoaded(i) {
+  const c = CART[i];
+  const slot = document.getElementById('cart-'+i); if(!slot) return;
+  slot.classList.add('loaded');
+  slot.querySelector('.cart-body').style.display = 'none';
+  slot.querySelector('.cart-info').style.display = 'flex';
+  document.getElementById('cart-title-'+i).textContent = c.title;
+  // Bouton EDIT
+  if(!document.getElementById('cart-edit-'+i)) {
+    const btn = document.createElement('button');
+    btn.id = 'cart-edit-'+i;
+    btn.className = 'cart-edit-btn';
+    btn.textContent = '✦ EDIT';
+    btn.onclick = e => { e.stopPropagation(); cartOpenEditModal(i); };
+    slot.appendChild(btn);
+  }
+  cartUpdateDisplay(i);
 }
 
 // ── Mettre à jour décompte + barre ──
-function updateCd(idx){
-  const s=S[idx]; if(!s.audio) return;
-  const pos = s.audio.currentTime;
-  const out = s.outCue!=null?s.outCue:s.dur;
-  const rem = Math.max(0, out-pos);
-  const cd  = document.getElementById('cart-cd-'+idx);
-  if(cd) cd.textContent = s.playing ? fmtCd(rem) : fmtCd(out-(s.inCue||0));
-  const bar = document.getElementById('cart-bar-'+idx);
-  if(bar){
-    const span=Math.max(0.01,out-(s.inCue||0));
-    bar.style.width = (Math.min(1,Math.max(0,(pos-(s.inCue||0))/span))*100).toFixed(2)+'%';
-  }
+function cartUpdateDisplay(i) {
+  const c = CART[i]; if(!c.audio) return;
+  const pos = c.audio.currentTime;
+  const out = c.outCue != null ? c.outCue : c.dur;
+  const inp = c.inCue || 0;
+  const rem = Math.max(0, out - pos);
+  const span = Math.max(0.01, out - inp);
+  const cd = document.getElementById('cart-cd-'+i);
+  if(cd) cd.textContent = c.playing ? cartFmtCd(rem) : cartFmtCd(span);
+  const fill = document.getElementById('cart-bar-'+i);
+  if(fill) fill.style.width = (Math.min(1, Math.max(0, (pos - inp) / span)) * 100).toFixed(2) + '%';
+}
+
+// ── Charger un fichier ──
+function cartLoadFile(i, file) {
+  const c = CART[i];
+  cartStopSlot(i);
+  if(c.url && c.url.startsWith('blob:')) URL.revokeObjectURL(c.url);
+  c.url     = URL.createObjectURL(file);
+  c.title   = file.name.replace(/\.[^/.]+$/, '');
+  c.dur     = 0;
+  c.inCue   = 0; c.outCue = null; c.nextCue = null; c.introCue = null;
+
+  // Afficher immédiatement
+  cartRenderLoaded(i);
+
+  // Audio
+  if(c.audio) { c.audio.pause(); c.audio = null; }
+  const a = new Audio(c.url);
+  a.preload = 'metadata';
+  c.audio = a;
+
+  a.addEventListener('loadedmetadata', () => {
+    c.dur = a.duration || 0;
+    if(c.outCue == null) c.outCue = c.dur;
+    cartUpdateDisplay(i);
+    // Pré-décoder la waveform pour l'éditeur
+    if(typeof WV_DATA_CACHE !== 'undefined' && !WV_DATA_CACHE[c.url]) {
+      drawWaveform(document.createElement('canvas'), c.url).catch(() => {});
+    }
+  });
+
+  a.addEventListener('ended', () => {
+    c.playing = false;
+    const slot = document.getElementById('cart-'+i);
+    if(slot) { slot.classList.remove('playing'); slot.classList.add('loaded'); }
+    if(c.raf) { cancelAnimationFrame(c.raf); c.raf = null; }
+    a.currentTime = c.inCue || 0;
+    cartUpdateDisplay(i);
+  });
+}
+
+// ── Play ──
+function cartPlaySlot(i) {
+  const c = CART[i]; if(!c.audio) return;
+  c.audio.currentTime = c.inCue || 0;
+  c.audio.play().catch(() => {});
+  c.playing = true;
+  const slot = document.getElementById('cart-'+i);
+  if(slot) { slot.classList.add('playing'); slot.classList.remove('loaded'); }
+  (function loop() {
+    if(!c.playing || !c.audio) return;
+    cartUpdateDisplay(i);
+    const out = c.outCue != null ? c.outCue : c.dur;
+    if(c.audio.currentTime >= out - 0.05) { cartStopSlot(i); return; }
+    c.raf = requestAnimationFrame(loop);
+  })();
+}
+
+// ── Stop ──
+function cartStopSlot(i) {
+  const c = CART[i];
+  if(c.audio) { c.audio.pause(); c.audio.currentTime = c.inCue || 0; }
+  c.playing = false;
+  if(c.raf) { cancelAnimationFrame(c.raf); c.raf = null; }
+  const slot = document.getElementById('cart-'+i);
+  if(slot) { slot.classList.remove('playing'); if(c.audio) slot.classList.add('loaded'); }
+  cartUpdateDisplay(i);
 }
 
 // ── Supprimer ──
-function cartDelete(idx){
-  cartStop(idx);
-  const s=S[idx];
-  if(s.url&&s.url.startsWith('blob:'))URL.revokeObjectURL(s.url);
-  s.url=null; s.title=null; s.dur=0; s.audio=null;
-  s.inCue=0; s.outCue=null; s.nextCue=null; s.introCue=null;
-  renderEmpty(idx);
+function cartDeleteSlot(i) {
+  cartStopSlot(i);
+  const c = CART[i];
+  if(c.url && c.url.startsWith('blob:')) URL.revokeObjectURL(c.url);
+  c.url = null; c.title = ''; c.dur = 0; c.audio = null;
+  c.inCue = 0; c.outCue = null; c.nextCue = null; c.introCue = null;
+  cartRenderEmpty(i);
 }
 
-// ── EDIT : ouvre la modale éditeur de points ──
-function cartOpenEdit(idx){
-  const s=S[idx]; if(!s.audio) return;
-  // Injecter la piste dans D[0] temporairement si possible
-  // Sinon utiliser la modale directement
-  if(typeof openEditModal==='function'){
-    // Créer un objet compatible avec le système existant
-    const fakeTrack={
-      title:s.title, file:s.url,
-      inCue:s.inCue||0, outCue:s.outCue,
-      nextCue:s.nextCue, introCue:s.introCue,
-      _cartIdx:idx, _isCart:true
-    };
-    // Injecter temporairement dans D[0].tracks si pas en lecture
-    const d=D[0];
-    const tempIdx=d.tracks.length;
-    d.tracks.push(fakeTrack);
-    d.durs.push(s.dur);
-    d.audios.push(s.audio);
+// ── Modale EDIT pour le cartwall ──
+// Réutilise la modale existante (edit-modal / EM) en injectant la piste temporairement
+
+function cartOpenEditModal(i) {
+  const c = CART[i];
+  if(!c.audio || !c.url) return;
+
+  // Construire un objet piste compatible avec EM
+  const fakeTrack = {
+    title:    c.title,
+    file:     c.url,
+    inCue:    c.inCue   || 0,
+    outCue:   c.outCue  != null ? c.outCue  : c.dur,
+    nextCue:  c.nextCue != null ? c.nextCue : null,
+    introCue: c.introCue!= null ? c.introCue: null,
+    _cartIdx: i
+  };
+
+  // Injecter dans D[0] temporairement
+  const d = D[0];
+  const tempIdx = d.tracks.length;
+  d.tracks.push(fakeTrack);
+  d.durs.push(c.dur);
+  d.audios.push(c.audio);
+
+  // Ouvrir la modale
+  if(typeof openEditModal === 'function') {
     openEditModal(tempIdx);
-    // Hook pour récupérer les valeurs en fermant
-    const origClose = window._cartEditClose;
-    window._cartEditClose = function(){
-      s.inCue = fakeTrack.inCue||0;
-      s.outCue = fakeTrack.outCue;
-      s.nextCue = fakeTrack.nextCue;
-      s.introCue = fakeTrack.introCue;
-      // Retirer la piste temporaire
-      d.tracks.splice(tempIdx,1);
-      d.durs.splice(tempIdx,1);
-      d.audios.splice(tempIdx,1);
-      updateCd(idx);
-      if(typeof origClose==='function') origClose();
-    };
   }
+
+  // Stocker le callback de fermeture
+  window._cartOnEditClose = function() {
+    // Récupérer les valeurs modifiées
+    c.inCue    = fakeTrack.inCue   || 0;
+    c.outCue   = fakeTrack.outCue  != null ? fakeTrack.outCue  : c.dur;
+    c.nextCue  = fakeTrack.nextCue != null ? fakeTrack.nextCue : null;
+    c.introCue = fakeTrack.introCue!= null ? fakeTrack.introCue: null;
+    // Nettoyer
+    d.tracks.splice(tempIdx, 1);
+    d.durs.splice(tempIdx, 1);
+    d.audios.splice(tempIdx, 1);
+    cartUpdateDisplay(i);
+    window._cartOnEditClose = null;
+  };
 }
 
-// ── Événements clic / drag ──
-window.cartClick = function(idx){
-  const s=S[idx];
-  if(!s.audio){
-    // Case vide → ouvrir le sélecteur de fichier
-    _pickIdx=idx;
-    const inp=document.getElementById('cart-file-input');
-    if(inp){inp.value='';inp.click();}
-  } else if(s.playing){
-    cartStop(idx);
+// ── Handler global clic ──
+window.cartClick = function(i) {
+  const c = CART[i];
+  if(!c.audio) {
+    // Ouvrir sélecteur fichier
+    _cartPickIdx = i;
+    const inp = document.getElementById('cart-file-input');
+    if(inp) { inp.value = ''; inp.click(); }
+  } else if(c.playing) {
+    cartStopSlot(i);
   } else {
-    cartStart(idx);
+    cartPlaySlot(i);
   }
 };
 
-window.cartRightClick = function(e,idx){
+window.cartRightClick = function(e, i) {
   e.preventDefault(); e.stopPropagation();
-  _ctxIdx=idx;
-  const menu=document.getElementById('cart-ctx-menu'); if(!menu) return;
-  menu.style.left=Math.min(e.clientX,window.innerWidth-170)+'px';
-  menu.style.top =Math.min(e.clientY,window.innerHeight-90)+'px';
-  menu.style.display='block';
-  _ctxVisible=true;
+  _cartCtxIdx = i;
+  const m = document.getElementById('cart-ctx-menu'); if(!m) return;
+  m.style.left   = Math.min(e.clientX, window.innerWidth  - 175) + 'px';
+  m.style.top    = Math.min(e.clientY, window.innerHeight - 90)  + 'px';
+  m.style.display = 'block';
 };
 
-window.cartDragOver = function(e,idx){
+window.cartDragOver  = function(e, i) { e.preventDefault(); document.getElementById('cart-'+i)?.classList.add('dragover'); };
+window.cartDragLeave = function(i)    { document.getElementById('cart-'+i)?.classList.remove('dragover'); };
+window.cartDrop      = function(e, i) {
   e.preventDefault();
-  const slot=document.getElementById('cart-'+idx);
-  if(slot) slot.classList.add('dragover');
+  document.getElementById('cart-'+i)?.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if(f && f.type.startsWith('audio/')) cartLoadFile(i, f);
 };
 
-window.cartDragLeave = function(idx){
-  const slot=document.getElementById('cart-'+idx);
-  if(slot) slot.classList.remove('dragover');
-};
-
-window.cartDrop = function(e,idx){
-  e.preventDefault();
-  const slot=document.getElementById('cart-'+idx);
-  if(slot) slot.classList.remove('dragover');
-  const f=e.dataTransfer.files[0];
-  if(f && f.type.startsWith('audio/')) cartLoad(idx,f);
-};
-
-window.cartFileChosen = function(inp){
-  if(_pickIdx!==null && inp.files[0]){
-    cartLoad(_pickIdx, inp.files[0]);
-    _pickIdx=null;
+window.cartFileChosen = function(inp) {
+  if(_cartPickIdx !== null && inp.files[0]) {
+    cartLoadFile(_cartPickIdx, inp.files[0]);
+    _cartPickIdx = null;
   }
 };
 
-window.cartCtxEdit = function(){
-  if(_ctxIdx!==null) cartOpenEdit(_ctxIdx);
-  hideCtxMenu();
-};
+window.cartCtxEdit   = function() { if(_cartCtxIdx !== null) cartOpenEditModal(_cartCtxIdx); cartHideCtx(); };
+window.cartCtxDelete = function() { if(_cartCtxIdx !== null) cartDeleteSlot(_cartCtxIdx);    cartHideCtx(); };
 
-window.cartCtxDelete = function(){
-  if(_ctxIdx!==null) cartDelete(_ctxIdx);
-  hideCtxMenu();
-};
-
-function hideCtxMenu(){
-  const m=document.getElementById('cart-ctx-menu');
-  if(m) m.style.display='none';
-  _ctxVisible=false; _ctxIdx=null;
+function cartHideCtx() {
+  const m = document.getElementById('cart-ctx-menu');
+  if(m) m.style.display = 'none';
+  _cartCtxIdx = null;
 }
 
-document.addEventListener('click', ()=>{ if(_ctxVisible) hideCtxMenu(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideCtxMenu(); });
+document.addEventListener('click',   () => cartHideCtx());
+document.addEventListener('keydown',  e => { if(e.key === 'Escape') cartHideCtx(); });
 
-// Patch closeEditModal pour récupérer les points
-const _origCloseEditModal = window.closeEditModal;
-window.closeEditModal = function(){
-  if(window._cartEditClose){ window._cartEditClose(); window._cartEditClose=null; }
-  if(typeof _origCloseEditModal==='function') _origCloseEditModal();
+// ── Patch closeEditModal pour récupérer les cues ──
+// Wrap sans perdre l'original
+const _origCloseEM = window.closeEditModal;
+window.closeEditModal = function() {
+  if(typeof window._cartOnEditClose === 'function') {
+    window._cartOnEditClose();
+  }
+  if(typeof _origCloseEM === 'function') _origCloseEM();
 };
 
-})(); // fin IIFE cartwall
+
 
 </script>
 <!-- ══ MODAL ÉDITEUR DE POINTS ══ -->
