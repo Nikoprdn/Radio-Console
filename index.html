@@ -41,8 +41,12 @@
   .diff-badge{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;padding:2px 10px;border-radius:4px;}
   .notification.is-onair{background:var(--s2);border:1px solid var(--border);border-top:none;border-radius:0;padding:.4rem 1rem;margin:0;display:flex;align-items:center;justify-content:space-between;transition:background .2s,border-color .2s;flex-shrink:0;}
 
-  /* ── État EN DIRECT ── */
-  .diff-card-header.is-live{background:linear-gradient(90deg,#2a0a0a 0%,#1e0a0a 100%)!important;border-bottom-color:#6a1010!important;transition:background .2s,border-color .2s;}
+  /* ── État EN DIRECT — rouge fort sur tout le diffuseur ── */
+  .diff-card-header.is-live{background:linear-gradient(90deg,#2a0a0a 0%,#1e0a0a 100%)!important;border-bottom-color:#6a1010!important;transition:background .3s,border-color .3s;}
+  .diff-card-header.is-live .diff-badge{background:#5a0000!important;color:#ff6060!important;border-color:#991818!important;box-shadow:0 0 8px rgba(200,30,30,.4);}
+  /* Zone PAZ rouge en lecture */
+  #paz.is-playing{ background:#120204 !important; }
+  #paz.is-playing .paz-right-col{ background:rgba(28,4,4,.85) !important; }
   .diff-card-header.is-live .diff-badge{background:#5a0000!important;color:#ff6060!important;border-color:#991818!important;box-shadow:0 0 8px rgba(200,30,30,.4);}
   .diff-onair-bar.is-live{background:linear-gradient(90deg,#2e0808 0%,#200606 100%)!important;border-color:#6a1010!important;transition:background .2s,border-color .2s;}
   .diff-onair-bar.is-live .onair-title{color:#ff5050!important;}
@@ -1284,11 +1288,11 @@
 
       <!-- Zone active waveform -->
       <div id="paz" style="position:relative;height:160px;overflow:hidden;border-bottom:2px solid var(--border);background:#12141a;">
-        <!-- Waveform fond HD — uniquement dans la zone centrale -->
-        <canvas id="paz-bg" style="position:absolute;top:0;bottom:0;left:110px;right:260px;display:block;pointer-events:none;z-index:0;width:calc(100% - 370px);"></canvas>
+        <!-- Waveform fond HD — pleine largeur jusqu'au countdown -->
+        <canvas id="paz-bg" style="position:absolute;top:0;bottom:0;left:0;right:260px;display:block;pointer-events:none;z-index:0;width:calc(100% - 260px);"></canvas>
 
-        <!-- Tous les overlays dans la zone centrale (left:110px → right:260px) -->
-        <div id="paz-center-zone" style="position:absolute;top:0;bottom:0;left:110px;right:260px;overflow:hidden;pointer-events:none;">
+        <!-- Tous les overlays dans la zone waveform (0 → right:260px) -->
+        <div id="paz-center-zone" style="position:absolute;top:0;bottom:0;left:0;right:260px;overflow:hidden;pointer-events:none;">
           <div id="paz-red"    style="position:absolute;top:0;bottom:0;left:0;width:0;z-index:1;background:linear-gradient(90deg,rgba(160,8,8,.72),rgba(80,3,3,.5));"></div>
           <div id="paz-yellow" style="position:absolute;top:0;bottom:0;left:0;width:0;z-index:2;background:linear-gradient(90deg,rgba(190,148,0,.55),rgba(120,90,0,.35));display:none;"></div>
           <div id="paz-ph"     style="position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,200,.8);z-index:5;display:none;"></div>
@@ -1299,23 +1303,20 @@
             <span style="position:absolute;bottom:18px;left:4px;font-family:var(--mono);font-size:8px;color:#f5c400;background:rgba(0,0,0,.8);padding:1px 4px;border-radius:2px;white-space:nowrap;">INTRO</span>
           </div>
           <div id="paz-zoom-bar" style="position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06);display:none;z-index:6;">
-            <div id="paz-zoom-pos" style="position:absolute;height:100%;background:rgba(0,212,240,.4);"></div>
+            <div id="paz-zoom-pos" style="position:absolute;height:100%;background:rgba(255,255,255,.3);"></div>
           </div>
         </div>
-        <!-- Colonne gauche : heure lancement -->
-        <div style="position:absolute;top:0;bottom:0;left:0;width:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-right:1px solid rgba(255,255,255,.07);padding:0 8px;z-index:6;">
-          <span style="font-family:var(--mono);font-size:9px;color:rgba(0,212,240,.45);letter-spacing:2px;text-transform:uppercase;">LANCÉ À</span>
-          <span id="paz-launch" style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--cyan);letter-spacing:2px;line-height:1;">--:--:--</span>
+
+        <!-- Titre + cues superposés sur la waveform -->
+        <div style="position:absolute;top:0;bottom:0;left:0;right:260px;display:flex;flex-direction:column;justify-content:center;padding:14px 20px;gap:5px;z-index:6;overflow:hidden;pointer-events:none;">
+          <div id="paz-title" style="font-family:var(--display);font-size:34px;font-weight:700;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 18px rgba(0,0,0,.95);color:rgba(220,228,240,.55);transition:color .2s;">AUCUNE PISTE</div>
+          <div id="paz-cues" style="font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.35);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,.8);"></div>
         </div>
-        <!-- Centre : titre + cues -->
-        <div style="position:absolute;top:0;bottom:0;left:110px;right:260px;display:flex;flex-direction:column;justify-content:center;padding:12px 18px;gap:6px;z-index:6;overflow:hidden;">
-          <div id="paz-title" style="font-family:var(--display);font-size:34px;font-weight:700;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 18px rgba(0,0,0,.95);color:rgba(180,200,230,.55);transition:color .2s;">AUCUNE PISTE</div>
-          <div id="paz-cues" style="font-family:var(--mono);font-size:9px;color:rgba(0,212,240,.45);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-        </div>
+
         <!-- Colonne droite : décompte + boutons -->
-        <div style="position:absolute;top:0;bottom:0;right:0;width:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-left:1px solid rgba(255,255,255,.07);padding:0 18px;z-index:6;">
+        <div style="position:absolute;top:0;bottom:0;right:0;width:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-left:1px solid rgba(255,255,255,.08);padding:0 18px;z-index:6;background:rgba(14,16,22,.7);">
           <span id="paz-cd-lbl" style="font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.3);letter-spacing:4px;text-transform:uppercase;">NEXT</span>
-          <span id="paz-cd" style="font-family:var(--mono);font-size:52px;font-weight:700;letter-spacing:0px;line-height:1;color:var(--cyan);text-shadow:0 0 24px rgba(0,212,240,.5);">--:--:--</span>
+          <span id="paz-cd" style="font-family:var(--mono);font-size:52px;font-weight:700;letter-spacing:0px;line-height:1;color:#ffffff;text-shadow:0 0 24px rgba(255,255,255,.3);">--:--:--</span>
           <div style="display:flex;gap:5px;margin-top:6px;">
             <button id="paz-next-btn" onclick="pazToggleNext()" style="background:rgba(0,40,10,.5);border:1px solid rgba(0,217,106,.5);border-radius:2px;color:var(--green);font-family:var(--mono);font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:2px;transition:all .15s;font-weight:700;">⬥ NEXT</button>
             <button onclick="openEditModal()" style="background:rgba(20,10,40,.5);border:1px solid rgba(100,70,180,.4);border-radius:2px;color:#7060a0;font-family:var(--mono);font-size:8px;padding:3px 8px;cursor:pointer;letter-spacing:1px;transition:all .15s;" onmouseover="this.style.color='#9b6de5';this.style.borderColor='#9b6de5'" onmouseout="this.style.color='#7060a0';this.style.borderColor='rgba(100,70,180,.4)'">✦ EDIT</button>
@@ -2361,9 +2362,9 @@ function pazDrawBg(force){
 
   const bg  = document.getElementById('paz-bg'); if(!bg) return;
   const paz = document.getElementById('paz');    if(!paz) return;
-  // Mesurer la zone centrale seule (entre col gauche 110px et countdown 260px)
+  // Largeur = zone entière moins la colonne countdown (260px)
   const pazW = Math.max(paz.getBoundingClientRect().width, 200);
-  const W = Math.max(Math.round(pazW - 370), 100); // 110 + 260 = 370px de colonnes fixes
+  const W = Math.max(Math.round(pazW - 260), 100);
   const H = Math.max(paz.getBoundingClientRect().height, paz.offsetHeight, 100) || 160;
   if(W < 10 || H < 10){
     requestAnimationFrame(()=>{ _pazWvFile=null; pazDrawBg(true); });
@@ -2372,19 +2373,22 @@ function pazDrawBg(force){
   bg.width=W; bg.height=H;
   _pazWvFile = t.file;
 
-  const draw = (data)=> pazPaintBg(bg, data, _pazZoom.on?_pazZoom.s:0, _pazZoom.on?_pazZoom.e:1);
+  const draw = (data)=>{
+    pazPaintBg(bg, data, _pazZoom.on?_pazZoom.s:0, _pazZoom.on?_pazZoom.e:1);
+    pazMarkers(); // ← repositionner NEXT/INTRO après chaque redessin
+  };
 
   if(WV_DATA_CACHE[t.file]){ draw(WV_DATA_CACHE[t.file]); return; }
   // Feedback pendant chargement
   const ctx=bg.getContext('2d');
-  ctx.fillStyle='rgba(0,212,240,.08)'; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='rgba(0,212,240,.4)'; ctx.font="11px 'Share Tech Mono',monospace";
+  ctx.fillStyle='rgba(255,255,255,.04)'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,.25)'; ctx.font="11px 'Share Tech Mono',monospace";
   ctx.fillText('⟳ Chargement…',16,H/2+4);
   drawWaveform(document.createElement('canvas'), t.file).then(()=>{
     if(t.file!==_pazWvFile) return;
     const b=document.getElementById('paz-bg'); if(!b) return;
-    b.width=b.parentElement.offsetWidth||900;
-    b.height=b.parentElement.offsetHeight||150;
+    b.width = Math.max(Math.round(paz.getBoundingClientRect().width - 260), 100);
+    b.height= paz.getBoundingClientRect().height || 160;
     if(WV_DATA_CACHE[t.file]) draw(WV_DATA_CACHE[t.file]);
   });
 }
@@ -2482,15 +2486,22 @@ function pazTick(){
     ['paz-red','paz-yellow'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.left='0';el.style.width='0';}});
     const ph=document.getElementById('paz-ph'); if(ph) ph.style.display='none';
     const cd=document.getElementById('paz-cd');
-    if(cd){cd.textContent='--:--:--';cd.style.color='var(--txt-dim)';cd.style.animation='none';cd.style.textShadow='none';}
+    if(cd){cd.textContent='--:--:--';cd.style.color='#ffffff';cd.style.animation='none';cd.style.textShadow='none';}
     const lb=document.getElementById('paz-cd-lbl');
     if(lb){lb.textContent='NEXT';lb.style.color='rgba(255,255,255,.3)';}
-    const pazEl=document.getElementById('paz'); if(pazEl) pazEl.style.background='#12141a';
+    const pazEl=document.getElementById('paz');
+    if(pazEl){pazEl.classList.remove('is-playing');pazEl.style.background='';}
+    const hdr=document.getElementById('diff-header-0');
+    if(hdr) hdr.classList.remove('is-live');
     return;
   }
 
   const pos=pazPos(), dur=pazDur()||1;
   const inT=cStart(t), endT=cEnd(t), nextT=cNext(t), introT=cIntro(t);
+
+  // Maintenir rouge en lecture
+  const pazEl=document.getElementById('paz');
+  if(pazEl&&!pazEl.classList.contains('is-playing')) pazEl.classList.add('is-playing');
 
   // Progression rouge (inT → pos)
   const rEl=document.getElementById('paz-red');
@@ -2903,22 +2914,21 @@ D[0]._startTrack=function(i){
   _pazWvFile=null;
   _pazZoom={on:false,s:0,e:1,key:''};
   _pazLaunchTime=nowClock();
-  const lEl=document.getElementById('paz-launch');
-  if(lEl) lEl.textContent=_pazLaunchTime;
   const newT = D[0].tracks[i];
-  // ── Mémoriser l'heure de lancement sur la piste ──
   if(newT) newT._launchTime = Date.now();
-  const tEl  = document.getElementById('paz-title');
+  const tEl = document.getElementById('paz-title');
   if(tEl && newT && !newT.isMacro){
     tEl.textContent = newT.title;
     tEl.style.color = '#ffffff';
   }
-  // Forcer le redessin de la waveform de fond pour la nouvelle piste
-  // (qu'elle soit déjà en cache ou non)
+  // Cacher immédiatement les marqueurs de l'ancienne piste
+  ['paz-mn','paz-mi'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  // Redessin waveform + marqueurs correctement positionnés
   requestAnimationFrame(()=>{
-    _pazWvFile=null; // invalider pour forcer le redessin
-    pazDrawBg(true);
-    // Si pas encore en cache, lancer le décodage
+    _pazWvFile=null;
+    pazDrawBg(true); // appelle pazMarkers() en interne après le dessin
     if(newT && newT.file && !WV_DATA_CACHE[newT.file]){
       drawWaveform(document.createElement('canvas'), newT.file).then(()=>{
         if(D[0].tracks[D[0].ci]===newT){ _pazWvFile=null; pazDrawBg(true); }
@@ -2927,6 +2937,11 @@ D[0]._startTrack=function(i){
     pazRenderList();
   });
   _s0(i);
+  // Diffuseur rouge
+  const paz=document.getElementById('paz');
+  if(paz) paz.style.background='#120204';
+  const hdr=document.getElementById('diff-header-0');
+  if(hdr) hdr.classList.add('is-live');
 };
 
 const _add0=D[0].addTracks.bind(D[0]);
@@ -3032,7 +3047,9 @@ _pazUpdateNextBtn();
 
   // Zone PAZ : fond rouge pendant la lecture
   const pazEl=document.getElementById('paz');
-  if(pazEl) pazEl.style.background='#120204';
+  if(pazEl) pazEl.classList.add('is-playing');
+  const hdr=document.getElementById('diff-header-0');
+  if(hdr) hdr.classList.add('is-live');
 
   // Décompte dans la liste
   const cdR=document.getElementById('paz-row-cd-active');
