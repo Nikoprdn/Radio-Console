@@ -1379,39 +1379,99 @@
         </div>
         <!-- Grille 3 colonnes × 2 rangées -->
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px;background:#1e2028;">
-          <div class="cart-slot" id="cart-0" onclick="cartClick(0)" oncontextmenu="cartRightClick(event,0)" ondragover="cartDragOver(event,0)" ondragleave="cartDragLeave(0)" ondrop="cartDrop(event,0)">
-            <div class="cart-num">01</div><div class="cart-body"><span class="cart-icon">⊕</span><span class="cart-hint">Glisser un son</span></div>
-            <div class="cart-info" style="display:none"><div class="cart-title" id="cart-title-0"></div><div class="cart-cd" id="cart-cd-0">--:--</div></div>
+          <div class="cart-slot" id="cart-0" oncontextmenu="cartRightClick(event,0)" ondragover="cartDragOver(event,0)" ondragleave="cartDragLeave(0)" ondrop="cartDrop(event,0)">
+            <div class="cart-num">01</div>
+            <!-- Case vide : label natif → ouvre file picker directement -->
+            <label class="cart-body" for="cart-inp-0" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <input type="file" id="cart-inp-0" accept="audio/*" style="display:none" onchange="cartFileChosen(0,this)">
+              <span class="cart-icon">⊕</span>
+              <span class="cart-hint">Glisser un son</span>
+            </label>
+            <!-- Case chargée : clic = play/stop -->
+            <div class="cart-info" style="display:none" onclick="cartToggle(0)">
+              <div class="cart-title" id="cart-title-0"></div>
+              <div class="cart-cd" id="cart-cd-0">--:--</div>
+            </div>
             <div class="cart-bar"><div class="cart-bar-fill" id="cart-bar-0"></div></div>
             <div class="cart-air" id="cart-air-0">● AIR</div>
           </div>
-          <div class="cart-slot" id="cart-1" onclick="cartClick(1)" oncontextmenu="cartRightClick(event,1)" ondragover="cartDragOver(event,1)" ondragleave="cartDragLeave(1)" ondrop="cartDrop(event,1)">
-            <div class="cart-num">02</div><div class="cart-body"><span class="cart-icon">⊕</span><span class="cart-hint">Glisser un son</span></div>
-            <div class="cart-info" style="display:none"><div class="cart-title" id="cart-title-1"></div><div class="cart-cd" id="cart-cd-1">--:--</div></div>
+          <div class="cart-slot" id="cart-1" oncontextmenu="cartRightClick(event,1)" ondragover="cartDragOver(event,1)" ondragleave="cartDragLeave(1)" ondrop="cartDrop(event,1)">
+            <div class="cart-num">02</div>
+            <!-- Case vide : label natif → ouvre file picker directement -->
+            <label class="cart-body" for="cart-inp-1" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <input type="file" id="cart-inp-1" accept="audio/*" style="display:none" onchange="cartFileChosen(1,this)">
+              <span class="cart-icon">⊕</span>
+              <span class="cart-hint">Glisser un son</span>
+            </label>
+            <!-- Case chargée : clic = play/stop -->
+            <div class="cart-info" style="display:none" onclick="cartToggle(1)">
+              <div class="cart-title" id="cart-title-1"></div>
+              <div class="cart-cd" id="cart-cd-1">--:--</div>
+            </div>
             <div class="cart-bar"><div class="cart-bar-fill" id="cart-bar-1"></div></div>
             <div class="cart-air" id="cart-air-1">● AIR</div>
           </div>
-          <div class="cart-slot" id="cart-2" onclick="cartClick(2)" oncontextmenu="cartRightClick(event,2)" ondragover="cartDragOver(event,2)" ondragleave="cartDragLeave(2)" ondrop="cartDrop(event,2)">
-            <div class="cart-num">03</div><div class="cart-body"><span class="cart-icon">⊕</span><span class="cart-hint">Glisser un son</span></div>
-            <div class="cart-info" style="display:none"><div class="cart-title" id="cart-title-2"></div><div class="cart-cd" id="cart-cd-2">--:--</div></div>
+          <div class="cart-slot" id="cart-2" oncontextmenu="cartRightClick(event,2)" ondragover="cartDragOver(event,2)" ondragleave="cartDragLeave(2)" ondrop="cartDrop(event,2)">
+            <div class="cart-num">03</div>
+            <!-- Case vide : label natif → ouvre file picker directement -->
+            <label class="cart-body" for="cart-inp-2" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <input type="file" id="cart-inp-2" accept="audio/*" style="display:none" onchange="cartFileChosen(2,this)">
+              <span class="cart-icon">⊕</span>
+              <span class="cart-hint">Glisser un son</span>
+            </label>
+            <!-- Case chargée : clic = play/stop -->
+            <div class="cart-info" style="display:none" onclick="cartToggle(2)">
+              <div class="cart-title" id="cart-title-2"></div>
+              <div class="cart-cd" id="cart-cd-2">--:--</div>
+            </div>
             <div class="cart-bar"><div class="cart-bar-fill" id="cart-bar-2"></div></div>
             <div class="cart-air" id="cart-air-2">● AIR</div>
           </div>
-          <div class="cart-slot" id="cart-3" onclick="cartClick(3)" oncontextmenu="cartRightClick(event,3)" ondragover="cartDragOver(event,3)" ondragleave="cartDragLeave(3)" ondrop="cartDrop(event,3)">
-            <div class="cart-num">04</div><div class="cart-body"><span class="cart-icon">⊕</span><span class="cart-hint">Glisser un son</span></div>
-            <div class="cart-info" style="display:none"><div class="cart-title" id="cart-title-3"></div><div class="cart-cd" id="cart-cd-3">--:--</div></div>
+          <div class="cart-slot" id="cart-3" oncontextmenu="cartRightClick(event,3)" ondragover="cartDragOver(event,3)" ondragleave="cartDragLeave(3)" ondrop="cartDrop(event,3)">
+            <div class="cart-num">04</div>
+            <!-- Case vide : label natif → ouvre file picker directement -->
+            <label class="cart-body" for="cart-inp-3" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <input type="file" id="cart-inp-3" accept="audio/*" style="display:none" onchange="cartFileChosen(3,this)">
+              <span class="cart-icon">⊕</span>
+              <span class="cart-hint">Glisser un son</span>
+            </label>
+            <!-- Case chargée : clic = play/stop -->
+            <div class="cart-info" style="display:none" onclick="cartToggle(3)">
+              <div class="cart-title" id="cart-title-3"></div>
+              <div class="cart-cd" id="cart-cd-3">--:--</div>
+            </div>
             <div class="cart-bar"><div class="cart-bar-fill" id="cart-bar-3"></div></div>
             <div class="cart-air" id="cart-air-3">● AIR</div>
           </div>
-          <div class="cart-slot" id="cart-4" onclick="cartClick(4)" oncontextmenu="cartRightClick(event,4)" ondragover="cartDragOver(event,4)" ondragleave="cartDragLeave(4)" ondrop="cartDrop(event,4)">
-            <div class="cart-num">05</div><div class="cart-body"><span class="cart-icon">⊕</span><span class="cart-hint">Glisser un son</span></div>
-            <div class="cart-info" style="display:none"><div class="cart-title" id="cart-title-4"></div><div class="cart-cd" id="cart-cd-4">--:--</div></div>
+          <div class="cart-slot" id="cart-4" oncontextmenu="cartRightClick(event,4)" ondragover="cartDragOver(event,4)" ondragleave="cartDragLeave(4)" ondrop="cartDrop(event,4)">
+            <div class="cart-num">05</div>
+            <!-- Case vide : label natif → ouvre file picker directement -->
+            <label class="cart-body" for="cart-inp-4" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <input type="file" id="cart-inp-4" accept="audio/*" style="display:none" onchange="cartFileChosen(4,this)">
+              <span class="cart-icon">⊕</span>
+              <span class="cart-hint">Glisser un son</span>
+            </label>
+            <!-- Case chargée : clic = play/stop -->
+            <div class="cart-info" style="display:none" onclick="cartToggle(4)">
+              <div class="cart-title" id="cart-title-4"></div>
+              <div class="cart-cd" id="cart-cd-4">--:--</div>
+            </div>
             <div class="cart-bar"><div class="cart-bar-fill" id="cart-bar-4"></div></div>
             <div class="cart-air" id="cart-air-4">● AIR</div>
           </div>
-          <div class="cart-slot" id="cart-5" onclick="cartClick(5)" oncontextmenu="cartRightClick(event,5)" ondragover="cartDragOver(event,5)" ondragleave="cartDragLeave(5)" ondrop="cartDrop(event,5)">
-            <div class="cart-num">06</div><div class="cart-body"><span class="cart-icon">⊕</span><span class="cart-hint">Glisser un son</span></div>
-            <div class="cart-info" style="display:none"><div class="cart-title" id="cart-title-5"></div><div class="cart-cd" id="cart-cd-5">--:--</div></div>
+          <div class="cart-slot" id="cart-5" oncontextmenu="cartRightClick(event,5)" ondragover="cartDragOver(event,5)" ondragleave="cartDragLeave(5)" ondrop="cartDrop(event,5)">
+            <div class="cart-num">06</div>
+            <!-- Case vide : label natif → ouvre file picker directement -->
+            <label class="cart-body" for="cart-inp-5" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <input type="file" id="cart-inp-5" accept="audio/*" style="display:none" onchange="cartFileChosen(5,this)">
+              <span class="cart-icon">⊕</span>
+              <span class="cart-hint">Glisser un son</span>
+            </label>
+            <!-- Case chargée : clic = play/stop -->
+            <div class="cart-info" style="display:none" onclick="cartToggle(5)">
+              <div class="cart-title" id="cart-title-5"></div>
+              <div class="cart-cd" id="cart-cd-5">--:--</div>
+            </div>
             <div class="cart-bar"><div class="cart-bar-fill" id="cart-bar-5"></div></div>
             <div class="cart-air" id="cart-air-5">● AIR</div>
           </div>
@@ -4931,8 +4991,11 @@ const cartFmtMs = s => {
 function cartRenderEmpty(i) {
   const slot = document.getElementById('cart-'+i); if(!slot) return;
   slot.classList.remove('loaded','playing');
-  slot.querySelector('.cart-body').style.display = 'flex';
-  slot.querySelector('.cart-info').style.display = 'none';
+  // Montrer le label (zone d'import) - cacher la zone info
+  const body = slot.querySelector('.cart-body');
+  if(body) { body.style.display = 'flex'; body.style.pointerEvents = 'auto'; }
+  const info = slot.querySelector('.cart-info');
+  if(info) info.style.display = 'none';
   const btn = document.getElementById('cart-edit-'+i);
   if(btn) btn.remove();
   const fill = document.getElementById('cart-bar-'+i);
@@ -4946,9 +5009,13 @@ function cartRenderLoaded(i) {
   const c = CART[i];
   const slot = document.getElementById('cart-'+i); if(!slot) return;
   slot.classList.add('loaded');
-  slot.querySelector('.cart-body').style.display = 'none';
-  slot.querySelector('.cart-info').style.display = 'flex';
-  document.getElementById('cart-title-'+i).textContent = c.title;
+  // Cacher le label, montrer la zone info (clic = play/stop)
+  const body = slot.querySelector('.cart-body');
+  if(body) body.style.display = 'none';
+  const info = slot.querySelector('.cart-info');
+  if(info) { info.style.display = 'flex'; info.style.cursor = 'pointer'; }
+  const tEl = document.getElementById('cart-title-'+i);
+  if(tEl) tEl.textContent = c.title;
   // Bouton EDIT
   if(!document.getElementById('cart-edit-'+i)) {
     const btn = document.createElement('button');
@@ -5099,18 +5166,17 @@ function cartOpenEditModal(i) {
 }
 
 // ── Handler global clic ──
-window.cartClick = function(i) {
+// cartToggle : play/stop depuis la zone "info" d'une case chargée
+window.cartToggle = function(i) {
   const c = CART[i];
-  if(!c.audio) {
-    // Ouvrir sélecteur fichier
-    _cartPickIdx = i;
-    const inp = document.getElementById('cart-file-input');
-    if(inp) { inp.value = ''; inp.click(); }
-  } else if(c.playing) {
-    cartStopSlot(i);
-  } else {
-    cartPlaySlot(i);
-  }
+  if(!c.audio) return;
+  if(c.playing) cartStopSlot(i);
+  else cartPlaySlot(i);
+};
+
+// cartFileChosen : appelé par l'<input> natif de chaque case
+window.cartFileChosen = function(i, inp) {
+  if(inp.files[0]) cartLoadFile(i, inp.files[0]);
 };
 
 window.cartRightClick = function(e, i) {
@@ -5129,13 +5195,6 @@ window.cartDrop      = function(e, i) {
   document.getElementById('cart-'+i)?.classList.remove('dragover');
   const f = e.dataTransfer.files[0];
   if(f && f.type.startsWith('audio/')) cartLoadFile(i, f);
-};
-
-window.cartFileChosen = function(inp) {
-  if(_cartPickIdx !== null && inp.files[0]) {
-    cartLoadFile(_cartPickIdx, inp.files[0]);
-    _cartPickIdx = null;
-  }
 };
 
 window.cartCtxEdit   = function() { if(_cartCtxIdx !== null) cartOpenEditModal(_cartCtxIdx); cartHideCtx(); };
@@ -5171,14 +5230,21 @@ document.addEventListener('keydown', function(e) {
   const modal = document.getElementById('edit-modal');
   if(modal && modal.style.display !== 'none') return;
 
-  switch(e.key) {
-    case '1': e.preventDefault(); cartClick(0); break; // Cart 01
-    case '2': e.preventDefault(); cartClick(1); break; // Cart 02
-    case '3': e.preventDefault(); cartClick(2); break; // Cart 03
-    case '4': e.preventDefault(); cartClick(3); break; // Cart 04
-    case '5': e.preventDefault(); cartClick(4); break; // Cart 05
-    case '6': e.preventDefault(); cartClick(5); break; // Cart 06
-    case '0': e.preventDefault(); D[0].togglePlay(); break; // DIFF A play/stop
+  const cartKey = {'1':0,'2':1,'3':2,'4':3,'5':4,'6':5}[e.key];
+  if(cartKey !== undefined) {
+    e.preventDefault();
+    // Raccourci : play/stop uniquement si une piste est chargée
+    const c = CART[cartKey];
+    if(c.audio) {
+      if(c.playing) cartStopSlot(cartKey);
+      else cartPlaySlot(cartKey);
+    }
+    // Si vide : on ne fait rien (le file picker ne peut pas s'ouvrir depuis keydown)
+    return;
+  }
+  if(e.key === '0') {
+    e.preventDefault();
+    D[0].togglePlay();
   }
 });
 
@@ -5265,8 +5331,6 @@ document.addEventListener('keydown', function(e) {
 
   </div>
 </div>
-<!-- Input fichier cartwall au niveau body (pas dans overflow:hidden) -->
-<input type="file" id="cart-file-input" accept="audio/*" style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;" onchange="cartFileChosen(this)">
 
 </body>
 </html>
