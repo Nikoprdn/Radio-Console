@@ -1972,7 +1972,128 @@ body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Barlow
 [data-theme="light"] .na-plan-day{background:rgba(0,0,0,.04);}
 [data-theme="light"] .na-col{border-right-color:rgba(0,0,0,.07);}
 [data-theme="light"] .na-today-team{color:#111;}
-[data-theme="light"] .na-comm-nom{color:#111;}</style>
+[data-theme="light"] .na-comm-nom{color:#111;}
+
+/* ── Incident Antenne ── */
+.na-incident-card{
+  background:#1a0a0a;
+  border:1px solid rgba(228,3,46,.25);
+  border-left:4px solid #E4032E;
+  border-radius:14px;overflow:hidden;
+}
+.na-incident-header{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 22px;
+  background:linear-gradient(135deg,#2a0808 0%,#1a0a0a 100%);
+  border-bottom:1px solid rgba(228,3,46,.15);
+}
+.na-incident-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:#E4032E;flex-shrink:0;
+  box-shadow:0 0 10px #E4032E;
+  animation:naPulse 1.5s ease-in-out infinite;
+}
+.na-incident-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:18px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;
+  color:#E4032E;
+}
+.na-incident-date{
+  margin-left:auto;font-family:'Share Tech Mono',monospace;
+  font-size:12px;color:rgba(255,255,255,.3);
+}
+.na-incident-body{padding:20px 22px;display:flex;flex-direction:column;gap:16px;}
+
+/* Types d'incidents */
+.na-inc-types{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.na-inc-type{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:14px 10px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.04);
+  color:rgba(255,255,255,.65);cursor:pointer;
+  transition:all .15s;
+  font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase;
+}
+.na-inc-type:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff;}
+.na-inc-type.selected{
+  background:rgba(228,3,46,.15);border-color:#E4032E;color:#fff;
+}
+.na-inc-type--major{border-color:rgba(228,3,46,.3);}
+.na-inc-type--major:hover,.na-inc-type--major.selected{
+  background:rgba(228,3,46,.25);border-color:#E4032E;
+}
+.na-inc-type-icon{font-size:24px;line-height:1;}
+
+/* Formulaire */
+.na-inc-form{display:flex;flex-direction:column;gap:10px;}
+.na-inc-form-row{display:grid;grid-template-columns:1fr 160px 160px;gap:12px;}
+.na-inc-field{display:flex;flex-direction:column;gap:4px;}
+.na-inc-label{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);
+}
+.na-inc-selected-type{
+  font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;
+  color:#E4032E;padding:6px 0;
+}
+.na-inc-input{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:6px;padding:8px 12px;
+  font-family:'Share Tech Mono',monospace;font-size:14px;color:#fff;
+  outline:none;transition:border-color .12s;width:100%;box-sizing:border-box;
+  color-scheme:dark;
+}
+.na-inc-input:focus{border-color:#E4032E;}
+.na-inc-textarea{resize:vertical;font-family:'Inter',sans-serif;font-size:13px;}
+.na-inc-actions{display:flex;gap:10px;align-items:center;}
+.na-inc-btn{
+  font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:800;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:10px 24px;border-radius:8px;cursor:pointer;transition:all .15s;
+}
+.na-inc-btn--declare{
+  background:#E4032E;border:none;color:#fff;
+  box-shadow:0 4px 16px rgba(228,3,46,.3);
+}
+.na-inc-btn--declare:hover{background:#c0021f;box-shadow:0 4px 20px rgba(228,3,46,.5);}
+.na-inc-btn--cancel{
+  background:transparent;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);
+}
+.na-inc-btn--cancel:hover{border-color:rgba(255,255,255,.35);color:#fff;}
+
+/* Incidents récents */
+.na-inc-recent{display:flex;flex-direction:column;gap:8px;}
+.na-inc-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:10px 14px;border-radius:8px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+  border-left:3px solid #E4032E;
+}
+.na-inc-item--major{
+  background:rgba(228,3,46,.08);border-color:rgba(228,3,46,.3);
+  border-left-color:#E4032E;
+}
+.na-inc-item-time{
+  font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;
+  color:rgba(255,255,255,.4);white-space:nowrap;flex-shrink:0;
+}
+.na-inc-item-body{flex:1;}
+.na-inc-item-type{
+  font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;
+  color:#fff;margin-bottom:2px;
+}
+.na-inc-item-desc{
+  font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,.4);
+}
+.na-inc-item-status{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 8px;border-radius:4px;
+  background:rgba(228,3,46,.2);color:#E4032E;
+  flex-shrink:0;
+}</style>
 </head>
 <body>
 
@@ -2136,6 +2257,8 @@ body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Barlow
 <div class="tab-content" id="tab-antenne">
   <div class="na-page">
 
+    <!-- ▸ INCIDENT ANTENNE -->
+
     <!-- ▸ MORNING -->
     <div class="na-block na-block--morning">
       <div class="na-block-header">
@@ -2211,6 +2334,68 @@ body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Barlow
         </div>
       </div>
     </div>
+
+<div class="na-incident-card">
+
+      <div class="na-incident-header">
+        <span class="na-incident-dot"></span>
+        <span class="na-incident-title">INCIDENT ANTENNE</span>
+        <span class="na-incident-date" id="na-inc-date"></span>
+      </div>
+
+      <div class="na-incident-body">
+
+        <div class="na-inc-types">
+          <button class="na-inc-type" data-type="Diffusion Publicitaire" onclick="naIncSelect(this)">
+            <span class="na-inc-type-icon">&#128267;</span>
+            <span>Diffusion Publicitaire</span>
+          </button>
+          <button class="na-inc-type" data-type="Blanc Antenne" onclick="naIncSelect(this)">
+            <span class="na-inc-type-icon">&#9898;</span>
+            <span>Blanc Antenne</span>
+          </button>
+          <button class="na-inc-type" data-type="Incident diffuseur" onclick="naIncSelect(this)">
+            <span class="na-inc-type-icon">&#128225;</span>
+            <span>Incident diffuseur</span>
+          </button>
+          <button class="na-inc-type na-inc-type--major" data-type="Incident Majeur" onclick="naIncSelect(this)">
+            <span class="na-inc-type-icon">&#9888;&#65039;</span>
+            <span>Incident Majeur</span>
+          </button>
+        </div>
+
+        <div class="na-inc-form" id="na-inc-form" style="display:none">
+          <div class="na-inc-form-row">
+            <div class="na-inc-field">
+              <label class="na-inc-label">Type d'incident</label>
+              <div class="na-inc-selected-type" id="na-inc-selected-type">—</div>
+            </div>
+            <div class="na-inc-field">
+              <label class="na-inc-label">Heure de début</label>
+              <input class="na-inc-input" type="time" id="na-inc-heure-debut" />
+            </div>
+            <div class="na-inc-field">
+              <label class="na-inc-label">Heure de fin <span style="opacity:.4">(optionnel)</span></label>
+              <input class="na-inc-input" type="time" id="na-inc-heure-fin" />
+            </div>
+          </div>
+          <div class="na-inc-field">
+            <label class="na-inc-label">Description <span style="opacity:.4">(optionnel)</span></label>
+            <textarea class="na-inc-input na-inc-textarea" id="na-inc-desc" rows="2" placeholder="Détails…"></textarea>
+          </div>
+          <div class="na-inc-actions">
+            <button class="na-inc-btn na-inc-btn--declare" onclick="naIncDeclare()">&#9889; Déclarer l'incident</button>
+            <button class="na-inc-btn na-inc-btn--cancel" onclick="naIncCancel()">Annuler</button>
+          </div>
+        </div>
+
+        <div class="na-inc-recent" id="na-inc-recent">
+          <div class="na-empty">Aucun incident déclaré</div>
+        </div>
+
+      </div>
+    </div>
+
 
   </div>
 </div>
@@ -3444,7 +3629,131 @@ function naTogglePlanningDyn(key){
   el.style.display = (el.style.display === 'none') ? 'block' : 'none';
 }
 
+
+/* ── INCIDENT ANTENNE ── */
+var naIncSelectedType = '';
+
+function naIncInit(){
+  var dateEl = document.getElementById('na-inc-date');
+  if(dateEl) dateEl.textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  /* Heure de début = maintenant par défaut */
+  var now = new Date();
+  var hh = ('0'+now.getHours()).slice(-2);
+  var mm = ('0'+now.getMinutes()).slice(-2);
+  var heureEl = document.getElementById('na-inc-heure-debut');
+  if(heureEl) heureEl.value = hh+':'+mm;
+  /* Charger les incidents récents depuis le storage */
+  naIncLoadRecent();
+}
+
+function naIncSelect(btn){
+  document.querySelectorAll('.na-inc-type').forEach(function(b){ b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  naIncSelectedType = btn.dataset.type;
+  var typeEl = document.getElementById('na-inc-selected-type');
+  if(typeEl) typeEl.textContent = naIncSelectedType;
+  var form = document.getElementById('na-inc-form');
+  if(form) form.style.display = 'flex';
+}
+
+function naIncCancel(){
+  naIncSelectedType = '';
+  document.querySelectorAll('.na-inc-type').forEach(function(b){ b.classList.remove('selected'); });
+  var form = document.getElementById('na-inc-form');
+  if(form) form.style.display = 'none';
+}
+
+function naIncDeclare(){
+  if(!naIncSelectedType) return;
+  var heureDebut = document.getElementById('na-inc-heure-debut').value || '—';
+  var heureFin   = document.getElementById('na-inc-heure-fin').value   || '';
+  var desc       = document.getElementById('na-inc-desc').value.trim() || '';
+
+  var incident = {
+    id:        'inc_' + Date.now(),
+    type:      naIncSelectedType,
+    date:      new Date().toLocaleDateString('fr-FR'),
+    heureDebut: heureDebut,
+    heureFin:   heureFin,
+    desc:       desc,
+    declaredAt: new Date().toISOString(),
+    status:     'actif'
+  };
+
+  /* Sauvegarder dans le storage partagé (lu par la page incidents) */
+  var key = 'rm_incidents';
+  var save = function(existing){
+    var list = existing ? JSON.parse(existing) : [];
+    list.unshift(incident);  /* Plus récent en premier */
+    if(list.length > 50) list = list.slice(0, 50);  /* Max 50 incidents */
+    if(typeof window.storage !== 'undefined'){
+      window.storage.set(key, JSON.stringify(list), true)
+        .catch(function(){ localStorage.setItem(key, JSON.stringify(list)); });
+    } else {
+      localStorage.setItem(key, JSON.stringify(list));
+    }
+  };
+
+  if(typeof window.storage !== 'undefined'){
+    window.storage.get(key, true)
+      .then(function(r){ save(r && r.value ? r.value : null); })
+      .catch(function(){ save(localStorage.getItem(key)); });
+  } else {
+    save(localStorage.getItem(key));
+  }
+
+  /* Rafraîchir l'affichage */
+  naIncLoadRecent();
+  naIncCancel();
+  /* Reset desc */
+  var descEl = document.getElementById('na-inc-desc');
+  if(descEl) descEl.value = '';
+}
+
+function naIncLoadRecent(){
+  var el = document.getElementById('na-inc-recent'); if(!el) return;
+
+  function render(list){
+    if(!list || !list.length){
+      el.innerHTML = '<div class="na-empty">Aucun incident d\u00e9clar\u00e9</div>';
+      return;
+    }
+    var today = new Date().toLocaleDateString('fr-FR');
+    var todayItems = list.filter(function(i){ return i.date === today; });
+    if(!todayItems.length){
+      el.innerHTML = '<div class="na-empty">Aucun incident aujourd\'hui</div>';
+      return;
+    }
+    el.innerHTML = todayItems.slice(0,5).map(function(inc){
+      var isMajor = inc.type === 'Incident Majeur';
+      var timeStr = inc.heureDebut + (inc.heureFin ? ' \u2192 ' + inc.heureFin : '');
+      return '<div class="na-inc-item'+(isMajor?' na-inc-item--major':'')+'">'
+        +'<span class="na-inc-item-time">'+timeStr+'</span>'
+        +'<div class="na-inc-item-body">'
+          +'<div class="na-inc-item-type">'+inc.type+'</div>'
+          +(inc.desc?'<div class="na-inc-item-desc">'+inc.desc+'</div>':'')
+        +'</div>'
+        +'<span class="na-inc-item-status">'+inc.status+'</span>'
+      +'</div>';
+    }).join('');
+  }
+
+  var key = 'rm_incidents';
+  if(typeof window.storage !== 'undefined'){
+    window.storage.get(key, true)
+      .then(function(r){
+        var list = (r && r.value) ? JSON.parse(r.value) : [];
+        render(list);
+      })
+      .catch(function(){
+        render(JSON.parse(localStorage.getItem(key)||'[]'));
+      });
+  } else {
+    render(JSON.parse(localStorage.getItem(key)||'[]'));
+  }
+}
 function initNoteAntenne(){
+  naIncInit();
   if(typeof window.storage !== 'undefined'){
     naLoadFromStorage().then(function(loaded){
       if(!loaded){
