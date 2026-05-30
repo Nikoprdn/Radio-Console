@@ -3166,15 +3166,13 @@ function wxPalSwitch(z,day){
 }
 
 function wxPalGenerate(z){
-  console.log('[PAL] Generate called for zone:', z);
-  var body=document.getElementById('wx-'+z+'-pal-body');if(!body){console.error('[PAL] body not found');return;}
+  var body=document.getElementById('wx-'+z+'-pal-body');if(!body)return;
   var copyBtn=document.getElementById('wx-'+z+'-pal-copy');
   if(copyBtn)copyBtn.style.display='none';
-  body.innerHTML='<div class="wx-pal-loading">Rédaction du bulletin en cours&#8230;</div>';
+  body.innerHTML='<div class="wx-pal-loading">G\u00e9n\u00e9ration\u2026</div>';
 
   var d=wxPalData[z];
-  console.log('[PAL] wxPalData[z]:', d?'OK':'NULL');
-  if(!d){body.innerHTML='<div class="wx-pal-hint">Données pas encore chargées. Veuillez patienter.</div>';return;}
+  if(!d){body.innerHTML='<div class="wx-pal-hint">Donn\u00e9es m\u00e9t\u00e9o non charg\u00e9es. Patientez.</div>';return;}
 
   var off=wxPalDay[z];
   var daily=d.daily;
@@ -3184,61 +3182,58 @@ function wxPalGenerate(z){
   var cond=wxShort(daily.weathercode[off]);
   var wind=Math.round(daily.windspeed_10m_max[off]);
   var wdir=daily.winddirection_10m_dominant?wxDir(daily.winddirection_10m_dominant[off]):'';
-  var precip=(daily.precipitation_sum[off]||0).toFixed(1);
+  var precip=parseFloat((daily.precipitation_sum[off]||0).toFixed(1));
   var pop=daily.precipitation_probability_max?daily.precipitation_probability_max[off]:0;
   var dayLbl=off===0?'aujourd\'hui':'demain';
+  var dayFull=off===0?wxDayName(0)+' '+new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):wxDayName(1);
 
-  /* Récupérer les températures des villes pour les ajouter */
+  /* Villes */
   var citiesEl=document.getElementById('wx-'+z+'-cities');
   var cityTemps=[];
   if(citiesEl){
     citiesEl.querySelectorAll('.wx-city-tile').forEach(function(tile){
-      var name=tile.querySelector('.wx-city-tile-name');
-      var tmax2=tile.querySelector('.wx-city-tile-tmax');
-      var tmin2=tile.querySelector('.wx-city-tile-tmin');
-      if(name&&tmax2)cityTemps.push({name:name.textContent,tmax:tmax2.textContent,tmin:tmin2?tmin2.textContent:''});
+      var n=tile.querySelector('.wx-city-tile-name');
+      var tm=tile.querySelector('.wx-city-tile-tmax');
+      var tn=tile.querySelector('.wx-city-tile-tmin');
+      if(n&&tm)cityTemps.push({name:n.textContent.trim(),tmax:tm.textContent.trim(),tmin:tn?tn.textContent.trim():''});
     });
   }
 
-  var cityLine=cityTemps.length?'\nTempératures dans les villes : '+cityTemps.map(function(ct){return ct.name+' '+ct.tmax+'/'+ct.tmin;}).join(', '):'' ;
+  /* Bulletin local */
+  var phrTemps=dayFull+' sur '+zone.name+', '+cond.toLowerCase()+' avec un maximum de '+tmax+'\u00b0C et un minimum de '+tmin+'\u00b0C.';
+  var phrVent=wind>=30?'Le vent souffle jusqu\'\u00e0 '+wind+' km/h'+( wdir?' en provenance du '+wdir:'')+'.' :'';
+  var phrPluie=precip>1||pop>40?'Des pr\u00e9cipitations sont possibles ('+pop+'%).' :'Pas de pr\u00e9cipitations pr\u00e9vues.';
+  var phrVilles=cityTemps.length?'Les temp\u00e9ratures maximales : '+cityTemps.slice(0,5).map(function(ct){return ct.name+' '+ct.tmax;}).join(', ')+'.':'';
+  var bulletin=[phrTemps,phrVent,phrPluie,phrVilles].filter(function(s){return s.length>2;}).join(' ');
 
-  var prompt='Tu es présentateur météo à Radio Monaco. Rédige un bulletin météo à lire en direct pour '+dayLbl+' sur '+zone.name+'.\n'
-    +'Météo : '+cond+', max '+tmax+'°C, min '+tmin+'°C, vent '+wind+' km/h '+wdir+', pluie '+precip+' mm ('+pop+'%).\n'
-    +cityLine+'\n'
-    +'Format : 4-5 phrases fluides et naturelles, style radio professionnel, sans titre ni numérotation. '
-    +'Termine par une phrase récapitulative avec les températures clés.';
+  function showResult(text){
+    var th='';
+    if(cityTemps.length){
+      th='<div class="wx-pal-temps">';
+      cityTemps.forEach(function(ct){
+        th+='<div class="wx-pal-temp-item"><span class="wx-pal-temp-city">'+ct.name+'</span><span class="wx-pal-temp-val">'+ct.tmax+' <span>'+ct.tmin+'</span></span></div>';
+      });
+      th+='</div>';
+    }
+    body.innerHTML='<div class="wx-pal-text">'+text.replace(/\n/g,'<br>')+'</div>'+th;
+    body.dataset.text=text+(cityTemps.length?'\n\n'+cityTemps.map(function(ct){return ct.name+' : '+ct.tmax+' / '+ct.tmin;}).join(' | '):'');
+    if(copyBtn)copyBtn.style.display='';
+  }
 
-  fetch('https://api.anthropic.com/v1/messages',{
+  showResult(bulletin);
+
+  /* Upgrade via Worker (si disponible) */
+  fetch(W+'/ai',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:prompt}]})
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',max_tokens:350,
+      messages:[{role:'user',content:'Bulletin m\u00e9t\u00e9o radio 4 phrases pour '+dayLbl+' \u00e0 '+zone.name+': '+cond+', max '+tmax+'\u00b0, min '+tmin+'\u00b0, vent '+wind+' km/h '+wdir+', pluie '+precip+'mm ('+pop+'%). '+(cityTemps.length?'Villes max: '+cityTemps.map(function(ct){return ct.name+' '+ct.tmax;}).join(', ')+'. ':'')}]
+    })
   })
-  .then(function(r){return r.json();})
-  .then(function(data){
-    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
-    if(!text){body.innerHTML='<div class="wx-pal-hint">Erreur de génération.</div>';return;}
-
-    /* Construire le bloc températures villes */
-    var tempsHtml='';
-    if(cityTemps.length){
-      tempsHtml='<div class="wx-pal-temps">';
-      cityTemps.forEach(function(ct){
-        tempsHtml+='<div class="wx-pal-temp-item">'
-          +'<span class="wx-pal-temp-city">'+ct.name+'</span>'
-          +'<span class="wx-pal-temp-val">'+ct.tmax+' <span>'+ct.tmin+'</span></span>'
-          +'</div>';
-      });
-      tempsHtml+='</div>';
-    }
-
-    body.innerHTML='<div class="wx-pal-text">'+text.trim().replace(/\n/g,'<br>')+'</div>'+tempsHtml;
-    body.dataset.text=text.trim()+'\n\n'+cityTemps.map(function(ct){return ct.name+' : '+ct.tmax+' / '+ct.tmin;}).join(' | ');
-    if(copyBtn)copyBtn.style.display='';
-  })
-  .catch(function(e){
-    console.error('[PAL] Fetch error:', e);
-    body.innerHTML='<div class="wx-pal-hint" style="color:#E4032E">Erreur : '+e.message+'</div>';
-  });
+  .then(function(r){if(!r.ok)throw 0;return r.json();})
+  .then(function(data){var t=(data.content&&data.content[0]&&data.content[0].text)||'';if(t.length>20)showResult(t);})
+  .catch(function(){});
 }
 
 function wxPalCopy(z){
